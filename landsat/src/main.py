@@ -1,9 +1,9 @@
+"""Lambda function to trigger low-latency Landsat processing from newly acquired scenes."""
 import argparse
 import json
 import logging
 import sys
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
 import geopandas as gpd
 import hyp3_sdk as sdk
@@ -27,13 +27,13 @@ MAX_CLOUD_COVER_PERCENT = 60
 log = logging.getLogger(__name__)
 
 
-def search_date(date_string: str) -> datetime:
+def _search_date(date_string: str) -> datetime:
     default_date = datetime(2020, 1, 1, 0, 0, 0, 0, timezone.utc)
     dt = date_parser(date_string, default=default_date)
     return dt.astimezone(tz=timezone.utc)
 
 
-def check_scene(scene, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT):
+def _check_scene(scene: str, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> None:
     collection = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION)
     item = collection.get_item(scene)
     # TODO: raise specific errors instead of asserts
@@ -46,7 +46,7 @@ def get_landsat_pairs_for_reference_scene(
     max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPERATION),
     max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
 ) -> gpd.GeoDataFrame:
-    """Generate potential ITS_LIVE velocity pairs for a given Landsat scene
+    """Generate potential ITS_LIVE velocity pairs for a given Landsat scene.
 
     Args:
         reference: Landsat reference scene to find pairs for
@@ -59,7 +59,7 @@ def get_landsat_pairs_for_reference_scene(
     """
     path = reference.split('_')[2][0:3]
     row = reference.split('_')[2][3:]
-    acquisition_time = search_date(reference.split('_')[3])
+    acquisition_time = _search_date(reference.split('_')[3])
 
     results = LANDSAT_CATALOG.search(
         collections=[LANDSAT_COLLECTION],
@@ -104,8 +104,24 @@ def get_landsat_pairs_for_reference_scene(
 #       When *adding* tiles to the pair list, new scenes will get picked up automatically, but we'll need to manually
 #       generate pairs all the way back in time. Marks scripts generate all possible pairs for all time.
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Ensure we don't submit duplicate jobs to HyP3.
+
+    Search HyP3 jobs since the reference scene's acquisition date and remove already processed pairs
+
+    Args:
+         pairs: A GeoDataFrame containing *at least*  these columns: `reference`, `reference_acquisition`, and
+          `secondary`.
+
+    Returns:
+         The pairs GeoDataFrame with any already submitted pairs removed.
+    """
     # FIXME: do we want to hardcode job type and username here?
-    jobs = HYP3.find_jobs(start=pairs.iloc[0].reference_acquisition, job_type='AUTORIFT', user_id='hyp3.its_live')
+    jobs = HYP3.find_jobs(
+        job_type='AUTORIFT',
+        start=pairs.iloc[0].reference_acquisition,
+        name=pairs.iloc[0].referece.str.split('_').str[2],
+        user_id='hyp3.its_live',
+    )
 
     df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
 
@@ -119,7 +135,7 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return pairs.reset_index()
 
 
-def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:
+def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: D103
     prepared_jobs = []
     for reference, secondary in pairs[['reference', 'secondary']].itertuples(index=False):
         tile = reference.split('_')[2]
@@ -133,13 +149,25 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:
 
 
 def process_scene(
-    scene,
+    scene: str,
     max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPERATION),
     max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
     submit: bool = True,
 ) -> sdk.Batch:
+    """Trigger Landsat processing for a scene.
+
+    Args:
+        scene: Reference Landsat scene name to build pairs for.
+        max_pair_separation: How many days back from a reference scene's acquisition date to search for secondary
+         scenes.
+        max_cloud_cover: The maximum percent a Landsat scene can be covered by clouds.
+        submit: Submit pairs to HyP3 for processing.
+
+    Returns:
+        Jobs submitted to HyP3 for processing.
+    """
     # TODO: error handling
-    check_scene(scene, max_cloud_cover)
+    _check_scene(scene, max_cloud_cover)
 
     pairs = get_landsat_pairs_for_reference_scene(scene, max_pair_separation, max_cloud_cover)
     log.info(f'Found {len(pairs)} pairs for {scene}')
@@ -159,7 +187,7 @@ def process_scene(
     return jobs
 
 
-def lambda_handler(event: dict, context: Any):
+def lambda_handler(event: dict, context: object) -> None:
     """Landsat processing lambda function.
 
     Accepts an event with SQS records for newly ingested Landsat scenes and processes each scene.
@@ -174,15 +202,15 @@ def lambda_handler(event: dict, context: Any):
         _ = process_scene(message['landsat_product_id'])
 
 
-# FIXME
-def main():
+def main() -> None:
+    """Command Line wrapper around `process_scene`."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('reference', help='Reference Landsat scene name to build pairs for')
     parser.add_argument(
         '--max-pair-separation',
         type=int,
         default=MAX_PAIR_SEPERATION,
-        help="How many days back from a reference scene's acquisition date " 'to search for secondary scenes',
+        help="How many days back from a reference scene's acquisition date to search for secondary scenes",
     )
     parser.add_argument(
         '--max-cloud-cover',
