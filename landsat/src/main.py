@@ -42,9 +42,9 @@ def check_scene(scene, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT):
 
 
 def get_landsat_pairs_for_reference_scene(
-        reference: str,
-        max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPERATION),
-        max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
+    reference: str,
+    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPERATION),
+    max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
 ) -> gpd.GeoDataFrame:
     """Generate potential ITS_LIVE velocity pairs for a given Landsat scene
 
@@ -70,7 +70,7 @@ def get_landsat_pairs_for_reference_scene(
             # TODO: off-nadir handling
             'view:off_nadir=0',
         ],
-        datetime=[acquisition_time - max_pair_separation, acquisition_time]
+        datetime=[acquisition_time - max_pair_separation, acquisition_time],
     )
     items = [ii for iis in results.pages() for ii in iis]
 
@@ -104,7 +104,6 @@ def get_landsat_pairs_for_reference_scene(
 #       When *adding* tiles to the pair list, new scenes will get picked up automatically, but we'll need to manually
 #       generate pairs all the way back in time. Marks scripts generate all possible pairs for all time.
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-
     # FIXME: do we want to hardcode job type and username here?
     jobs = HYP3.find_jobs(start=pairs.iloc[0].reference_acquisition, job_type='AUTORIFT', user_id='hyp3.its_live')
 
@@ -133,8 +132,12 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:
     return jobs
 
 
-def process_scene(scene, max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPERATION),
-                  max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT, submit: bool = True) -> sdk.Batch:
+def process_scene(
+    scene,
+    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPERATION),
+    max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
+    submit: bool = True,
+) -> sdk.Batch:
     # TODO: error handling
     check_scene(scene, max_cloud_cover)
 
@@ -173,17 +176,21 @@ def lambda_handler(event: dict, context: Any):
 
 # FIXME
 def main():
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('reference', help='Reference Landsat scene name to build pairs for')
-    parser.add_argument('--max-pair-separation', type=int, default=MAX_PAIR_SEPERATION,
-                        help='How many days back from a reference scene\'s acquisition date '
-                             'to search for secondary scenes')
-    parser.add_argument('--max-cloud-cover', type=int, default=MAX_CLOUD_COVER_PERCENT,
-                        help='The maximum percent a Landsat scene can be covered by clouds')
-    parser .add_argument('--submit', action='store_true', help='Submit pairs to HyP3 for processing')
+    parser.add_argument(
+        '--max-pair-separation',
+        type=int,
+        default=MAX_PAIR_SEPERATION,
+        help="How many days back from a reference scene's acquisition date " 'to search for secondary scenes',
+    )
+    parser.add_argument(
+        '--max-cloud-cover',
+        type=int,
+        default=MAX_CLOUD_COVER_PERCENT,
+        help='The maximum percent a Landsat scene can be covered by clouds',
+    )
+    parser.add_argument('--submit', action='store_true', help='Submit pairs to HyP3 for processing')
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
 

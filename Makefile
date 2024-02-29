@@ -12,10 +12,15 @@ test_file ?= 'tests/'
 test:
 	pytest $(test_file)
 
-static: flake8 cfn-lint
+static: ruff-check cfn-lint
 
-flake8:
-	flake8 --max-line-length=120
+ruff-check:
+	ruff check
+
+ruff-format:
+	ruff format
+
+ruff: ruff-check ruff-format
 
 cfn-lint:
 	cfn-lint --template `find . -name cloudformation.yml` --info --ignore-checks W3002
