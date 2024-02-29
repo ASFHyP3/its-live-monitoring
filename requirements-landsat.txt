@@ -1,3 +1,4 @@
+boto3
 geopandas
 hyp3_sdk
 pandas
