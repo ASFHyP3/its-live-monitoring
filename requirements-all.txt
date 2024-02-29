@@ -1,0 +1,5 @@
+-r requirements-landsat.txt
+cfn-lint
+ruff
+pytest
+python-dotenv
