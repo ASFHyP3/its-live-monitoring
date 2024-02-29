@@ -2,6 +2,7 @@
 import argparse
 import json
 import logging
+import os
 import sys
 from datetime import datetime, timedelta, timezone
 
@@ -12,9 +13,13 @@ import pystac_client
 from dateutil.parser import parse as date_parser
 
 
-# FIXME: specify earthdata username and password?
-# FIXME: don't hardcode HyP3 API here
-HYP3 = sdk.HyP3('https://hyp3-its-live.asf.alaska.edu')
+EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
+EARTHDATA_PASSWORD = os.environ.get('EARTHDATA_PASSWORD')
+HYP3 = sdk.HyP3(
+    os.environ.get('ITS_LIVE_HYP3_API', 'https://hyp3-its-live.asf.alaska.edu'),
+    username=EARTHDATA_USERNAME,
+    password=EARTHDATA_PASSWORD,
+)
 
 STAC_CLIENT = pystac_client.Client
 LANDSAT_STAC_API = 'https://landsatlook.usgs.gov/stac-server'
@@ -115,12 +120,11 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
-    # FIXME: do we want to hardcode job type and username here?
     jobs = HYP3.find_jobs(
         job_type='AUTORIFT',
         start=pairs.iloc[0].reference_acquisition,
-        name=pairs.iloc[0].referece.str.split('_').str[2],
-        user_id='hyp3.its_live',
+        name=pairs.iloc[0].reference.split('_')[2],
+        user_id=EARTHDATA_USERNAME,
     )
 
     df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
