@@ -65,7 +65,6 @@ def _check_scene(scene: str, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> 
 
     collection = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION)
     item = collection.get_item(scene)
-    # TODO: raise specific errors instead of asserts
     assert item.properties['eo:cloud_cover'] < max_cloud_cover
     assert item.properties['view:off_nadir'] == 0
 
@@ -95,7 +94,6 @@ def get_landsat_pairs_for_reference_scene(
             f'landsat:wrs_path={tile[0:3]}',
             f'landsat:wrs_row={tile[3:]}',
             f'eo:cloud_cover<{max_cloud_cover}',
-            # TODO: off-nadir handling
             'view:off_nadir=0',
         ],
         datetime=[acquisition_time - max_pair_separation, acquisition_time],
@@ -178,7 +176,6 @@ def process_scene(
     Returns:
         Jobs submitted to HyP3 for processing.
     """
-    # TODO: error handling
     _check_scene(scene, max_cloud_cover)
 
     pairs = get_landsat_pairs_for_reference_scene(scene, max_pair_separation, max_cloud_cover)
