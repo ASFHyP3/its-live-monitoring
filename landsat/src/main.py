@@ -87,18 +87,11 @@ def get_landsat_pairs_for_reference_scene(
 
     df = gpd.GeoDataFrame.from_features(features)
     df['datetime'] = pd.to_datetime(df.datetime)
+    df = df.rename(columns={'id': 'secondary'})
+    df['reference'] = reference
+    df['reference_acquisition'] = acquisition_time
 
-    # FIXME: This duplicates the search parameters... do we still want these filters?
-    sec_scenes = df[
-        (acquisition_time.date() > df.datetime.dt.date)
-        & (df.datetime.dt.date > (acquisition_time.date() - max_pair_separation))
-    ]
-
-    sec_scenes = sec_scenes.rename(columns={'id': 'secondary'})
-    sec_scenes['reference'] = reference
-    sec_scenes['reference_acquisition'] = acquisition_time
-
-    return sec_scenes
+    return df
 
 
 # NOTE: Since each newly ingested Landsat scene will become a new unique reference scene, we don't need to look in the
