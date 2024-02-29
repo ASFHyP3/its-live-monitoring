@@ -1,4 +1,5 @@
 """Lambda function to trigger low-latency Landsat processing from newly acquired scenes."""
+
 import json
 
 
