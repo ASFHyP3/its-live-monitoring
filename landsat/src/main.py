@@ -44,6 +44,7 @@ def _check_scene(scene: str, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> 
     # TODO: raise specific errors instead of asserts
     assert item.properties['eo:cloud_cover'] < max_cloud_cover
     assert item.properties['view:off_nadir'] == 0
+    # TODO: valid tile to process
 
 
 def get_landsat_pairs_for_reference_scene(
@@ -94,13 +95,6 @@ def get_landsat_pairs_for_reference_scene(
     return df
 
 
-# NOTE: Since each newly ingested Landsat scene will become a new unique reference scene, we don't need to look in the
-#       catalog to deduplicate. We do need to make sure we haven't already requested HyP3 jobs, but we only need to look
-#       back as far as the search start time as HyP3 jobs *must* have been submitted after the reference scene was
-#       acquired.
-#
-#       When *adding* tiles to the pair list, new scenes will get picked up automatically, but we'll need to manually
-#       generate pairs all the way back in time. Marks scripts generate all possible pairs for all time.
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """Ensure we don't submit duplicate jobs to HyP3.
 
