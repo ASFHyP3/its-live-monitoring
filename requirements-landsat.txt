@@ -1,0 +1,5 @@
+geopandas
+hyp3_sdk
+pandas
+pystac-client
+python-dateutil
