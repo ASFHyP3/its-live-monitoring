@@ -129,7 +129,7 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     jobs = HYP3.find_jobs(
         job_type='AUTORIFT',
         start=pairs.iloc[0].reference_acquisition,
-        name=_landsat_tile(pairs.iloc[0].reference),
+        name=pairs.iloc[0].reference,
         user_id=EARTHDATA_USERNAME,
     )
 
@@ -149,7 +149,7 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
     prepared_jobs = []
     for reference, secondary in pairs[['reference', 'secondary']].itertuples(index=False):
         tile = _landsat_tile(reference)
-        prepared_jobs.append(HYP3.prepare_autorift_job(reference, secondary, name=tile))
+        prepared_jobs.append(HYP3.prepare_autorift_job(reference, secondary, name=reference))
 
     log.debug(prepared_jobs)
 
