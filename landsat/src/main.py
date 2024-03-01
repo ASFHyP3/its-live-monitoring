@@ -133,7 +133,6 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: D103
     prepared_jobs = []
     for reference, secondary in pairs[['reference', 'secondary']].itertuples(index=False):
-        tile = _landsat_tile(reference)
         prepared_jobs.append(HYP3.prepare_autorift_job(reference, secondary, name=reference))
 
     log.debug(prepared_jobs)
