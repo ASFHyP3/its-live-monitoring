@@ -25,7 +25,7 @@ LANDSAT_STAC_API = 'https://landsatlook.usgs.gov/stac-server'
 LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_STAC_API)
 LANDSAT_COLLECTION = 'landsat-c2l1'
 
-MAX_PAIR_SEPERATION = 544  # days
+MAX_PAIR_SEPARATION = 544  # days
 MAX_CLOUD_COVER_PERCENT = 60
 
 EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
@@ -71,7 +71,7 @@ def _check_scene(scene: str, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> 
 
 def get_landsat_pairs_for_reference_scene(
     reference: str,
-    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPERATION),
+    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION),
     max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
 ) -> gpd.GeoDataFrame:
     """Generate potential ITS_LIVE velocity pairs for a given Landsat scene.
@@ -98,7 +98,7 @@ def get_landsat_pairs_for_reference_scene(
         ],
         datetime=[acquisition_time - max_pair_separation, acquisition_time],
     )
-    items = [ii for iis in results.pages() for ii in iis]
+    items = [item for page in results.pages() for item in page]
 
     features = []
     for item in items:
@@ -160,7 +160,7 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
 
 def process_scene(
     scene: str,
-    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPERATION),
+    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION),
     max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
     submit: bool = True,
 ) -> sdk.Batch:
@@ -218,7 +218,7 @@ def main() -> None:
     parser.add_argument(
         '--max-pair-separation',
         type=int,
-        default=MAX_PAIR_SEPERATION,
+        default=MAX_PAIR_SEPARATION,
         help="How many days back from a reference scene's acquisition date to search for secondary scenes",
     )
     parser.add_argument(
