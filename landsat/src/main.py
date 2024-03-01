@@ -151,6 +151,8 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
         tile = _landsat_tile(reference)
         prepared_jobs.append(HYP3.prepare_autorift_job(reference, secondary, name=tile))
 
+    log.debug(prepared_jobs)
+
     jobs = sdk.Batch()
     for batch in sdk.util.chunk(prepared_jobs):
         jobs += HYP3.submit_prepared_jobs(batch)
@@ -208,6 +210,10 @@ def lambda_handler(event: dict, context: object) -> None:
     for record in event['Records']:
         body = json.loads(record['body'])
         message = json.loads(body['Message'])
+
+        level = logging.DEBUG if os.environ.get('LOGGING_LEVEL', 'INFO').upper() == 'DEBUG' else logging.INFO
+        logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
+
         _ = process_scene(message['landsat_product_id'])
 
 

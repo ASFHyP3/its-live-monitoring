@@ -1,0 +1,28 @@
+name: Deploy ITS_LIVE Monitoring Test
+
+on:
+  push:
+    branches:
+      - develop
+
+concurrency: deploy-test
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/deploy
+        with:
+          STACK_NAME: its-live-monitoring-test
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          CLOUDFORMATION_ROLE_ARN: ${{ secrets.CLOUDFORMATION_ROLE_ARN }}
+          EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_USERNAME }}
+          EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD }}
+          CF_TEMPLATE_BUCKET: # TODO
+          TOPIC_ARN: # TODO
+          ITS_LIVE_HYP3_API: https://hyp3-its-live.asf.alaska.edu
+          LAMBDA_LOGGING_LEVEL: INFO
+          PROCESSING_STATE: DISABLED

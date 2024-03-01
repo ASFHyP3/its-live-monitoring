@@ -1,0 +1,61 @@
+name: Deploy ITS_LIVE Monitoring
+description: Deploy the ITS_LIVE Monitoring system
+
+inputs:
+  STACK_NAME:
+    required: true
+  AWS_ACCESS_KEY_ID:
+    required: true
+  AWS_SECRET_ACCESS_KEY:
+    required: true
+  CLOUDFORMATION_ROLE_ARN:
+    required: true
+  CF_TEMPLATE_BUCKET:
+    required: true
+  TOPIC_ARN:
+    required: true
+  ITS_LIVE_HYP3_API:
+    required: true
+  LAMBDA_LOGGING_LEVEL:
+    required: true
+  EARTHDATA_USERNAME:
+    required: true
+  EARTHDATA_PASSWORD:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ inputs.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ inputs.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+
+    - uses: actions/setup-python@v3
+      with:
+        python-version: 3.12
+
+    - name: Install
+      shell: bash
+      run: make install-lambda-deps
+
+    - name: Package and deploy
+      shell: bash
+      run: |
+        aws cloudformation package \
+          --template-file cloudformation.yml \
+          --s3-bucket=${{ inputs.CF_TEMPLATE_BUCKET }} \
+          --output-template-file packaged.yml
+        
+        aws cloudformation deploy \
+          --template-file packaged.yml \
+          --stack-name=${{ inputs.STACK_NAME }} \
+          --capabilities CAPABILITY_IAM \
+          --role-arn ${{ inputs.CLOUDFORMATION_ROLE_ARN }} \
+          --parameter-overrides \
+            TopicArn=${{ inputs.TOPIC_ARN }} \
+            ItsLiveHyp3Api=${{ inputs.ITS_LIVE_HYP3_API }} \
+            LambdaLoggingLevel=${{ inputs.LAMBDA_LOGGING_LEVEL }} \
+            EarthdataUsername=${{ inputs.EARTHDATA_USERNAME }} \
+            EarthdataPassword=${{ inputs.EARTHDATA_PASSWORD }}

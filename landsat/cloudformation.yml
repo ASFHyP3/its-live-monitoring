@@ -1,8 +1,23 @@
 Parameters:
-
   TopicArn:
     Type: String
-    Default: arn:aws:sns:us-west-2:673253540267:public-c2-notify-v2
+
+  ItsLiveHyp3Api:
+    Type: String
+
+  LambdaLoggingLevel:
+    Type: String
+    Default: "INFO"
+    AllowedValues:
+      - "INFO"
+      - "DEBUG"
+
+  EarthdataUsername:
+    Type: String
+
+  EarthdataPassword:
+    Type: String
+    NoEcho: true
 
 Resources:
 
@@ -55,6 +70,12 @@ Resources:
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.12
       Timeout: 300
+      Environment:
+        Variables:
+          ITS_LIVE_HYP3_API: !ref ItsLiveHyp3Api
+          LOGGING_LEVEL: !Ref LambdaLoggingLevel
+          EARTHDATA_USERNAME: !Ref EarthdataUsername
+          EARTHDATA_PASSWORD: !Ref EarthdataPassword
 
   LambdaEventSourceMapping:
     Type: AWS::Lambda::EventSourceMapping
