@@ -6,8 +6,8 @@ import logging
 import os
 import sys
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
-import boto3
 import geopandas as gpd
 import hyp3_sdk as sdk
 import pandas as pd
@@ -15,15 +15,10 @@ import pystac_client
 from dateutil.parser import parse as date_parser
 
 
-S3_CLIENT = boto3.client('s3')
-ITS_LIVE_BUCKET = 'its-live-data'
-ITS_LIVE_TILES_KEY = 'catalog_geojson/landsatOLI/v2_LandsatOLI_tiles.json'
-
-
-STAC_CLIENT = pystac_client.Client
 LANDSAT_STAC_API = 'https://landsatlook.usgs.gov/stac-server'
 LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_STAC_API)
 LANDSAT_COLLECTION = 'landsat-c2l1'
+LANDSAT_TILES = json.loads(Path('tile_list.json').read_text())
 
 MAX_PAIR_SEPARATION_IN_DAYS = 544
 MAX_CLOUD_COVER_PERCENT = 60
@@ -39,15 +34,6 @@ HYP3 = sdk.HyP3(
 log = logging.getLogger(__name__)
 
 
-def _get_landsat_tile_list() -> dict:
-    try:
-        response = S3_CLIENT.get_object(Bucket=ITS_LIVE_BUCKET, Key=ITS_LIVE_TILES_KEY)
-    except S3_CLIENT.exceptions.NoSuchKey:
-        raise KeyError(f'Tile list does not exist for s3://{ITS_LIVE_BUCKET}/{ITS_LIVE_TILES_KEY}')
-
-    return json.loads(response['Body'].read().decode('utf-8'))
-
-
 def _landsat_tile(scene: str) -> str:
     return scene.split('_')[2]
 
@@ -60,8 +46,7 @@ def _search_date(date_string: str) -> datetime:
 
 def _check_scene(scene: str, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> None:
     tile = _landsat_tile(scene)
-    tile_list = _get_landsat_tile_list()
-    assert tile in {f'{path:0>3}{row:0>3}' for path, row in tile_list}
+    assert tile in LANDSAT_TILES
 
     collection = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION)
     item = collection.get_item(scene)
