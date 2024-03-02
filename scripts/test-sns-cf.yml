@@ -1,0 +1,28 @@
+Resources:
+
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: public-c2-notify-test
+
+  SNSTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref SNSTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: allowOnlySQSandLambdaSubscription
+          Effect: Allow
+          Action:
+            - sns:Subscribe
+            - sns:Receive
+          Resource: !Ref SNSTopic
+          Principal:
+            AWS: "*"
+          Condition:
+            StringEquals:
+              SNS:Protocol:
+                - sqs
+                - lambda
