@@ -18,7 +18,9 @@ from dateutil.parser import parse as date_parser
 LANDSAT_STAC_API = 'https://landsatlook.usgs.gov/stac-server'
 LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_STAC_API)
 LANDSAT_COLLECTION = 'landsat-c2l1'
-LANDSAT_TILES = json.loads(Path('tile_list.json').read_text())
+LANDSAT_TILES = json.loads(
+    (Path(__file__).parent / 'tile_list.json').read_text()
+)
 
 MAX_PAIR_SEPARATION_IN_DAYS = 544
 MAX_CLOUD_COVER_PERCENT = 60
