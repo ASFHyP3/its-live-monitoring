@@ -72,7 +72,7 @@ Resources:
       Timeout: 300
       Environment:
         Variables:
-          ITS_LIVE_HYP3_API: !ref ItsLiveHyp3Api
+          ITS_LIVE_HYP3_API: !Ref ItsLiveHyp3Api
           LOGGING_LEVEL: !Ref LambdaLoggingLevel
           EARTHDATA_USERNAME: !Ref EarthdataUsername
           EARTHDATA_PASSWORD: !Ref EarthdataPassword
