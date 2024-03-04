@@ -194,10 +194,6 @@ def lambda_handler(event: dict, context: object) -> None:
     for record in event['Records']:
         body = json.loads(record['body'])
         message = json.loads(body['Message'])
-
-        level = logging.DEBUG if os.environ.get('LOGGING_LEVEL', 'INFO').upper() == 'DEBUG' else logging.INFO
-        logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
-
         _ = process_scene(message['landsat_product_id'])
 
 
