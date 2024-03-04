@@ -12,7 +12,7 @@ inputs:
     required: true
   CF_TEMPLATE_BUCKET:
     required: true
-  TOPIC_ARN:
+  LANDSAT_TOPIC_ARN:
     required: true
   HYP3_API:
     required: true
@@ -54,7 +54,7 @@ runs:
           --capabilities CAPABILITY_IAM \
           --role-arn ${{ inputs.CLOUDFORMATION_ROLE_ARN }} \
           --parameter-overrides \
-            TopicArn=${{ inputs.TOPIC_ARN }} \
+            LandsatTopicArn=${{ inputs.LANDSAT_TOPIC_ARN }} \
             Hyp3Api=${{ inputs.HYP3_API }} \
             LambdaLoggingLevel=${{ inputs.LAMBDA_LOGGING_LEVEL }} \
             EarthdataUsername=${{ inputs.EARTHDATA_USERNAME }} \

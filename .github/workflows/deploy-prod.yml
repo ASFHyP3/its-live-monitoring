@@ -22,7 +22,7 @@ jobs:
           EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_USERNAME }}
           EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD }}
           CF_TEMPLATE_BUCKET: cf-templates-3o5lnspmwmzg-us-west-2
-          TOPIC_ARN: arn:aws:sns:us-west-2:673253540267:public-c2-notify-v2
+          LANDSAT_TOPIC_ARN: arn:aws:sns:us-west-2:673253540267:public-c2-notify-v2
           HYP3_API: https://hyp3-its-live.asf.alaska.edu
           LAMBDA_LOGGING_LEVEL: INFO
 

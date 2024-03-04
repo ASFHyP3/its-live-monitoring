@@ -1,5 +1,5 @@
 Parameters:
-  TopicArn:
+  LandsatTopicArn:
     Type: String
 
   Hyp3Api:
@@ -40,14 +40,14 @@ Resources:
             Resource: !GetAtt Queue.Arn
             Condition:
               ArnEquals:
-                aws:SourceArn: !Ref TopicArn
+                aws:SourceArn: !Ref LandsatTopicArn
       Queues:
         - !Ref Queue
 
   Subscription:
     Type: AWS::SNS::Subscription
     Properties:
-      TopicArn: !Ref TopicArn
+      TopicArn: !Ref LandsatTopicArn
       Protocol: sqs
       Endpoint: !GetAtt Queue.Arn
       FilterPolicyScope: MessageBody
