@@ -18,7 +18,7 @@ from dateutil.parser import parse as date_parser
 LANDSAT_STAC_API = 'https://landsatlook.usgs.gov/stac-server'
 LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_STAC_API)
 LANDSAT_COLLECTION = 'landsat-c2l1'
-LANDSAT_TILES = json.loads((Path(__file__).parent / 'tile_list.json').read_text())
+LANDSAT_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'landsat_tiles_to_process.json').read_text())
 
 MAX_PAIR_SEPARATION_IN_DAYS = 544
 MAX_CLOUD_COVER_PERCENT = 60
@@ -46,7 +46,7 @@ def _search_date(date_string: str) -> datetime:
 
 def _check_scene(scene: str, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> None:
     tile = _landsat_tile(scene)
-    assert tile in LANDSAT_TILES
+    assert tile in LANDSAT_TILES_TO_PROCESS
 
     collection = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION)
     item = collection.get_item(scene)
