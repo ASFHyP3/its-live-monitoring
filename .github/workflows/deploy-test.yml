@@ -9,6 +9,7 @@ concurrency: deploy-test
 
 jobs:
   deploy:
+    environment: test
     runs-on: ubuntu-latest
 
     steps:
