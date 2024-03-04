@@ -14,7 +14,7 @@ inputs:
     required: true
   TOPIC_ARN:
     required: true
-  ITS_LIVE_HYP3_API:
+  HYP3_API:
     required: true
   LAMBDA_LOGGING_LEVEL:
     required: true
@@ -55,7 +55,7 @@ runs:
           --role-arn ${{ inputs.CLOUDFORMATION_ROLE_ARN }} \
           --parameter-overrides \
             TopicArn=${{ inputs.TOPIC_ARN }} \
-            ItsLiveHyp3Api=${{ inputs.ITS_LIVE_HYP3_API }} \
+            Hyp3Api=${{ inputs.HYP3_API }} \
             LambdaLoggingLevel=${{ inputs.LAMBDA_LOGGING_LEVEL }} \
             EarthdataUsername=${{ inputs.EARTHDATA_USERNAME }} \
             EarthdataPassword=${{ inputs.EARTHDATA_PASSWORD }}

@@ -23,5 +23,5 @@ jobs:
           EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD }}
           CF_TEMPLATE_BUCKET: cf-templates-3o5lnspmwmzg-us-west-2
           TOPIC_ARN: # TODO
-          ITS_LIVE_HYP3_API: https://hyp3-its-live.asf.alaska.edu
+          HYP3_API: https://hyp3-its-live.asf.alaska.edu
           LAMBDA_LOGGING_LEVEL: DEBUG

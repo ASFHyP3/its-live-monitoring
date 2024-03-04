@@ -2,7 +2,7 @@ Parameters:
   TopicArn:
     Type: String
 
-  ItsLiveHyp3Api:
+  Hyp3Api:
     Type: String
 
   LambdaLoggingLevel:
@@ -72,7 +72,7 @@ Resources:
       Timeout: 300
       Environment:
         Variables:
-          ITS_LIVE_HYP3_API: !Ref ItsLiveHyp3Api
+          HYP3_API: !Ref Hyp3Api
           LOGGING_LEVEL: !Ref LambdaLoggingLevel
           EARTHDATA_USERNAME: !Ref EarthdataUsername
           EARTHDATA_PASSWORD: !Ref EarthdataPassword

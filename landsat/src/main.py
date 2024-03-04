@@ -26,7 +26,7 @@ MAX_CLOUD_COVER_PERCENT = 60
 EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
 EARTHDATA_PASSWORD = os.environ.get('EARTHDATA_PASSWORD')
 HYP3 = sdk.HyP3(
-    os.environ.get('ITS_LIVE_HYP3_API', 'https://hyp3-its-live.asf.alaska.edu'),
+    os.environ.get('HYP3_API', 'https://hyp3-its-live.asf.alaska.edu'),
     username=EARTHDATA_USERNAME,
     password=EARTHDATA_PASSWORD,
 )
