@@ -42,7 +42,7 @@ runs:
       shell: bash
       run: |
         aws cloudformation package \
-          --template-file cloudformation.yml \
+          --template-file landsat/cloudformation.yml \
           --s3-bucket=${{ inputs.CF_TEMPLATE_BUCKET }} \
           --output-template-file packaged.yml
         
