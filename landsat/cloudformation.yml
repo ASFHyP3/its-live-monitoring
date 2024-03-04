@@ -7,10 +7,10 @@ Parameters:
 
   LambdaLoggingLevel:
     Type: String
-    Default: "INFO"
+    Default: INFO
     AllowedValues:
-      - "INFO"
-      - "DEBUG"
+      - INFO
+      - DEBUG
 
   EarthdataUsername:
     Type: String
