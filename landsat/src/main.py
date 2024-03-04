@@ -31,7 +31,8 @@ HYP3 = sdk.HyP3(
     password=EARTHDATA_PASSWORD,
 )
 
-log = logging.getLogger(__name__)
+log = logging.getLogger()
+log.setLevel(os.environ.get('LAMBDA_LOGGING_LEVEL', 'INFO'))
 
 
 def _landsat_tile(scene: str) -> str:
