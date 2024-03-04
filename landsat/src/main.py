@@ -6,8 +6,8 @@ import logging
 import os
 import sys
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
-import boto3
 import geopandas as gpd
 import hyp3_sdk as sdk
 import pandas as pd
@@ -15,37 +15,24 @@ import pystac_client
 from dateutil.parser import parse as date_parser
 
 
-S3_CLIENT = boto3.client('s3')
-ITS_LIVE_BUCKET = 'its-live-data'
-ITS_LIVE_TILES_KEY = 'catalog_geojson/landsatOLI/v2_LandsatOLI_tiles.json'
-
-
-STAC_CLIENT = pystac_client.Client
 LANDSAT_STAC_API = 'https://landsatlook.usgs.gov/stac-server'
 LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_STAC_API)
 LANDSAT_COLLECTION = 'landsat-c2l1'
+LANDSAT_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'landsat_tiles_to_process.json').read_text())
 
-MAX_PAIR_SEPARATION = 544  # days
+MAX_PAIR_SEPARATION_IN_DAYS = 544
 MAX_CLOUD_COVER_PERCENT = 60
 
 EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
 EARTHDATA_PASSWORD = os.environ.get('EARTHDATA_PASSWORD')
 HYP3 = sdk.HyP3(
-    os.environ.get('ITS_LIVE_HYP3_API', 'https://hyp3-its-live.asf.alaska.edu'),
+    os.environ.get('HYP3_API', 'https://hyp3-its-live.asf.alaska.edu'),
     username=EARTHDATA_USERNAME,
     password=EARTHDATA_PASSWORD,
 )
 
-log = logging.getLogger(__name__)
-
-
-def _get_landsat_tile_list() -> dict:
-    try:
-        response = S3_CLIENT.get_object(Bucket=ITS_LIVE_BUCKET, Key=ITS_LIVE_TILES_KEY)
-    except S3_CLIENT.exceptions.NoSuchKey:
-        raise KeyError(f'Tile list does not exist for s3://{ITS_LIVE_BUCKET}/{ITS_LIVE_TILES_KEY}')
-
-    return json.loads(response['Body'].read().decode('utf-8'))
+log = logging.getLogger()
+log.setLevel(os.environ.get('LAMBDA_LOGGING_LEVEL', 'INFO'))
 
 
 def _landsat_tile(scene: str) -> str:
@@ -60,8 +47,7 @@ def _search_date(date_string: str) -> datetime:
 
 def _check_scene(scene: str, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> None:
     tile = _landsat_tile(scene)
-    tile_list = _get_landsat_tile_list()
-    assert tile in {f'{path:0>3}{row:0>3}' for path, row in tile_list}
+    assert tile in LANDSAT_TILES_TO_PROCESS
 
     collection = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION)
     item = collection.get_item(scene)
@@ -71,7 +57,7 @@ def _check_scene(scene: str, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> 
 
 def get_landsat_pairs_for_reference_scene(
     reference: str,
-    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION),
+    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION_IN_DAYS),
     max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
 ) -> gpd.GeoDataFrame:
     """Generate potential ITS_LIVE velocity pairs for a given Landsat scene.
@@ -129,7 +115,7 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     jobs = HYP3.find_jobs(
         job_type='AUTORIFT',
         start=pairs.iloc[0].reference_acquisition,
-        name=_landsat_tile(pairs.iloc[0].reference),
+        name=pairs.iloc[0].reference,
         user_id=EARTHDATA_USERNAME,
     )
 
@@ -148,8 +134,9 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: D103
     prepared_jobs = []
     for reference, secondary in pairs[['reference', 'secondary']].itertuples(index=False):
-        tile = _landsat_tile(reference)
-        prepared_jobs.append(HYP3.prepare_autorift_job(reference, secondary, name=tile))
+        prepared_jobs.append(HYP3.prepare_autorift_job(reference, secondary, name=reference))
+
+    log.debug(prepared_jobs)
 
     jobs = sdk.Batch()
     for batch in sdk.util.chunk(prepared_jobs):
@@ -160,7 +147,7 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
 
 def process_scene(
     scene: str,
-    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION),
+    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION_IN_DAYS),
     max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
     submit: bool = True,
 ) -> sdk.Batch:
@@ -218,7 +205,7 @@ def main() -> None:
     parser.add_argument(
         '--max-pair-separation',
         type=int,
-        default=MAX_PAIR_SEPARATION,
+        default=MAX_PAIR_SEPARATION_IN_DAYS,
         help="How many days back from a reference scene's acquisition date to search for secondary scenes",
     )
     parser.add_argument(

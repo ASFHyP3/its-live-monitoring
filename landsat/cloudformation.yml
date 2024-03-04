@@ -1,8 +1,23 @@
 Parameters:
-
-  TopicArn:
+  LandsatTopicArn:
     Type: String
-    Default: arn:aws:sns:us-west-2:673253540267:public-c2-notify-v2
+
+  Hyp3Api:
+    Type: String
+
+  LambdaLoggingLevel:
+    Type: String
+    Default: INFO
+    AllowedValues:
+      - INFO
+      - DEBUG
+
+  EarthdataUsername:
+    Type: String
+
+  EarthdataPassword:
+    Type: String
+    NoEcho: true
 
 Resources:
 
@@ -25,14 +40,14 @@ Resources:
             Resource: !GetAtt Queue.Arn
             Condition:
               ArnEquals:
-                aws:SourceArn: !Ref TopicArn
+                aws:SourceArn: !Ref LandsatTopicArn
       Queues:
         - !Ref Queue
 
   Subscription:
     Type: AWS::SNS::Subscription
     Properties:
-      TopicArn: !Ref TopicArn
+      TopicArn: !Ref LandsatTopicArn
       Protocol: sqs
       Endpoint: !GetAtt Queue.Arn
       FilterPolicyScope: MessageBody
@@ -55,6 +70,12 @@ Resources:
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.12
       Timeout: 300
+      Environment:
+        Variables:
+          HYP3_API: !Ref Hyp3Api
+          LOGGING_LEVEL: !Ref LambdaLoggingLevel
+          EARTHDATA_USERNAME: !Ref EarthdataUsername
+          EARTHDATA_PASSWORD: !Ref EarthdataPassword
 
   LambdaEventSourceMapping:
     Type: AWS::Lambda::EventSourceMapping
@@ -71,8 +92,10 @@ Resources:
       RetentionInDays: 90
 
   LambdaRole:
-    Type: AWS::IAM::Role
+    Type: Custom::JplRole
     Properties:
+      ServiceToken: !ImportValue Custom::JplRole::ServiceToken
+      Path: /account-managed/hyp3/
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -80,16 +103,22 @@ Resources:
           Principal:
             Service: lambda.amazonaws.com
           Effect: Allow
-      Policies:
-        - PolicyName: policy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
-              - Effect: Allow
-                Action: sqs:*
-                Resource: !GetAtt Queue.Arn
+      ManagedPolicyArns:
+        - !Ref LambdaPolicy
+
+  LambdaPolicy:
+    Type: Custom::JplPolicy
+    Properties:
+      ServiceToken: !ImportValue Custom::JplPolicy::ServiceToken
+      Path: /account-managed/hyp3/
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*"
+          - Effect: Allow
+            Action: sqs:*
+            Resource: !GetAtt Queue.Arn
