@@ -8,8 +8,6 @@ inputs:
     required: true
   AWS_SECRET_ACCESS_KEY:
     required: true
-  CLOUDFORMATION_ROLE_ARN:
-    required: true
   CF_TEMPLATE_BUCKET:
     required: true
   LANDSAT_TOPIC_ARN:
@@ -52,7 +50,6 @@ runs:
           --template-file packaged.yml \
           --stack-name=${{ inputs.STACK_NAME }} \
           --capabilities CAPABILITY_IAM \
-          --role-arn ${{ inputs.CLOUDFORMATION_ROLE_ARN }} \
           --parameter-overrides \
             LandsatTopicArn=${{ inputs.LANDSAT_TOPIC_ARN }} \
             Hyp3Api=${{ inputs.HYP3_API }} \
