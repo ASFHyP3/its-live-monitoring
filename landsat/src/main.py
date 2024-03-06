@@ -11,6 +11,7 @@ from pathlib import Path
 import geopandas as gpd
 import hyp3_sdk as sdk
 import pandas as pd
+import pystac
 import pystac_client
 from dateutil.parser import parse as date_parser
 
@@ -45,14 +46,19 @@ def _search_date(date_string: str) -> datetime:
     return dt.astimezone(tz=timezone.utc)
 
 
-def _check_scene(scene: str, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> None:
-    tile = _landsat_tile(scene)
-    assert tile in LANDSAT_TILES_TO_PROCESS
+def _qualifies_for_processing(item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> bool:
+    return item.collection_id == 'landsat-c2l1' and \
+           'OLI' in item.properties['instruments'] and \
+           item.properties['landsat:collection_category'] in ['T1', 'T2'] and \
+           item.properties['eo:cloud_cover'] < max_cloud_cover and \
+           item.properties['view:off_nadir'] == 0 and \
+           item.properties['landsat:wrs_path'] + item.properties['landsat:wrs_row'] in LANDSAT_TILES_TO_PROCESS
 
+
+def _check_scene(scene: str,  max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> None:
     collection = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION)
     item = collection.get_item(scene)
-    assert item.properties['eo:cloud_cover'] < max_cloud_cover
-    assert item.properties['view:off_nadir'] == 0
+    assert _qualifies_for_processing(item, max_cloud_cover)
 
 
 def get_landsat_pairs_for_reference_scene(
@@ -79,12 +85,10 @@ def get_landsat_pairs_for_reference_scene(
         query=[
             f'landsat:wrs_path={tile[0:3]}',
             f'landsat:wrs_row={tile[3:]}',
-            f'eo:cloud_cover<{max_cloud_cover}',
-            'view:off_nadir=0',
         ],
         datetime=[acquisition_time - max_pair_separation, acquisition_time],
     )
-    items = [item for page in results.pages() for item in page]
+    items = [item for page in results.pages() for item in page if _qualifies_for_processing(item, max_cloud_cover)]
 
     features = []
     for item in items:
