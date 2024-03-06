@@ -76,7 +76,7 @@ def get_landsat_pairs_for_reference_scene(
             f'landsat:wrs_path={reference.properties["landsat:wrs_path"]}',
             f'landsat:wrs_row={reference.properties["landsat:wrs_row"]}',
         ],
-        datetime=[reference.datetime - max_pair_separation, reference.datetime],
+        datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
     items = [item for page in results.pages() for item in page if _qualifies_for_processing(item, max_cloud_cover)]
 
