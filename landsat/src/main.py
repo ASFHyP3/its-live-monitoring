@@ -201,7 +201,7 @@ def lambda_handler(event: dict, context: object) -> dict:
             _ = process_scene(message['landsat_product_id'])
         except Exception:
             log.exception(f'Could not process message {record["messageId"]}')
-            batch_item_failures.append({"itemIdentifier": record['messageId']})
+            batch_item_failures.append({'itemIdentifier': record['messageId']})
     return {'batchItemFailures': batch_item_failures}
 
 
