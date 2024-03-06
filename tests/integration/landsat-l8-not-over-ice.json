@@ -1,0 +1,4 @@
+{
+  "landsat_product_id": "LC08_L1TP_084230_20230624_20230630_02_T2",
+  "s3_location": "s3://usgs-landsat/collection02/level-1/standard/oli-tirs/2023/084/230/LC08_L1TP_084230_20230624_20230630_02_T2/"
+}
