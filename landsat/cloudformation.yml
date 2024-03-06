@@ -21,11 +21,19 @@ Parameters:
 
 Resources:
 
+  DeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600
+
   Queue:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600
       VisibilityTimeout: 300
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 2
 
   QueuePolicy:
     Type: AWS::SQS::QueuePolicy
