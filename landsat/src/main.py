@@ -58,6 +58,7 @@ def _qualifies_for_processing(item: pystac.item.Item, max_cloud_cover: int = MAX
 def _check_scene(scene: str,  max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> None:
     collection = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION)
     item = collection.get_item(scene)
+    assert item is not None
     assert _qualifies_for_processing(item, max_cloud_cover)
 
 
