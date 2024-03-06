@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from pathlib import Path
 
 import geopandas as gpd
@@ -13,7 +13,6 @@ import hyp3_sdk as sdk
 import pandas as pd
 import pystac
 import pystac_client
-from dateutil.parser import parse as date_parser
 
 
 LANDSAT_STAC_API = 'https://landsatlook.usgs.gov/stac-server'
@@ -36,16 +35,6 @@ log = logging.getLogger()
 log.setLevel(os.environ.get('LAMBDA_LOGGING_LEVEL', 'INFO'))
 
 
-def _landsat_tile(scene: str) -> str:
-    return scene.split('_')[2]
-
-
-def _search_date(date_string: str) -> datetime:
-    default_date = datetime(2020, 1, 1, 0, 0, 0, 0, timezone.utc)
-    dt = date_parser(date_string, default=default_date)
-    return dt.astimezone(tz=timezone.utc)
-
-
 def _qualifies_for_processing(item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> bool:
     return (
         item.collection_id == 'landsat-c2l1'
@@ -57,22 +46,23 @@ def _qualifies_for_processing(item: pystac.item.Item, max_cloud_cover: int = MAX
     )
 
 
-def _check_scene(scene: str, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> None:
+def _get_stac_item(scene: str) -> pystac.item.Item:
     collection = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION)
     item = collection.get_item(scene)
-    assert item is not None
-    assert _qualifies_for_processing(item, max_cloud_cover)
+    if item is None:
+        raise ValueError(f'Scene {scene} not found in STAC catalog')
+    return item
 
 
 def get_landsat_pairs_for_reference_scene(
-    reference: str,
+    reference: pystac.item.Item,
     max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION_IN_DAYS),
     max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
 ) -> gpd.GeoDataFrame:
     """Generate potential ITS_LIVE velocity pairs for a given Landsat scene.
 
     Args:
-        reference: Landsat reference scene to find pairs for
+        reference: STAC item of the Landsat reference scene to find pairs for
         max_pair_separation: How many days back from a reference scene's acquisition date to search for secondary scenes
         max_cloud_cover: The maximum percent of the secondary scene that can be covered by clouds
 
@@ -80,24 +70,21 @@ def get_landsat_pairs_for_reference_scene(
         A DataFrame with all potential pairs for a landsat reference scene. Metadata in the columns will be for the
         *secondary* scene unless specified otherwise.
     """
-    tile = _landsat_tile(reference)
-    acquisition_time = _search_date(reference.split('_')[3])
-
     results = LANDSAT_CATALOG.search(
-        collections=[LANDSAT_COLLECTION],
+        collections=[reference.collection_id],
         query=[
-            f'landsat:wrs_path={tile[0:3]}',
-            f'landsat:wrs_row={tile[3:]}',
+            f'landsat:wrs_path={reference.properties["landsat:wrs_path"]}',
+            f'landsat:wrs_row={reference.properties["landsat:wrs_row"]}',
         ],
-        datetime=[acquisition_time - max_pair_separation, acquisition_time],
+        datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
     items = [item for page in results.pages() for item in page if _qualifies_for_processing(item, max_cloud_cover)]
 
     features = []
     for item in items:
         feature = item.to_dict()
-        feature['properties']['reference'] = reference
-        feature['properties']['reference_acquisition'] = acquisition_time
+        feature['properties']['reference'] = reference.id
+        feature['properties']['reference_acquisition'] = reference.datetime
         feature['properties']['secondary'] = item.id
         features.append(feature)
 
@@ -170,9 +157,13 @@ def process_scene(
     Returns:
         Jobs submitted to HyP3 for processing.
     """
-    _check_scene(scene, max_cloud_cover)
+    reference = _get_stac_item(scene)
 
-    pairs = get_landsat_pairs_for_reference_scene(scene, max_pair_separation, max_cloud_cover)
+    if not _qualifies_for_processing(reference, max_cloud_cover):
+        log.info(f'Reference scene {scene} does not qualify for processing')
+        return sdk.Batch()
+
+    pairs = get_landsat_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
     log.info(f'Found {len(pairs)} pairs for {scene}')
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
         log.debug(pairs.loc[:, ['reference', 'secondary']])
@@ -186,11 +177,11 @@ def process_scene(
     if submit:
         jobs += submit_pairs_for_processing(pairs)
 
-    logging.info(jobs)
+    log.info(jobs)
     return jobs
 
 
-def lambda_handler(event: dict, context: object) -> None:
+def lambda_handler(event: dict, context: object) -> dict:
     """Landsat processing lambda function.
 
     Accepts an event with SQS records for newly ingested Landsat scenes and processes each scene.
@@ -198,11 +189,20 @@ def lambda_handler(event: dict, context: object) -> None:
     Args:
         event: The event dictionary that contains the parameters sent when this function is invoked.
         context: The context in which is function is called.
+
+    Returns:
+        AWS SQS batchItemFailures JSON response including messages that failed to be processed
     """
+    batch_item_failures = []
     for record in event['Records']:
-        body = json.loads(record['body'])
-        message = json.loads(body['Message'])
-        _ = process_scene(message['landsat_product_id'])
+        try:
+            body = json.loads(record['body'])
+            message = json.loads(body['Message'])
+            _ = process_scene(message['landsat_product_id'])
+        except Exception:
+            log.exception(f'Could not process message {record["messageId"]}')
+            batch_item_failures.append({'itemIdentifier': record['messageId']})
+    return {'batchItemFailures': batch_item_failures}
 
 
 def main() -> None:

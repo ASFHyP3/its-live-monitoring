@@ -86,7 +86,8 @@ Resources:
       FunctionName: !Ref Lambda
       BatchSize: 10
       EventSourceArn: !GetAtt Queue.Arn
-      MaximumBatchingWindowInSeconds: 5
+      FunctionResponseTypes:
+        - ReportBatchItemFailures
 
   LambdaLogGroup:
     Type: AWS::Logs::LogGroup
