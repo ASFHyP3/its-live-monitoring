@@ -61,12 +61,7 @@ Resources:
       FilterPolicyScope: MessageBody
       FilterPolicy: |
         {
-          "landsat_product_id": [
-            {"prefix": "LC08_L1"},
-            {"prefix": "LC09_L1"},
-            {"prefix": "LO08_L1"},
-            {"prefix": "LO09_L1"}
-          ]
+          "s3_location": [{"prefix": "s3://usgs-landsat/collection02/level-1/standard/oli-tirs/"}]
         }
 
   Lambda:
