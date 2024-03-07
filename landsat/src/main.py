@@ -32,7 +32,7 @@ HYP3 = sdk.HyP3(
 )
 
 log = logging.getLogger()
-log.setLevel(os.environ.get('LAMBDA_LOGGING_LEVEL', 'INFO'))
+log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
 
 def _qualifies_for_processing(item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> bool:
