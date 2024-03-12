@@ -61,6 +61,7 @@ Resources:
       FilterPolicyScope: MessageBody
       FilterPolicy: |
         {
+          "landsat_product_id": [{"suffix": "_T1"}, {"suffix": "_T2"}],
           "s3_location": [{"prefix": "s3://usgs-landsat/collection02/level-1/standard/oli-tirs/"}]
         }
 
