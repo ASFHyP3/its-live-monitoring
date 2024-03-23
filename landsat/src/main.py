@@ -35,15 +35,35 @@ log = logging.getLogger()
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
 
-def _qualifies_for_processing(item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT) -> bool:
-    return (
-        item.collection_id == 'landsat-c2l1'
-        and 'OLI' in item.properties['instruments']
-        and item.properties['landsat:collection_category'] in ['T1', 'T2']
-        and item.properties['landsat:wrs_path'] + item.properties['landsat:wrs_row'] in LANDSAT_TILES_TO_PROCESS
-        and item.properties['eo:cloud_cover'] < max_cloud_cover
-        and item.properties['view:off_nadir'] == 0
-    )
+def _qualifies_for_processing(
+    item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT, log_level: int = logging.DEBUG
+) -> bool:
+    if item.collection_id != 'landsat-c2l1':
+        log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
+        return False
+
+    if 'OLI' not in item.properties['instruments']:
+        log.log(log_level, f'{item.id} disqualifies for processing because it was not imaged with the right instrument')
+        return False
+
+    if item.properties['landsat:collection_category'] not in ['T1', 'T2']:
+        log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong tier')
+        return False
+
+    if item.properties['landsat:wrs_path'] + item.properties['landsat:wrs_row'] not in LANDSAT_TILES_TO_PROCESS:
+        log.log(log_level, f'{item.id} disqualifies for processing because it is not from a tile containing land-ice')
+        return False
+
+    if item.properties['eo:cloud_cover'] >= max_cloud_cover:
+        log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
+        return False
+
+    if item.properties['view:off_nadir'] != 0:
+        log.log(log_level, f'{item.id} disqualifies for processing because it is off-nadir')
+        return False
+
+    log.log(log_level, f'{item.id} qualifies for processing')
+    return True
 
 
 def _get_stac_item(scene: str) -> pystac.item.Item:
@@ -164,8 +184,7 @@ def process_scene(
     """
     reference = _get_stac_item(scene)
 
-    if not _qualifies_for_processing(reference, max_cloud_cover):
-        log.info(f'Reference scene {scene} does not qualify for processing')
+    if not _qualifies_for_processing(reference, max_cloud_cover, logging.INFO):
         return sdk.Batch()
 
     pairs = get_landsat_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
