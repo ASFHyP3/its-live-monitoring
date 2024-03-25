@@ -20,6 +20,8 @@ inputs:
     required: true
   EARTHDATA_PASSWORD:
     required: true
+  PUBLISH_BUCKET:
+    required: true
 
 runs:
   using: composite
@@ -55,4 +57,5 @@ runs:
             Hyp3Api=${{ inputs.HYP3_API }} \
             LambdaLoggingLevel=${{ inputs.LAMBDA_LOGGING_LEVEL }} \
             EarthdataUsername=${{ inputs.EARTHDATA_USERNAME }} \
-            EarthdataPassword=${{ inputs.EARTHDATA_PASSWORD }}
+            EarthdataPassword=${{ inputs.EARTHDATA_PASSWORD }} \
+            PublishBucket=${{ inputs.PUBLISH_BUCKET }}

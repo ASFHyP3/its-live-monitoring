@@ -128,7 +128,12 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: D103
     prepared_jobs = []
     for reference, secondary in pairs[['reference', 'secondary']].itertuples(index=False):
-        prepared_jobs.append(HYP3.prepare_autorift_job(reference, secondary, name=reference))
+        prepared_job = HYP3.prepare_autorift_job(reference, secondary, name=reference)
+
+        if publish_bucket := os.environ.get('PUBLISH_BUCKET', ''):
+            prepared_job['job_parameters']['publish_bucket'] = publish_bucket
+
+        prepared_jobs.append(prepared_job)
 
     log.debug(prepared_jobs)
 
