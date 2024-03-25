@@ -19,6 +19,12 @@ Parameters:
     Type: String
     NoEcho: true
 
+  PublishBucket:
+    Type: String
+    AllowedValues:
+      - its-live-data
+      - its-live-data-test
+
 Resources:
 
   DeadLetterQueue:
@@ -80,6 +86,7 @@ Resources:
           LOGGING_LEVEL: !Ref LambdaLoggingLevel
           EARTHDATA_USERNAME: !Ref EarthdataUsername
           EARTHDATA_PASSWORD: !Ref EarthdataPassword
+          PUBLISH_BUCKET: !Ref PublishBucket
 
   LambdaEventSourceMapping:
     Type: AWS::Lambda::EventSourceMapping
