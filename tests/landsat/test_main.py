@@ -46,6 +46,10 @@ def test_qualifies_for_processing():
     assert not main._qualifies_for_processing(item)
 
     item = get_mock_pystac_item()
+    del item.properties['landsat:cloud_cover_land']
+    assert not main._qualifies_for_processing(item)
+
+    item = get_mock_pystac_item()
     item.properties['landsat:cloud_cover_land'] = -1
     assert not main._qualifies_for_processing(item)
 
