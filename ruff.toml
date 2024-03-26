@@ -20,3 +20,6 @@ convention = "google"
 [lint.isort]
 case-sensitive = true
 lines-after-imports = 2
+
+[lint.extend-per-file-ignores]
+"tests/landsat/test_main.py" = ["D100", "D103", "ANN201"]

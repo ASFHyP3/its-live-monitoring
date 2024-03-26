@@ -25,6 +25,7 @@ jobs:
           LANDSAT_TOPIC_ARN: arn:aws:sns:us-west-2:673253540267:public-c2-notify-v2
           HYP3_API: https://hyp3-its-live.asf.alaska.edu
           LAMBDA_LOGGING_LEVEL: INFO
+          PUBLISH_BUCKET: its-live-data
 
 
   call-bump-version-workflow:
