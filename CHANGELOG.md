@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - The `landsat:cloud_cover_land` property instead of `eo:cloud_cover` will be used to determine if a scene qualifies for processing
+- Scenes with unknown cloud cover (unreported or a value < 0) will be disqualified for processing
+- The max cloud cover percentage is now an inclusive bound, so only scenes with *more* (`>`) cloud cover will be disqualified 
 
 ## [0.0.3]
 
