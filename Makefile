@@ -1,4 +1,5 @@
 export PYTHONPATH = ${PWD}/landsat/src
+TEST_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-test
 
 install:
 	python -m pip install --upgrade pip && \
@@ -11,6 +12,10 @@ install-lambda-deps:
 test_file ?= 'tests/'
 test:
 	pytest $(test_file)
+
+integration:
+	export AWS_PAGER='' && \
+	$(foreach file, $(wildcard tests/integration/*.json), aws sns publish --profile saml-pub --topic-arn ${TEST_TOPIC_ARN} --message file://${file} --output json;)
 
 static: ruff-check cfn-lint
 
