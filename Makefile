@@ -15,7 +15,7 @@ test:
 
 integration:
 	export AWS_PAGER='' && \
-	$(foreach file, $(wildcard tests/integration/*.json), echo "aws sns publish --profile saml-pub --topic-arn ${TEST_TOPIC_ARN} --message file://${file} --output json";)
+	$(foreach file, $(wildcard tests/integration/*.json), aws sns publish --profile saml-pub --topic-arn ${TEST_TOPIC_ARN} --message file://${file} --output json;)
 
 static: ruff-check cfn-lint
 
