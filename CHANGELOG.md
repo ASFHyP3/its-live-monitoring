@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HyP3 jobs will now be submitted with the `publish_bucket` job parameter set
 - The reason a scene disqualifies for processing will now be logged
 
+### Fixed
+- The `landsat:cloud_cover_land` property instead of `eo:cloud_cover` will be used to determine if a scene qualifies for processing
+
 ## [0.0.3]
 
 ### Changed
