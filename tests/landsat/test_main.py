@@ -26,7 +26,7 @@ def test_qualifies_for_processing():
     assert not main._qualifies_for_processing(item)
 
     item = get_mock_pystac_item()
-    item.properties['instruments'] = []
+    item.properties['instruments'] = ['TIRS']
     assert not main._qualifies_for_processing(item)
 
     item = get_mock_pystac_item()
@@ -34,7 +34,7 @@ def test_qualifies_for_processing():
     assert main._qualifies_for_processing(item)
 
     item = get_mock_pystac_item()
-    item.properties['landsat:collection_category'] = 'foo'
+    item.properties['landsat:collection_category'] = 'RT'
     assert not main._qualifies_for_processing(item)
 
     item = get_mock_pystac_item()
