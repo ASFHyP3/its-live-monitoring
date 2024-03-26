@@ -54,7 +54,11 @@ def _qualifies_for_processing(
         log.log(log_level, f'{item.id} disqualifies for processing because it is not from a tile containing land-ice')
         return False
 
-    if item.properties['eo:cloud_cover'] >= max_cloud_cover:
+    if item.properties.get('landsat:cloud_cover_land', -1) < 0:
+        log.log(log_level, f'{item.id} disqualifies for processing because cloud coverage is unknown')
+        return False
+
+    if item.properties['landsat:cloud_cover_land'] > max_cloud_cover:
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
         return False
 
