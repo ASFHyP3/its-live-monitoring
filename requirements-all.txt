@@ -2,4 +2,3 @@
 cfn-lint
 ruff
 pytest
-mattermostdriver
