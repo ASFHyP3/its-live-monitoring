@@ -1,13 +1,13 @@
 """Lambda function to trigger Mattermost updates for Dead Letter Queue."""
 
-import argparse
-import logging
 import os
-import sys
 from datetime import datetime
 
 import boto3
 from mattermostdriver import Driver
+
+
+CHANNEL = 'measures-its_live'
 
 
 def get_queue_status(queue_url: str) -> str:
@@ -27,7 +27,7 @@ def get_queue_status(queue_url: str) -> str:
     return result['Attributes']['ApproximateNumberOfMessages']
 
 
-def lambda_handler(channel: str = 'measures-its_live') -> dict:
+def lambda_handler(event, context) -> dict:
     """Posts a message to Mattermost with the Dead Letter Queue count for specified deployment.
 
     Args:
@@ -40,14 +40,14 @@ def lambda_handler(channel: str = 'measures-its_live') -> dict:
         {'url': 'chat.asf.alaska.edu', 'token': os.environ.get('MATTERMOST_PAT'), 'scheme': 'https', 'port': 443}
     )
     response = mattermost.login()
-    logging.debug(response)
+    print(response)
 
-    channel_info = mattermost.channels.get_channel_by_name_and_team_name('asf', channel)
+    channel_info = mattermost.channels.get_channel_by_name_and_team_name('asf', CHANNEL)
 
     queue_url = 'https://sqs.us-west-2.amazonaws.com/986442313181/its-live-monitoring-prod-DeadLetterQueue-LjzW63l95LAP'
     dead_letter_queue_count = get_queue_status(queue_url)
     mattermost_message = (
-        f'Dead Letter Queue Count for ITSLIVE has '
+        f'Dead Letter Queue Count for ITS_LIVE has '
         f'{dead_letter_queue_count} entries on {datetime.now().strftime("%m/%d/%Y")}'
     )
     response = mattermost.posts.create_post(
@@ -56,27 +56,4 @@ def lambda_handler(channel: str = 'measures-its_live') -> dict:
             'message': mattermost_message,
         }
     )
-    logging.debug(response)
-
-    return response
-
-
-def main() -> None:
-    """Command Line wrapper around `post`."""
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument('--channel', default='measures-its_live', help='The MatterMost channel to post to')
-
-    args = parser.parse_args()
-
-    out = logging.StreamHandler(stream=sys.stdout)
-    out.addFilter(lambda record: record.levelno <= logging.INFO)
-    err = logging.StreamHandler()
-    err.setLevel(logging.WARNING)
-    logging.basicConfig(format='%(message)s', level=logging.INFO, handlers=(out, err))
-
-    post(**args.__dict__)
-
-
-if __name__ == '__main__':
-    main()
+    print(response)
