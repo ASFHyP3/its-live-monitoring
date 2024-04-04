@@ -9,6 +9,7 @@ from mattermostdriver import Driver
 
 CHANNEL = 'measures-its_live'
 QUEUE_URL = os.environ['QUEUE_URL']
+MATTERMOST_PAT = os.environ['MATTERMOST_PAT']
 
 
 def get_queue_status() -> str:
@@ -36,7 +37,7 @@ def lambda_handler(event: dict, context: dict) -> None:
         response: from Mattermost
     """
     mattermost = Driver(
-        {'url': 'chat.asf.alaska.edu', 'token': os.environ.get('MATTERMOST_PAT'), 'scheme': 'https', 'port': 443}
+        {'url': 'chat.asf.alaska.edu', 'token': MATTERMOST_PAT, 'scheme': 'https', 'port': 443}
     )
     response = mattermost.login()
     print(response)
