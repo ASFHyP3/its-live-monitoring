@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
-  HyP3URL:
+  QueueURL:
     Type: String
 
   QueueName:
@@ -42,6 +42,7 @@ Resources:
       Environment:
         Variables:
           MATTERMOST_PAT: !Ref MattermostPAT
+          QUEUE_URL: !Ref QueueURL
       Code: src/
       Handler: status_messages.lambda_handler
       Role: !GetAtt Role.Arn
