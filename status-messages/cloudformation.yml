@@ -48,7 +48,7 @@ Resources:
           HYP3_URL: !Ref HyP3URL
           AWS_ACCESS_KEY_ID: !Ref AWSAccessKeyID
           AWS_SECRET_ACCESS_KEY: !Ref AWSSecretAccessKey
-          MATTERMOST_PAT: !Ref MattermostPat
+          MATTERMOST_PAT: !Ref MattermostPAT
       Code: src/
       Handler: status_messages.lambda_handler
       Role: !GetAtt Role.Arn
@@ -58,7 +58,7 @@ Resources:
   Schedule:
     Type: AWS::Events::Rule
     Properties:
-      ScheduleExpression: "cron(0 14 * * 1)"
+      ScheduleExpression: "cron(0 14 * * * 1)"
       Targets:
         - Arn: !GetAtt Lambda.Arn
           Id: lambda
