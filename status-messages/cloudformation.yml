@@ -3,12 +3,14 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   QueueURL:
     Type: String
+    NoEcho: true
 
   QueueName:
     Type: String
 
   MattermostPAT:
     Type: String
+    NoEcho: true
 
 Resources:
   LogGroup:

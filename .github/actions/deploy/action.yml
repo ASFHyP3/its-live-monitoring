@@ -44,7 +44,7 @@ runs:
       shell: bash
       run: |
         aws cloudformation package \
-          --template-file landsat/cloudformation.yml \
+          --template-file cloudformation.yml \
           --s3-bucket=${{ inputs.CF_TEMPLATE_BUCKET }} \
           --output-template-file packaged.yml
         
@@ -58,4 +58,5 @@ runs:
             LambdaLoggingLevel=${{ inputs.LAMBDA_LOGGING_LEVEL }} \
             EarthdataUsername=${{ inputs.EARTHDATA_USERNAME }} \
             EarthdataPassword=${{ inputs.EARTHDATA_PASSWORD }} \
-            PublishBucket=${{ inputs.PUBLISH_BUCKET }}
+            PublishBucket=${{ inputs.PUBLISH_BUCKET }} \
+            MattermostPAT=${{ secrets.MATTERMOST_PAT }}
