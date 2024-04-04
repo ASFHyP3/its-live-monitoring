@@ -1,3 +1,5 @@
+"""Lambda function to trigger Mattermost updates for Dead Letter Queue"""
+
 import argparse
 import logging
 import os
