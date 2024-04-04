@@ -4,21 +4,6 @@ on:
   schedule:
     # Run @ 5:00 AM ( 2:00 PM UTC) every Monday
     - cron: '0 14 * * 1'
-  workflow_dispatch:
-    inputs:
-      start_time:
-        description: "Start time of the bullet report"
-        required: false
-      sender:
-        description: "The sender's email address"
-        required: false
-        default: UAF-asf-apd@alaska.edu
-      recipients:
-        description: "A SPACE separated list of email address that should receive the bullet report"
-        required: false
-      mattermost_channel:
-        description: "Post report to this ASF MatterMost channel"
-        required: false
 
 env:
   AWS_DEFAULT_REGION: us-west-2
@@ -41,47 +26,8 @@ jobs:
         run: |
           python -m pip install .
 
-      - name: Generate report
+      - name: Generate ITSLIVE report
         env:
-          GITHUB_TOKEN: ${{ secrets.TOOLS_BOT_PAK }}
-          START_TIME: ${{ github.event.inputs.start_time }}
+          MATTERMOST_ITSLIVE_CHANNEL: ${{ github.event.inputs.mattermost_itslive_channel }}
         shell: bash -l {0}
-        run: |
-          if [[ -z "${START_TIME}" ]]; then
-            mm-update
-          else
-            mm-update --search-start "${START_TIME}"
-          fi
-
-      - name: Upload report artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: mm-update
-          path: 'mm-update.md'
-
-      - name: Send scheduled messages
-        if: github.event_name == 'schedule'
-        shell: bash -l {0}
-        run: |
-          export EMAIL_SUBJECT=$(sed -n 3p report.md)
-          sendit report.md UAF-asf-apd@alaska.edu "${EMAIL_SUBJECT}" kahogenson@alaska.edu jdmilburn@alaska.edu krkristenson@alaska.edu jhkennedy@alaska.edu rellis22@alaska.edu
-
-      - name: Send dispatched messages
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          SENDER_EMAIL: ${{ github.event.inputs.sender }}
-          RECIPIENT_EMAILS: ${{ github.event.inputs.recipients }}
-          MATTERMOST_CHANNEL: ${{ github.event.inputs.mattermost_channel }}
-        shell: bash -l {0}
-        run: |
-          if [[ -z "${RECIPIENT_EMAILS}" ]]; then
-            echo "Skipping sendit because no recipient email(s) provided"
-          else
-            export EMAIL_SUBJECT=$(sed -n 3p report.md)
-            sendit report.md ${SENDER_EMAIL} "${EMAIL_SUBJECT}" ${RECIPIENT_EMAILS}
-          fi
-          if [[ -z "${MATTERMOST_CHANNEL}" ]]; then
-            echo "Skipping postit because no MatterMost channel provided"
-          else
-            postit report.md --channel ${MATTERMOST_CHANNEL}
-          fi
+        run: python mattermost-update.py ${MATTERMOST_ITSLIVE_CHANNEL}
