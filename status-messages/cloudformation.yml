@@ -40,7 +40,6 @@ Resources:
     Properties:
       Environment:
         Variables:
-          HYP3_URL: !Ref HyP3URL
           MATTERMOST_PAT: !Ref MattermostPAT
       Code: src/
       Handler: status_messages.lambda_handler
