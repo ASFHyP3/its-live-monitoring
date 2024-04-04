@@ -26,7 +26,7 @@ def get_queue_status() -> str:
 
 
 def lambda_handler(event: dict, context: dict) -> None:
-    """Posts a message to Mattermost with the Dead Letter Queue count for specified deployment.
+    """Posts a message to Mattermost with the Dead Letter Queue count.
 
     Args:
         event: Lambda event
