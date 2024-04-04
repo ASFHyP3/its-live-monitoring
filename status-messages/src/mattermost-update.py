@@ -31,8 +31,8 @@ def post(channel: str = 'measures-its_live'):
 
     queue_url = 'https://sqs.us-west-2.amazonaws.com/986442313181/its-live-monitoring-prod-DeadLetterQueue-LjzW63l95LAP'
     dead_letter_queue_count = get_queue_status(queue_url)
-    mattermost_message = (f'Dead Letter Queue Count as of {datetime.now()} has '
-                          f'{dead_letter_queue_count} entries')
+    mattermost_message = (f'Dead Letter Queue Count for ITSLIVE has '
+                          f'{dead_letter_queue_count} entries on {datetime.now().strftime("%m/%d/%Y")}')
 
     response = mattermost.posts.create_post(
         options={
