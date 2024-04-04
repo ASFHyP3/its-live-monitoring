@@ -15,6 +15,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${Lambda}"
+      RetentionInDays: 30
 
   Role:
     Type: AWS::IAM::Role
