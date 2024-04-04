@@ -1,7 +1,7 @@
 """Lambda function to trigger Mattermost updates for Dead Letter Queue."""
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 import boto3
 from mattermostdriver import Driver
