@@ -27,11 +27,12 @@ def get_queue_status(queue_url: str) -> str:
     return result['Attributes']['ApproximateNumberOfMessages']
 
 
-def lambda_handler(event, context) -> dict:
+def lambda_handler(event: dict, context: dict) -> None:
     """Posts a message to Mattermost with the Dead Letter Queue count for specified deployment.
 
     Args:
-        channel: Mattermost channel to post to
+        event: Lambda event
+        context: Lambda context
 
     Returns:
         response: from Mattermost
