@@ -8,20 +8,18 @@ from mattermostdriver import Driver
 
 
 CHANNEL = 'measures-its_live'
+QUEUE_URL = os.environ['QUEUE_URL']
 
 
-def get_queue_status(queue_url: str) -> str:
+def get_queue_status() -> str:
     """Retrieve the status of the Dead Letter Queue for URL.
-
-    Args:
-        queue_url: Url for
 
     Returns:
         number_of_messages: count for Dead Letter Queue messages
     """
     client = boto3.client('sqs')
     result = client.get_queue_attributes(
-        QueueUrl=queue_url,
+        QueueUrl=QUEUE_URL,
         AttributeNames=['All'],
     )
     return result['Attributes']['ApproximateNumberOfMessages']
@@ -44,9 +42,7 @@ def lambda_handler(event: dict, context: dict) -> None:
     print(response)
 
     channel_info = mattermost.channels.get_channel_by_name_and_team_name('asf', CHANNEL)
-
-    queue_url = 'https://sqs.us-west-2.amazonaws.com/986442313181/its-live-monitoring-prod-DeadLetterQueue-LjzW63l95LAP'
-    dead_letter_queue_count = get_queue_status(queue_url)
+    dead_letter_queue_count = get_queue_status()
     mattermost_message = (
         f'Dead Letter Queue Count for ITS_LIVE has '
         f'{dead_letter_queue_count} entries on {datetime.now().strftime("%m/%d/%Y")}'
