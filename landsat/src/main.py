@@ -62,10 +62,6 @@ def _qualifies_for_processing(
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
         return False
 
-    if item.properties['view:off_nadir'] != 0:
-        log.log(log_level, f'{item.id} disqualifies for processing because it is off-nadir')
-        return False
-
     log.log(log_level, f'{item.id} qualifies for processing')
     return True
 
@@ -99,10 +95,16 @@ def get_landsat_pairs_for_reference_scene(
         query=[
             f'landsat:wrs_path={reference.properties["landsat:wrs_path"]}',
             f'landsat:wrs_row={reference.properties["landsat:wrs_row"]}',
+            f'view:off_nadir={reference.properties["view:off_nadir"]}',
         ],
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
+
     items = [item for page in results.pages() for item in page if _qualifies_for_processing(item, max_cloud_cover)]
+
+    if len(items) == 0:
+        log.info(f'Did not find secondary candidate scenes for the reference scene {reference.id}')
+        return None
 
     features = []
     for item in items:
@@ -192,6 +194,10 @@ def process_scene(
         return sdk.Batch()
 
     pairs = get_landsat_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
+
+    if pairs is None:
+        return None
+
     log.info(f'Found {len(pairs)} pairs for {scene}')
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
         log.debug(pairs.loc[:, ['reference', 'secondary']])
