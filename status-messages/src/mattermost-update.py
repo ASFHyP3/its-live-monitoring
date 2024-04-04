@@ -37,9 +37,7 @@ def post(channel: str = 'measures-its_live') -> dict:
         response: from Mattermost
     """
     mattermost = Driver(
-        {'url': 'chat.asf.alaska.edu', 'token': os.environ.get('MATTERMOST_PAT'), 'scheme': 'https',
-         'port': 443}
-    )
+        {'url': 'chat.asf.alaska.edu', 'token': os.environ.get('MATTERMOST_PAT'), 'scheme': 'https', 'port': 443})
     response = mattermost.login()
     logging.debug(response)
 
@@ -50,7 +48,7 @@ def post(channel: str = 'measures-its_live') -> dict:
     mattermost_message = (
         f'Dead Letter Queue Count for ITSLIVE has '
         f'{dead_letter_queue_count} entries on {datetime.now().strftime("%m/%d/%Y")}'
-        )
+    )
     response = mattermost.posts.create_post(
         options={
             'channel_id': channel_info['id'],
