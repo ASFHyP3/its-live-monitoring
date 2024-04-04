@@ -4,6 +4,9 @@ Parameters:
   HyP3URL:
     Type: String
 
+  QueueName:
+    Type: String
+
   AWSAccessKeyID:
     Type: String
 
@@ -19,7 +22,6 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub "/aws/lambda/${Lambda}"
-      RetentionInDays: 731
 
   Role:
     Type: AWS::IAM::Role
@@ -37,8 +39,8 @@ Resources:
             Version: 2012-10-17
             Statement:
               - Effect: Allow
-                Action: s3:GetQueueAttributes
-                Resource: arn:aws:s3:::*
+                Action: sqs:GetQueueAttributes
+                Resource: !Sub "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${QueueName}"
 
   Lambda:
     Type: AWS::Lambda::Function
