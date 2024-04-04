@@ -58,7 +58,7 @@ Resources:
   Schedule:
     Type: AWS::Events::Rule
     Properties:
-      ScheduleExpression: "cron(0 14 * * * 1)"
+      ScheduleExpression: "cron(13 0 ? * 2 *)"
       Targets:
         - Arn: !GetAtt Lambda.Arn
           Id: lambda
