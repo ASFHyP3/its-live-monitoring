@@ -34,11 +34,9 @@ def lambda_handler(event: dict, context: dict) -> None:
         context: Lambda context
 
     Returns:
-        response: from Mattermost
+        None
     """
-    mattermost = Driver(
-        {'url': 'chat.asf.alaska.edu', 'token': MATTERMOST_PAT, 'scheme': 'https', 'port': 443}
-    )
+    mattermost = Driver({'url': 'chat.asf.alaska.edu', 'token': MATTERMOST_PAT, 'scheme': 'https', 'port': 443})
     response = mattermost.login()
     print(response)
 
