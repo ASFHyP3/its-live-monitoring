@@ -44,7 +44,7 @@ def lambda_handler(event: dict, context: dict) -> None:
     dead_letter_queue_count = get_queue_count()
     mattermost_message = (
         f'Dead Letter Queue Count for ITS_LIVE has '
-        f'{dead_letter_queue_count} entries on {datetime.now(tz=timezone.utc).strftime("%m/%d/%Y")}'
+        f'{dead_letter_queue_count} entries on {datetime.now(tz=timezone.utc).isoformat()}'
     )
     response = mattermost.posts.create_post(
         options={
