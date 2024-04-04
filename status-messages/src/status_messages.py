@@ -43,7 +43,7 @@ def lambda_handler(event: dict, context: dict) -> None:
     print(response)
 
     channel_info = mattermost.channels.get_channel_by_name_and_team_name('asf', CHANNEL)
-    dead_letter_queue_count = get_queue_status()
+    dead_letter_queue_count = get_queue_count()
     mattermost_message = (
         f'Dead Letter Queue Count for ITS_LIVE has '
         f'{dead_letter_queue_count} entries on {datetime.now().strftime("%m/%d/%Y")}'
