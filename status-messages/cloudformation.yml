@@ -46,6 +46,7 @@ Resources:
       Handler: status_messages.lambda_handler
       Role: !GetAtt Role.Arn
       Runtime: python3.12
+      Timeout: 10
 
   Schedule:
     Type: AWS::Events::Rule
