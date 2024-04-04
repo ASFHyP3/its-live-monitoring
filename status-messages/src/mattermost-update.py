@@ -1,4 +1,4 @@
-"""Lambda function to trigger Mattermost updates for Dead Letter Queue"""
+"""Lambda function to trigger Mattermost updates for Dead Letter Queue."""
 
 import argparse
 import logging
@@ -19,7 +19,15 @@ def get_queue_status(queue_url: str) -> str:
     return result['Attributes']['ApproximateNumberOfMessages']
 
 
-def post(channel: str = 'measures-its_live'):
+def post(channel: str = 'measures-its_live') -> dict:
+    """
+    Posts a message to Mattermost with the Dead Letter Queue count for specified deployment.
+    Args:
+        channel: Mattermost channel to post to
+
+    Returns:
+        response: from Mattermost
+    """
     mattermost = Driver({
         'url': 'chat.asf.alaska.edu',
         'token': os.environ.get('MATTERMOST_PAT'),
@@ -47,7 +55,8 @@ def post(channel: str = 'measures-its_live'):
     return response
 
 
-def main():
+def main() -> None:
+    """Command Line wrapper around `post`."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
