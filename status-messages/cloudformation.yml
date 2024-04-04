@@ -7,13 +7,6 @@ Parameters:
   QueueName:
     Type: String
 
-  AWSAccessKeyID:
-    Type: String
-
-  AWSSecretAccessKey:
-    Type: String
-    NoEcho: true
-
   MattermostPAT:
     Type: String
 
@@ -48,19 +41,16 @@ Resources:
       Environment:
         Variables:
           HYP3_URL: !Ref HyP3URL
-          AWS_ACCESS_KEY_ID: !Ref AWSAccessKeyID
-          AWS_SECRET_ACCESS_KEY: !Ref AWSSecretAccessKey
           MATTERMOST_PAT: !Ref MattermostPAT
       Code: src/
       Handler: status_messages.lambda_handler
       Role: !GetAtt Role.Arn
-      Runtime: python3.9
-      Timeout: 900
+      Runtime: python3.12
 
   Schedule:
     Type: AWS::Events::Rule
     Properties:
-      ScheduleExpression: "cron(13 0 ? * 2 *)"
+      ScheduleExpression: "cron(0 13 ? * 2 *)"
       Targets:
         - Arn: !GetAtt Lambda.Arn
           Id: lambda
