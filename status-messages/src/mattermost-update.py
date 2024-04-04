@@ -11,6 +11,14 @@ from mattermostdriver import Driver
 
 
 def get_queue_status(queue_url: str) -> str:
+    """Retrieve the status of the Dead Letter Queue for URL.
+
+    Args:
+        queue_url: Url for
+
+    Returns:
+        number_of_messages: count for Dead Letter Queue messages
+    """
     client = boto3.client('sqs')
     result = client.get_queue_attributes(
         QueueUrl=queue_url,
@@ -20,8 +28,8 @@ def get_queue_status(queue_url: str) -> str:
 
 
 def post(channel: str = 'measures-its_live') -> dict:
-    """
-    Posts a message to Mattermost with the Dead Letter Queue count for specified deployment.
+    """Posts a message to Mattermost with the Dead Letter Queue count for specified deployment.
+
     Args:
         channel: Mattermost channel to post to
 
