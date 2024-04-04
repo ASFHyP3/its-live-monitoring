@@ -1,4 +1,4 @@
-name: Weekly ITSLIVE Dead Letter Queue
+name: Weekly ITS_LIVE Dead Letter Queue
 
 on:
   schedule:
