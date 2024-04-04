@@ -12,7 +12,7 @@ QUEUE_URL = os.environ['QUEUE_URL']
 MATTERMOST_PAT = os.environ['MATTERMOST_PAT']
 
 
-def get_queue_status() -> str:
+def get_queue_count() -> str:
     """Retrieve the status of the Dead Letter Queue for URL.
 
     Returns:
