@@ -37,7 +37,8 @@ def post(channel: str = 'measures-its_live') -> dict:
         response: from Mattermost
     """
     mattermost = Driver(
-        {'url': 'chat.asf.alaska.edu', 'token': os.environ.get('MATTERMOST_PAT'), 'scheme': 'https', 'port': 443})
+        {'url': 'chat.asf.alaska.edu', 'token': os.environ.get('MATTERMOST_PAT'), 'scheme': 'https', 'port': 443}
+    )
     response = mattermost.login()
     logging.debug(response)
 
@@ -62,9 +63,7 @@ def post(channel: str = 'measures-its_live') -> dict:
 
 def main() -> None:
     """Command Line wrapper around `post`."""
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--channel', default='measures-its_live', help='The MatterMost channel to post to')
 
