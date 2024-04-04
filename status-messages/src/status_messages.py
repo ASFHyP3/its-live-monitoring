@@ -13,7 +13,7 @@ MATTERMOST_PAT = os.environ['MATTERMOST_PAT']
 
 
 def get_queue_count() -> str:
-    """Retrieve the status of the Dead Letter Queue for URL.
+    """Retrieve the message count of the Dead Letter Queue.
 
     Returns:
         number_of_messages: count for Dead Letter Queue messages
