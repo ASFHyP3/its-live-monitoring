@@ -22,8 +22,6 @@ inputs:
     required: true
   PUBLISH_BUCKET:
     required: true
-
-secrets:
   MATTERMOST_PAT:
     required: true
 
@@ -63,4 +61,4 @@ runs:
             EarthdataUsername=${{ inputs.EARTHDATA_USERNAME }} \
             EarthdataPassword=${{ inputs.EARTHDATA_PASSWORD }} \
             PublishBucket=${{ inputs.PUBLISH_BUCKET }} \
-            MattermostPAT=${{ secrets.MATTERMOST_PAT }}
+            MattermostPAT=${{ inputs.MATTERMOST_PAT }}
