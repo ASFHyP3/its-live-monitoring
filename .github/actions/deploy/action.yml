@@ -23,6 +23,10 @@ inputs:
   PUBLISH_BUCKET:
     required: true
 
+secrets:
+  MATTERMOST_PAT:
+    required: true
+
 runs:
   using: composite
   steps:
