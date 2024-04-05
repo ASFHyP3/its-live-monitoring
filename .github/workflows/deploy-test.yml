@@ -26,3 +26,4 @@ jobs:
           HYP3_API: https://hyp3-its-live.asf.alaska.edu
           LAMBDA_LOGGING_LEVEL: DEBUG
           PUBLISH_BUCKET: its-live-data-test
+          MATTERMOST_PAT: ${{ secrets.MATTERMOST_PAT }}

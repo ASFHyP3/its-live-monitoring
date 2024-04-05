@@ -4,12 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.1]
+## [0.2.1]
 
 ### Fixed
 - Off-NADIR scene can be processed as long as the secondary scene has the same wrs_path, wrs_row, and vire:off_nadir properties. 
 
-##  [0.1.0]
+## [0.2.0]
+
+### Added
+- Dead-letter queue count is now posted automatically to Mattermost.
+
+## [0.1.0]
 
 ### Changed
 - HyP3 jobs will now be submitted with the `publish_bucket` job parameter set
