@@ -32,7 +32,7 @@ Resources:
             Service: lambda.amazonaws.com
           Effect: Allow
       ManagedPolicyArns:
-        - !Ref: Policy
+        - !Ref Policy
 
   Policy:
     Type: Custom::JplPolicy
