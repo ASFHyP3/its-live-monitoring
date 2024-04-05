@@ -20,8 +20,10 @@ Resources:
       RetentionInDays: 30
 
   Role:
-    Type: AWS::IAM::Role
+    Type: Custom::JplRole
     Properties:
+      ServiceToken: !ImportValue Custom::JplRole::ServiceToken
+      Path: /account-managed/hyp3/
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -29,14 +31,20 @@ Resources:
           Principal:
             Service: lambda.amazonaws.com
           Effect: Allow
-      Policies:
-        - PolicyName: policy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action: sqs:GetQueueAttributes
-                Resource: !Sub "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${QueueName}"
+      ManagedPolicyArns:
+        - !Ref: Policy
+
+  Policy:
+    Type: Custom::JplPolicy
+    Properties:
+      ServiceToken: !ImportValue Custom::JplPolicy::ServiceToken
+      Path: /account-managed/hyp3/
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sqs:GetQueueAttributes
+            Resource: !Sub "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${QueueName}"
 
   Lambda:
     Type: AWS::Lambda::Function
