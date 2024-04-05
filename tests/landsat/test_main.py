@@ -1,8 +1,13 @@
 import unittest.mock
+import pickle
 
 from landsat.src import main
 
+import geopandas as gpd
+
 import pdb
+
+
 def get_mock_pystac_item() -> unittest.mock.NonCallableMagicMock:
     item = unittest.mock.NonCallableMagicMock()
     item.collection_id = 'landsat-c2l1'
@@ -137,6 +142,15 @@ def test_get_stac_item():
             main._get_stac_item(scene2).properties == item2_properties)
 
 
+def test_get_landsat_pairs_for_reference_scene():
+    item = main._get_stac_item('LC08_L1TP_138041_20240128_20240207_02_T1')
+    df = main.get_landsat_pairs_for_reference_scene(item)
+    with open("tests/data/LC08_L1TP_138041_20240128_20240207_02_T1_pairs.pkl", 'rb') as file:
+        df_expect = pickle.load(file)
+        assert df.equals(df_expect)
 
-
-
+    item = main._get_stac_item('LC08_L1GT_208119_20190225_20200829_02_T2')
+    df = main.get_landsat_pairs_for_reference_scene(item)
+    with open("tests/data/LC08_L1GT_208119_20190225_20200829_02_T2_pairs.pkl", 'rb') as file:
+        df_expect = pickle.load(file)
+        assert df.equals(df_expect)
