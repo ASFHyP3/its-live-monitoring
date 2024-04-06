@@ -4,11 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.1]
+## [0.3.0]
 
 ### Fixed
-- Off-NADIR scene can be processed as long as the secondary scene has the same wrs_path, wrs_row, and vire:off_nadir properties. 
-
+- Off-naider scenes will now be processed and will only be paired with other off-nadir scenes.
 ## [0.2.0]
 
 ### Added
