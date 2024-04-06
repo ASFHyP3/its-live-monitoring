@@ -5,7 +5,6 @@ from landsat.src import main
 
 import geopandas as gpd
 
-import pdb
 
 
 def get_mock_pystac_item() -> unittest.mock.NonCallableMagicMock:
