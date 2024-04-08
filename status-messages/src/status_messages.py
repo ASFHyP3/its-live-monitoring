@@ -51,7 +51,7 @@ def lambda_handler(event: dict, context: dict) -> None:
         status_emoji = ':alert:' if dead_letter_queue_count != 0 else ':large_green_circle:'
 
     mattermost_message = (
-        f'{status_emoji} Dead Letter Queue {queue_name} Count for ITS_LIVE has '
+        f'{status_emoji} Dead Letter Queue Count for `{queue_name}` has '
         f'{dead_letter_queue_count} entries on {datetime.now(tz=timezone.utc).isoformat()}'
     )
     response = mattermost.posts.create_post(
