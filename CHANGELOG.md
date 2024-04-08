@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.3.0]
+
+### Added
+- A CLI wrapper for `status_messages.py` so that it can more easily be run locally.
+
+### Fixed
+- Status messages can now be posted to mattermost with a bot account.
+
 ## [0.2.0]
 
 ### Added
