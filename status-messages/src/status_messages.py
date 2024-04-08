@@ -20,6 +20,7 @@ MATTERMOST_CHANNEL_ID = 'mmffdcqsafdg8xyr747scyuqnw'  # ~measures-its_live
 log = logging.getLogger(__name__)
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
+
 def get_queue_count() -> str:
     """Retrieve the message count of the Dead Letter Queue.
 
