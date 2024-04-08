@@ -2,6 +2,7 @@
 
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 
 import boto3
 from mattermostdriver import Driver
@@ -42,8 +43,9 @@ def lambda_handler(event: dict, context: dict) -> None:
 
     channel_info = mattermost.channels.get_channel_by_name_and_team_name('asf', CHANNEL)
     dead_letter_queue_count = get_queue_count()
+    alert_emoji = ':alert:' if dead_letter_queue_count != '0' else ':large_green_circle:'
     mattermost_message = (
-        f'Dead Letter Queue Count for ITS_LIVE has '
+        f'{alert_emoji} Dead Letter Queue {Path(QUEUE_URL).name} Count for ITS_LIVE has '
         f'{dead_letter_queue_count} entries on {datetime.now(tz=timezone.utc).isoformat()}'
     )
     response = mattermost.posts.create_post(
