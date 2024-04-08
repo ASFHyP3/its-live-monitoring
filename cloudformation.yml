@@ -146,4 +146,5 @@ Resources:
         QueueURL: !Ref DeadLetterQueue
         QueueName: !GetAtt DeadLetterQueue.QueueName
         MattermostPAT: !Ref MattermostPAT
+        LambdaLoggingLevel: !Ref LambdaLoggingLevel
       TemplateURL: status-messages/cloudformation.yml

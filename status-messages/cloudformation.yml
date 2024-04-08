@@ -12,6 +12,13 @@ Parameters:
     Type: String
     NoEcho: true
 
+  LambdaLoggingLevel:
+    Type: String
+    Default: INFO
+    AllowedValues:
+      - INFO
+      - DEBUG
+
 Resources:
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -53,6 +60,7 @@ Resources:
         Variables:
           MATTERMOST_PAT: !Ref MattermostPAT
           QUEUE_URL: !Ref QueueURL
+          LOGGING_LEVEL: !Ref LambdaLoggingLevel
       Code: src/
       Handler: status_messages.lambda_handler
       Role: !GetAtt Role.Arn
