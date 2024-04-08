@@ -8,9 +8,11 @@ import boto3
 from mattermostdriver import Driver
 
 
-CHANNEL = 'measures-its_live'
 QUEUE_URL = os.environ['QUEUE_URL']
 MATTERMOST_PAT = os.environ['MATTERMOST_PAT']
+
+# You can find the ID for a channel by looking in the channel info
+MATTERMOST_CHANNEL_ID = 'mmffdcqsafdg8xyr747scyuqnw'  # ~measures-its_live
 
 
 def get_queue_count() -> str:
@@ -41,7 +43,6 @@ def lambda_handler(event: dict, context: dict) -> None:
     response = mattermost.login()
     print(response)
 
-    channel_info = mattermost.channels.get_channel_by_name_and_team_name('asf', CHANNEL)
     dead_letter_queue_count = int(get_queue_count())
 
     queue_name = Path(QUEUE_URL).name
@@ -54,9 +55,10 @@ def lambda_handler(event: dict, context: dict) -> None:
         f'{status_emoji} Dead Letter Queue Count for `{queue_name}` has '
         f'{dead_letter_queue_count} entries on {datetime.now(tz=timezone.utc).isoformat()}'
     )
+
     response = mattermost.posts.create_post(
         options={
-            'channel_id': channel_info['id'],
+            'channel_id': MATTERMOST_CHANNEL_ID,
             'message': mattermost_message,
         }
     )
