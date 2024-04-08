@@ -1,4 +1,5 @@
 -r requirements-landsat.txt
+-r requirements-status-messages.txt
 cfn-lint
 ruff
 pytest

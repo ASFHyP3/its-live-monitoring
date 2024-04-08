@@ -25,6 +25,10 @@ Parameters:
       - its-live-data
       - its-live-data-test
 
+  MattermostPAT:
+    Type: String
+    NoEcho: true
+
 Resources:
 
   DeadLetterQueue:
@@ -74,7 +78,7 @@ Resources:
   Lambda:
     Type: AWS::Lambda::Function
     Properties:
-      Code: src/
+      Code: landsat/src/
       Handler: main.lambda_handler
       MemorySize: 128
       Role: !GetAtt LambdaRole.Arn
@@ -134,3 +138,12 @@ Resources:
           - Effect: Allow
             Action: sqs:*
             Resource: !GetAtt Queue.Arn
+
+  StatusMessages:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      Parameters:
+        QueueURL: !Ref DeadLetterQueue
+        QueueName: !GetAtt DeadLetterQueue.QueueName
+        MattermostPAT: !Ref MattermostPAT
+      TemplateURL: status-messages/cloudformation.yml
