@@ -8,9 +8,10 @@ import geopandas as gpd
 import hyp3_sdk as sdk
 
 from landsat.src import main
-
+import pdb
 
 LANDSAT_CATALOG_real = main.LANDSAT_CATALOG
+HYP3_real = main.HYP3
 
 
 def get_mock_pystac_item() -> unittest.mock.NonCallableMagicMock:
@@ -118,6 +119,35 @@ def get_expect_item():
     return expect_item
 
 
+def get_expect_pairs():
+    pairs = gpd.read_parquet('tests/data/scene1_pair.parquet')
+    return pairs
+
+
+def get_expect_jobs():
+    job1 = sdk.jobs.Job.from_dict({'job_id': '88ea6109-8afa-483a-93d5-7f3231db7751', 'job_type': 'AUTORIFT',
+                                   'request_time': '2024-04-09T18:13:41+00:00', 'status_code': 'PENDING',
+                                   'user_id': 'cirrusasf', 'name': 'LC08_L1TP_138041_20240128_20240207_02_T1',
+                                   'job_parameters': {'granules': ['LC08_L1TP_138041_20240128_20240207_02_T1',
+                                                                   'LC09_L1TP_138041_20240120_20240120_02_T1'],
+                                                      'parameter_file':
+                                                          '/vsicurl/http://its-live-data.s3.amazonaws.com/'
+                                                          'autorift_parameters/v001/autorift_landice_0120m.shp',
+                                                      'publish_bucket': '""'}, 'credit_cost': 1})
+    job2 = sdk.jobs.Job.from_dict({'job_id': '4eea15af-167a-43b3-b292-aee55b3e893e', 'job_type': 'AUTORIFT',
+                                   'request_time': '2024-04-09T18:15:06+00:00', 'status_code': 'PENDING',
+                                   'user_id': 'cirrusasf', 'name': 'LC08_L1TP_138041_20240128_20240207_02_T1',
+                                   'job_parameters': {'granules': ['LC08_L1TP_138041_20240128_20240207_02_T1',
+                                                                   'LC08_L1TP_138041_20231227_20240104_02_T1'],
+                                                      'parameter_file':
+                                                          '/vsicurl/http://its-live-data.s3.amazonaws.com/'
+                                                          'autorift_parameters/v001/autorift_landice_0120m.shp',
+                                                      'publish_bucket': '""'}, 'credit_cost': 1})
+
+    jobs_expect = sdk.jobs.Batch([job1, job2])
+    return jobs_expect
+
+
 def test_get_stac_item():
     scene = 'LC08_L1TP_138041_20240128_20240207_02_T1'
     expect_item = get_expect_item()
@@ -155,17 +185,14 @@ def test_get_landsat_pairs_for_reference_scene():
 
 
 def test_deduplicate_hyp3_pairs():
-    pairs = gpd.read_parquet('tests/data/scene1_pair.parquet')
-    with open("tests/data/job1.json", "r") as f1:
-        job1 = sdk.jobs.Job.from_dict(json.load(f1))
-    with open("tests/data/job2.json", "r") as f2:
-        job2 = sdk.jobs.Job.from_dict(json.load(f2))
-    jobs = sdk.jobs.Batch([job1, job2])
+    pairs = get_expect_pairs()
+    jobs = get_expect_jobs()
 
     main.HYP3 = MagicMock()
     main.HYP3.find_jobs.return_value = jobs
 
     new_pairs = main.deduplicate_hyp3_pairs(pairs)
+    main.HYP3 = HYP3_real
 
     p_idx = pairs.set_index(['reference', 'secondary'])
     np_idx = new_pairs.set_index(['reference', 'secondary'])
@@ -173,4 +200,14 @@ def test_deduplicate_hyp3_pairs():
     assert len(p_idx) - 2 == len(np_idx)
 
 
+def test_submit_pairs_for_processing():
+    pdb.set_trace()
+    pairs = get_expect_pairs()
+    jobs_expect = get_expect_jobs()
 
+    main.HYP3.submit_prepared_jobs = MagicMock()
+    main.HYP3.submit_prepared_jobs.return_value = jobs_expect
+
+    jobs = main.submit_pairs_for_processing(pairs)
+
+    assert jobs == jobs_expect
