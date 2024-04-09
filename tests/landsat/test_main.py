@@ -156,21 +156,30 @@ def test_get_landsat_pairs_for_reference_scene():
 
 def test_deduplicate_hyp3_pairs():
     pairs = gpd.read_parquet('tests/data/scene1_pair.parquet')
-    with open("tests/data/job1.json", "r") as f1:
-        job1 = sdk.jobs.Job.from_dict(json.load(f1))
-    with open("tests/data/job2.json", "r") as f2:
-        job2 = sdk.jobs.Job.from_dict(json.load(f2))
-    jobs = sdk.jobs.Batch([job1, job2])
+    job1 = sdk.jobs.Job(
+        job_type='AUTORIFT',
+        job_id='job_id_1',
+        request_time=datetime.datetime(2024, 1, 1),
+        status_code=200,
+        user_id='hyp3',
+        job_parameters={"granules": ["LC08_L1TP_138041_20240128_20240207_02_T1", "LC09_L1TP_138041_20231101_20231101_02_T1"]}
+    )
+    job2 = sdk.jobs.Job(
+        job_type='AUTORIFT',
+        job_id='job_id_2',
+        request_time=datetime.datetime(2024, 1, 2),
+        status_code=200,
+        user_id='hyp3',
+        job_parameters={"granules": ["not_in_pairs", "also_not_in_pairs"]}
+    )
+    duplicate_jobs = sdk.jobs.Batch([job1, job2])
 
     main.HYP3 = MagicMock()
-    main.HYP3.find_jobs.return_value = jobs
+    main.HYP3.find_jobs.return_value = duplicate_jobs
 
     new_pairs = main.deduplicate_hyp3_pairs(pairs)
 
     p_idx = pairs.set_index(['reference', 'secondary'])
     np_idx = new_pairs.set_index(['reference', 'secondary'])
     assert np_idx.isin(p_idx).any().any()
-    assert len(p_idx) - 2 == len(np_idx)
-
-
-
+    assert len(p_idx) - 1 == len(np_idx)
