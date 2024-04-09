@@ -1,12 +1,13 @@
+import datetime
 import unittest.mock
 from unittest.mock import MagicMock
-import pystac
-import datetime
-import geopandas as gpd
 
+import geopandas as gpd
 import hyp3_sdk as sdk
+import pystac
 
 from landsat.src import main
+
 
 LANDSAT_CATALOG_real = main.LANDSAT_CATALOG
 HYP3_real = main.HYP3
@@ -166,7 +167,6 @@ def test_get_stac_item():
 
 def test_get_landsat_pairs_for_reference_scene():
     main.LANDSAT_CATALOG = MagicMock()
-    scene = 'LC08_L1TP_138041_20240128_20240207_02_T1'
     reference_item = get_expect_item()
     results_item_collection = pystac.item_collection.ItemCollection.from_file(
         'tests/data/scene1_return_itemcollection.json')
