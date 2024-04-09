@@ -1,6 +1,5 @@
 import unittest.mock
 from unittest.mock import MagicMock
-import json
 import pystac
 import datetime
 import geopandas as gpd
@@ -8,7 +7,6 @@ import geopandas as gpd
 import hyp3_sdk as sdk
 
 from landsat.src import main
-import pdb
 
 LANDSAT_CATALOG_real = main.LANDSAT_CATALOG
 HYP3_real = main.HYP3
@@ -201,7 +199,6 @@ def test_deduplicate_hyp3_pairs():
 
 
 def test_submit_pairs_for_processing():
-    pdb.set_trace()
     pairs = get_expect_pairs()
     jobs_expect = get_expect_jobs()
 
@@ -209,5 +206,6 @@ def test_submit_pairs_for_processing():
     main.HYP3.submit_prepared_jobs.return_value = jobs_expect
 
     jobs = main.submit_pairs_for_processing(pairs)
+    main.HYP3 = HYP3_real
 
     assert jobs == jobs_expect
