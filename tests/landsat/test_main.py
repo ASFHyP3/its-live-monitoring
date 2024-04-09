@@ -1,10 +1,16 @@
 import unittest.mock
-import pickle
+from unittest.mock import MagicMock
+import json
+import pystac
+import datetime
+import geopandas as gpd
+
+import hyp3_sdk as sdk
 
 from landsat.src import main
 
-import geopandas as gpd
 
+LANDSAT_CATALOG_real = main.LANDSAT_CATALOG
 
 
 def get_mock_pystac_item() -> unittest.mock.NonCallableMagicMock:
@@ -78,78 +84,93 @@ def test_qualifies_for_processing():
     assert not main._qualifies_for_processing(item)
 
 
+def get_expect_item():
+    scene = 'LC08_L1TP_138041_20240128_20240207_02_T1'
+    expect_datetime = datetime.datetime(2024, 1, 28, 4, 29, 49, 361022)
+    expect_datetime = expect_datetime.replace(tzinfo=datetime.timezone.utc)
+    expect_collection_id = 'landsat-c2l1'
+    expect_properties = {'datetime': '2024-01-28T04:29:49.361022Z',
+                         'eo:cloud_cover': 11.59,
+                         'view:sun_azimuth': 148.43311105,
+                         'view:sun_elevation': 37.83753177,
+                         'platform': 'LANDSAT_8',
+                         'instruments': ['OLI', 'TIRS'],
+                         'view:off_nadir': 0,
+                         'landsat:cloud_cover_land': 11.59,
+                         'landsat:wrs_type': '2',
+                         'landsat:wrs_path': '138',
+                         'landsat:wrs_row': '041',
+                         'landsat:scene_id': 'LC81380412024028LGN00',
+                         'landsat:collection_category': 'T1',
+                         'landsat:collection_number': '02',
+                         'landsat:correction': 'L1TP',
+                         'accuracy:geometric_x_bias': 0,
+                         'accuracy:geometric_y_bias': 0,
+                         'accuracy:geometric_x_stddev': 3.926,
+                         'accuracy:geometric_y_stddev': 3.525,
+                         'accuracy:geometric_rmse': 5.277,
+                         'proj:epsg': 32645,
+                         'proj:shape': [7681, 7531],
+                         'proj:transform': [30, 0, 674985, 0, -30, 3152415],
+                         }
+    expect_item = pystac.item.Item(id=scene, geometry=None, bbox=None, datetime=expect_datetime,
+                                   properties=expect_properties, collection=expect_collection_id)
+    return expect_item
+
+
 def test_get_stac_item():
-    scene1 = 'LC08_L1TP_138041_20240128_20240207_02_T1'
-    item1_id = 'LC08_L1TP_138041_20240128_20240207_02_T1'
-    item1_properties = {'datetime': '2024-01-28T04:29:49.361022Z',
-                        'eo:cloud_cover': 11.59,
-                        'view:sun_azimuth': 148.43311105,
-                        'view:sun_elevation': 37.83753177,
-                        'platform': 'LANDSAT_8',
-                        'instruments': ['OLI', 'TIRS'],
-                        'view:off_nadir': 0,
-                        'landsat:cloud_cover_land': 11.59,
-                        'landsat:wrs_type': '2',
-                        'landsat:wrs_path': '138',
-                        'landsat:wrs_row': '041',
-                        'landsat:scene_id': 'LC81380412024028LGN00',
-                        'landsat:collection_category': 'T1',
-                        'landsat:collection_number': '02',
-                        'landsat:correction': 'L1TP',
-                        'accuracy:geometric_x_bias': 0,
-                        'accuracy:geometric_y_bias': 0,
-                        'accuracy:geometric_x_stddev': 3.926,
-                        'accuracy:geometric_y_stddev': 3.525,
-                        'accuracy:geometric_rmse': 5.277,
-                        'proj:epsg': 32645,
-                        'proj:shape': [7681, 7531],
-                        'proj:transform': [30, 0, 674985, 0, -30, 3152415],
-                        'created': '2024-02-07T18:27:27.558Z',
-                        'updated': '2024-02-07T18:27:27.558Z'
-                        }
+    scene = 'LC08_L1TP_138041_20240128_20240207_02_T1'
+    expect_item = get_expect_item()
 
-    assert (main._get_stac_item(scene1).id == item1_id
-            and main._get_stac_item(scene1).properties == item1_properties)
+    main.LANDSAT_CATALOG = MagicMock()
+    main.LANDSAT_CATALOG.get_collection().get_item.return_value = expect_item
 
-    scene2 = 'LC08_L1GT_208119_20190225_20200829_02_T2'
+    item = main._get_stac_item(scene)
 
-    item2_id = 'LC08_L1GT_208119_20190225_20200829_02_T2'
-
-    item2_properties = {'datetime': '2019-02-25T12:13:15.140373Z',
-                        'eo:cloud_cover': 46.47,
-                        'view:sun_azimuth': 87.63621418,
-                        'view:sun_elevation': 9.4970641,
-                        'platform': 'LANDSAT_8',
-                        'instruments': ['OLI', 'TIRS'],
-                        'view:off_nadir': 14.092,
-                        'landsat:cloud_cover_land': 46.47,
-                        'landsat:wrs_type': '2',
-                        'landsat:wrs_path': '208',
-                        'landsat:wrs_row': '119',
-                        'landsat:scene_id': 'LC82081192019056LGN00',
-                        'landsat:collection_category': 'T2',
-                        'landsat:collection_number': '02',
-                        'landsat:correction': 'L1GT',
-                        'proj:epsg': 3031,
-                        'proj:shape': [8901, 9151],
-                        'proj:transform': [30, 0, -980415, 0, -30, 188115],
-                        'created': '2022-07-06T18:15:03.664Z',
-                        'updated': '2022-07-06T18:15:03.664Z'
-                        }
-
-    assert (main._get_stac_item(scene2).id == item2_id and
-            main._get_stac_item(scene2).properties == item2_properties)
+    assert (item.collection_id == expect_item.collection_id)
+    assert (item.properties['instruments'] == expect_item.properties['instruments'])
+    assert (item.properties['landsat:wrs_path'] == expect_item.properties['landsat:wrs_path'])
+    assert (item.properties['landsat:wrs_row'] == expect_item.properties['landsat:wrs_row'])
+    assert (item.properties['view:off_nadir'] == expect_item.properties['view:off_nadir'])
+    assert (item.properties['landsat:cloud_cover_land'] == expect_item.properties['landsat:cloud_cover_land'])
+    assert (item.properties['landsat:collection_category'] == expect_item.properties['landsat:collection_category'])
 
 
 def test_get_landsat_pairs_for_reference_scene():
-    item = main._get_stac_item('LC08_L1TP_138041_20240128_20240207_02_T1')
-    df = main.get_landsat_pairs_for_reference_scene(item)
-    with open("tests/data/LC08_L1TP_138041_20240128_20240207_02_T1_pairs.pkl", 'rb') as file:
-        df_expect = pickle.load(file)
-        assert df.equals(df_expect)
+    main.LANDSAT_CATALOG = MagicMock()
+    scene = 'LC08_L1TP_138041_20240128_20240207_02_T1'
+    reference_item = get_expect_item()
+    results_item_collection = pystac.item_collection.ItemCollection.from_file(
+        'tests/data/scene1_return_itemcollection.json')
+    data_gen = (y for y in [results_item_collection])
+    main.LANDSAT_CATALOG.search().pages.return_value = data_gen
 
-    item = main._get_stac_item('LC08_L1GT_208119_20190225_20200829_02_T2')
-    df = main.get_landsat_pairs_for_reference_scene(item)
-    with open("tests/data/LC08_L1GT_208119_20190225_20200829_02_T2_pairs.pkl", 'rb') as file:
-        df_expect = pickle.load(file)
-        assert df.equals(df_expect)
+    df = main.get_landsat_pairs_for_reference_scene(reference_item)
+
+    assert (df['landsat:wrs_path'] == reference_item.properties['landsat:wrs_path']).all()
+    assert (df['landsat:wrs_row'] == reference_item.properties['landsat:wrs_row']).all()
+    assert (df['view:off_nadir'] == reference_item.properties['view:off_nadir']).all()
+    assert (df['instruments'].apply(lambda x: ''.join(x)) == ''.join(reference_item.properties['instruments'])).all()
+    assert (df['reference'] == reference_item.id).all()
+
+
+def test_deduplicate_hyp3_pairs():
+    pairs = gpd.read_parquet('tests/data/scene1_pair.parquet')
+    with open("tests/data/job1.json", "r") as f1:
+        job1 = sdk.jobs.Job.from_dict(json.load(f1))
+    with open("tests/data/job2.json", "r") as f2:
+        job2 = sdk.jobs.Job.from_dict(json.load(f2))
+    jobs = sdk.jobs.Batch([job1, job2])
+
+    main.HYP3 = MagicMock()
+    main.HYP3.find_jobs.return_value = jobs
+
+    new_pairs = main.deduplicate_hyp3_pairs(pairs)
+
+    p_idx = pairs.set_index(['reference', 'secondary'])
+    np_idx = new_pairs.set_index(['reference', 'secondary'])
+    assert np_idx.isin(p_idx).any().any()
+    assert len(p_idx) - 2 == len(np_idx)
+
+
+

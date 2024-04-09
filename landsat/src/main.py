@@ -103,8 +103,7 @@ def get_landsat_pairs_for_reference_scene(
     items = [item for page in results.pages() for item in page if _qualifies_for_processing(item, max_cloud_cover)]
 
     if len(items) == 0:
-        log.info(f'Did not find secondary candidate scenes for the reference scene {reference.id}')
-        return None
+        return gpd.GeoDataFrame()
 
     features = []
     for item in items:
