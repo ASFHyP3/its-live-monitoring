@@ -208,10 +208,10 @@ def test_get_landsat_pairs_for_reference_scene():
 
 def test_deduplicate_hyp3_pairs():
     pairs = get_expect_pairs()
-    jobs = get_expect_jobs()
+    duplicate_jobs = get_expect_jobs()
 
     main.HYP3 = MagicMock()
-    main.HYP3.find_jobs.return_value = jobs
+    main.HYP3.find_jobs.return_value = duplicate_jobs
 
     new_pairs = main.deduplicate_hyp3_pairs(pairs)
     main.HYP3 = HYP3_real
