@@ -214,7 +214,9 @@ def test_deduplicate_hyp3_pairs():
         request_time=datetime.datetime(2024, 1, 1),
         status_code=200,
         user_id='hyp3',
-        job_parameters={"granules": ["LC08_L1TP_138041_20240128_20240207_02_T1", "LC09_L1TP_138041_20231101_20231101_02_T1"]}
+        job_parameters={
+            'granules': ['LC08_L1TP_138041_20240128_20240207_02_T1', 'LC09_L1TP_138041_20231101_20231101_02_T1']
+        }
     )
     job2 = sdk.jobs.Job(
         job_type='AUTORIFT',
@@ -222,7 +224,7 @@ def test_deduplicate_hyp3_pairs():
         request_time=datetime.datetime(2024, 1, 2),
         status_code=200,
         user_id='hyp3',
-        job_parameters={"granules": ["not_in_pairs", "also_not_in_pairs"]}
+        job_parameters={'granules': ['not_in_pairs', 'also_not_in_pairs']}
     )
     duplicate_jobs = sdk.jobs.Batch([job1, job2])
 
