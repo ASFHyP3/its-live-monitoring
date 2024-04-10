@@ -194,9 +194,6 @@ def process_scene(
 
     pairs = get_landsat_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
 
-    if pairs is None:
-        return None
-
     log.info(f'Found {len(pairs)} pairs for {scene}')
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
         log.debug(pairs.loc[:, ['reference', 'secondary']])
