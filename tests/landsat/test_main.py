@@ -11,6 +11,7 @@ from landsat.src import main
 
 LANDSAT_CATALOG_real = main.LANDSAT_CATALOG
 HYP3_real = main.HYP3
+SAMPLE_PAIRS = gpd.read_parquet('tests/data/scene1_pair.parquet')
 
 
 def get_mock_pystac_item() -> unittest.mock.NonCallableMagicMock:
@@ -84,12 +85,12 @@ def test_qualifies_for_processing():
     assert not main._qualifies_for_processing(item)
 
 
-def get_expect_item():
+def get_expected_item():
     scene = 'LC08_L1TP_138041_20240128_20240207_02_T1'
-    expect_datetime = datetime.datetime(2024, 1, 28, 4, 29, 49, 361022)
-    expect_datetime = expect_datetime.replace(tzinfo=datetime.timezone.utc)
-    expect_collection_id = 'landsat-c2l1'
-    expect_properties = {
+    expected_datetime = datetime.datetime(2024, 1, 28, 4, 29, 49, 361022)
+    expected_datetime = expected_datetime.replace(tzinfo=datetime.timezone.utc)
+    expected_collection_id = 'landsat-c2l1'
+    expected_properties = {
         'datetime': '2024-01-28T04:29:49.361022Z',
         'eo:cloud_cover': 11.59,
         'view:sun_azimuth': 148.43311105,
@@ -114,23 +115,18 @@ def get_expect_item():
         'proj:shape': [7681, 7531],
         'proj:transform': [30, 0, 674985, 0, -30, 3152415],
     }
-    expect_item = pystac.item.Item(
+    expected_item = pystac.item.Item(
         id=scene,
         geometry=None,
         bbox=None,
-        datetime=expect_datetime,
-        properties=expect_properties,
-        collection=expect_collection_id,
+        datetime=expected_datetime,
+        properties=expected_properties,
+        collection=expected_collection_id,
     )
-    return expect_item
+    return expected_item
 
 
-def get_expect_pairs():
-    pairs = gpd.read_parquet('tests/data/scene1_pair.parquet')
-    return pairs
-
-
-def get_expect_jobs():
+def get_expected_jobs():
     job1 = sdk.jobs.Job.from_dict(
         {
             'job_id': '88ea6109-8afa-483a-93d5-7f3231db7751',
@@ -166,13 +162,13 @@ def get_expect_jobs():
         }
     )
 
-    jobs_expect = sdk.jobs.Batch([job1, job2])
-    return jobs_expect
+    jobs_expected = sdk.jobs.Batch([job1, job2])
+    return jobs_expected
 
 
 def test_get_stac_item():
     scene = 'LC08_L1TP_138041_20240128_20240207_02_T1'
-    expect_item = get_expect_item()
+    expect_item = get_expected_item()
 
     main.LANDSAT_CATALOG = MagicMock()
     main.LANDSAT_CATALOG.get_collection().get_item.return_value = expect_item
@@ -190,7 +186,7 @@ def test_get_stac_item():
 
 def test_get_landsat_pairs_for_reference_scene():
     main.LANDSAT_CATALOG = MagicMock()
-    reference_item = get_expect_item()
+    reference_item = get_expected_item()
     results_item_collection = pystac.item_collection.ItemCollection.from_file(
         'tests/data/scene1_return_itemcollection.json'
     )
@@ -206,9 +202,8 @@ def test_get_landsat_pairs_for_reference_scene():
     assert (df['reference'] == reference_item.id).all()
 
 
-def test_deduplicate_hyp3_pairs():
-    pairs = get_expect_pairs()
-    duplicate_jobs = get_expect_jobs()
+def test_deduplicate_hyp3_pairs(pairs=SAMPLE_PAIRS):
+    duplicate_jobs = get_expected_jobs()
 
     main.HYP3 = MagicMock()
     main.HYP3.find_jobs.return_value = duplicate_jobs
@@ -222,9 +217,8 @@ def test_deduplicate_hyp3_pairs():
     assert len(p_idx) - 2 == len(np_idx)
 
 
-def test_submit_pairs_for_processing():
-    pairs = get_expect_pairs()
-    jobs_expect = get_expect_jobs()
+def test_submit_pairs_for_processing(pairs=SAMPLE_PAIRS):
+    jobs_expect = get_expected_jobs()
 
     main.HYP3.submit_prepared_jobs = MagicMock()
     main.HYP3.submit_prepared_jobs.return_value = jobs_expect
