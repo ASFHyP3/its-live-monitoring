@@ -172,13 +172,12 @@ def get_expected_jobs():
             'job_parameters': {
                 'granules': ['LC08_L1TP_138041_20240128_20240207_02_T1', 'LC09_L1TP_138041_20231101_20231101_02_T1'],
                 'parameter_file': '/vsicurl/http://its-live-data.s3.amazonaws.com/'
-                                  'autorift_parameters/v001/autorift_landice_0120m.shp',
+                'autorift_parameters/v001/autorift_landice_0120m.shp',
                 'publish_bucket': '""',
             },
             'credit_cost': 1,
         }
     )
-
 
     jobs_expected = sdk.jobs.Batch([job1, job2, job3])
     return jobs_expected
