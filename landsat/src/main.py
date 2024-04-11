@@ -142,7 +142,7 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         [[*job.job_parameters['granules'], *[job.job_id, job.status_code]] for job in jobs],
         columns=['reference', 'secondary', 'job_id', 'status_code'],
     )
-    df = df[df.status_code == 'SUCCESS']
+    df = df[df.status_code == 'SUCCEEDED']
     df = df.set_index(['reference', 'secondary'])
     pairs = pairs.set_index(['reference', 'secondary'])
 

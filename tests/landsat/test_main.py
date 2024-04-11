@@ -166,7 +166,7 @@ def get_expected_jobs():
             'job_id': '88ea6109-8afa-483a-93d5-7f3231db7751',
             'job_type': 'AUTORIFT',
             'request_time': '2024-04-09T18:13:41+00:00',
-            'status_code': 'SUCCESS',
+            'status_code': 'SUCCEEDED',
             'user_id': 'cirrusasf',
             'name': 'LC08_L1TP_138041_20240128_20240207_02_T1',
             'job_parameters': {
