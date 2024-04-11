@@ -161,8 +161,26 @@ def get_expected_jobs():
             'credit_cost': 1,
         }
     )
+    job3 = sdk.jobs.Job.from_dict(
+        {
+            'job_id': '88ea6109-8afa-483a-93d5-7f3231db7751',
+            'job_type': 'AUTORIFT',
+            'request_time': '2024-04-09T18:13:41+00:00',
+            'status_code': 'SUCCESS',
+            'user_id': 'cirrusasf',
+            'name': 'LC08_L1TP_138041_20240128_20240207_02_T1',
+            'job_parameters': {
+                'granules': ['LC08_L1TP_138041_20240128_20240207_02_T1', 'LC09_L1TP_138041_20231101_20231101_02_T1'],
+                'parameter_file': '/vsicurl/http://its-live-data.s3.amazonaws.com/'
+                                  'autorift_parameters/v001/autorift_landice_0120m.shp',
+                'publish_bucket': '""',
+            },
+            'credit_cost': 1,
+        }
+    )
 
-    jobs_expected = sdk.jobs.Batch([job1, job2])
+
+    jobs_expected = sdk.jobs.Batch([job1, job2, job3])
     return jobs_expected
 
 
@@ -214,7 +232,7 @@ def test_deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
     p_idx = pairs.set_index(['reference', 'secondary'])
     np_idx = new_pairs.set_index(['reference', 'secondary'])
     assert np_idx.isin(p_idx).any().any()
-    assert len(p_idx) >= len(np_idx)
+    assert len(p_idx) - 1 == len(np_idx)
 
 
 def test_submit_pairs_for_processing(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
