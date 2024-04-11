@@ -31,7 +31,7 @@ HYP3 = sdk.HyP3(
     password=EARTHDATA_PASSWORD,
 )
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
 
@@ -258,10 +258,11 @@ def main() -> None:
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
 
-    level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
-    log.debug(' '.join(sys.argv))
+    logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
+    if args.verbose:
+        log.setLevel(logging.DEBUG)
 
+    log.debug(' '.join(sys.argv))
     _ = process_scene(args.reference, timedelta(days=args.max_pair_separation), args.max_cloud_cover, args.submit)
 
 
