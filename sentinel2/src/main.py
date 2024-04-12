@@ -17,7 +17,7 @@ import pystac_client
 
 SENTINEL2_CATALOG_API = 'https://earth-search.aws.element84.com/v1'
 SENTINEL2_CATALOG = pystac_client.Client.open(SENTINEL2_CATALOG_API)
-SENTINEL2_COLLECTION = 'sentinel-2-l2a'
+SENTINEL2_COLLECTION = 'sentinel-2-l1c'
 SENTINEL2_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel2_tiles_to_process.json').read_text())
 
 MAX_PAIR_SEPARATION_IN_DAYS = 544
@@ -38,27 +38,22 @@ log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 def _qualifies_for_processing(
     item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT, log_level: int = logging.DEBUG
 ) -> bool:
-    if item.collection_id != 'landsat-c2l1':
+    if item.collection_id != SENTINEL2_COLLECTION:
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
         return False
 
-    if 'OLI' not in item.properties['instruments']:
+    if 'msi' not in item.properties['instruments']:
         log.log(log_level, f'{item.id} disqualifies for processing because it was not imaged with the right instrument')
         return False
 
-    if item.properties['landsat:collection_category'] not in ['T1', 'T2']:
-        log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong tier')
-        return False
-
-    if item.properties['landsat:wrs_path'] + item.properties['landsat:wrs_row'] not in LANDSAT_TILES_TO_PROCESS:
+    tile = (
+        item.properties['mgrs:utm_zone'] + item.properties['mgrs:latitude_band'] + item.properties['mgrs:grid_square']
+    )
+    if tile not in SENTINEL2_TILES_TO_PROCESS:
         log.log(log_level, f'{item.id} disqualifies for processing because it is not from a tile containing land-ice')
         return False
 
-    if item.properties.get('landsat:cloud_cover_land', -1) < 0:
-        log.log(log_level, f'{item.id} disqualifies for processing because cloud coverage is unknown')
-        return False
-
-    if item.properties['landsat:cloud_cover_land'] > max_cloud_cover:
+    if item.properties['eo:cloud_cover'] > max_cloud_cover:
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
         return False
 
@@ -67,14 +62,14 @@ def _qualifies_for_processing(
 
 
 def _get_stac_item(scene: str) -> pystac.item.Item:
-    collection = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION)
+    collection = SENTINEL2_CATALOG.get_collection(SENTINEL2_COLLECTION)
     item = collection.get_item(scene)
     if item is None:
         raise ValueError(f'Scene {scene} not found in STAC catalog')
     return item
 
 
-def get_landsat_pairs_for_reference_scene(
+def get_sentinel2_pairs_for_reference_scene(
     reference: pystac.item.Item,
     max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION_IN_DAYS),
     max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
@@ -90,7 +85,7 @@ def get_landsat_pairs_for_reference_scene(
         A DataFrame with all potential pairs for a landsat reference scene. Metadata in the columns will be for the
         *secondary* scene unless specified otherwise.
     """
-    results = LANDSAT_CATALOG.search(
+    results = SENTINEL2_CATALOG.search(
         collections=[reference.collection_id],
         query=[
             f'landsat:wrs_path={reference.properties["landsat:wrs_path"]}',
@@ -193,7 +188,7 @@ def process_scene(
     if not _qualifies_for_processing(reference, max_cloud_cover, logging.INFO):
         return sdk.Batch()
 
-    pairs = get_landsat_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
+    pairs = get_sentinel2_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
 
     log.info(f'Found {len(pairs)} pairs for {scene}')
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
@@ -229,7 +224,7 @@ def lambda_handler(event: dict, context: object) -> dict:
         try:
             body = json.loads(record['body'])
             message = json.loads(body['Message'])
-            _ = process_scene(message['landsat_product_id'])
+            _ = process_scene(message['sentinel2_product_id'])
         except Exception:
             log.exception(f'Could not process message {record["messageId"]}')
             batch_item_failures.append({'itemIdentifier': record['messageId']})
@@ -239,7 +234,7 @@ def lambda_handler(event: dict, context: object) -> dict:
 def main() -> None:
     """Command Line wrapper around `process_scene`."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('reference', help='Reference Landsat scene name to build pairs for')
+    parser.add_argument('reference', help='Reference Sentinel-2 scene name to build pairs for')
     parser.add_argument(
         '--max-pair-separation',
         type=int,
