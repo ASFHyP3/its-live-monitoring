@@ -74,23 +74,23 @@ def get_sentinel2_pairs_for_reference_scene(
     max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION_IN_DAYS),
     max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
 ) -> gpd.GeoDataFrame:
-    """Generate potential ITS_LIVE velocity pairs for a given Landsat scene.
+    """Generate potential ITS_LIVE velocity pairs for a given Sentinel 2 scene.
 
     Args:
-        reference: STAC item of the Landsat reference scene to find pairs for
+        reference: STAC item of the Sentinel 2 reference scene to find pairs for
         max_pair_separation: How many days back from a reference scene's acquisition date to search for secondary scenes
         max_cloud_cover: The maximum percent of the secondary scene that can be covered by clouds
 
     Returns:
-        A DataFrame with all potential pairs for a landsat reference scene. Metadata in the columns will be for the
+        A DataFrame with all potential pairs for a sentinel 2 reference scene. Metadata in the columns will be for the
         *secondary* scene unless specified otherwise.
     """
     results = SENTINEL2_CATALOG.search(
         collections=[reference.collection_id],
         query=[
-            f'landsat:wrs_path={reference.properties["landsat:wrs_path"]}',
-            f'landsat:wrs_row={reference.properties["landsat:wrs_row"]}',
-            f'view:off_nadir={reference.properties["view:off_nadir"]}',
+            f'mgrs:utm_zone={reference.properties["mgrs:utm_zone"]}',
+            f'mgrs:latitude_band={reference.properties["mgrs:latitude_band"]}',
+            f'mgrs:grid_square={reference.properties["mgrs:grid_square"]}'
         ],
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
