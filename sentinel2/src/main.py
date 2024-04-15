@@ -21,7 +21,7 @@ SENTINEL2_COLLECTION = 'sentinel-2-l1c'
 SENTINEL2_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel2_tiles_to_process.json').read_text())
 
 MAX_PAIR_SEPARATION_IN_DAYS = 544
-MAX_CLOUD_COVER_PERCENT = 60
+MAX_CLOUD_COVER_PERCENT = 99
 
 EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
 EARTHDATA_PASSWORD = os.environ.get('EARTHDATA_PASSWORD')
@@ -46,10 +46,11 @@ def _qualifies_for_processing(
         log.log(log_level, f'{item.id} disqualifies for processing because it was not imaged with the right instrument')
         return False
 
-    tile = (
-        item.properties['mgrs:utm_zone'] + item.properties['mgrs:latitude_band'] + item.properties['mgrs:grid_square']
-    )
-    if tile not in SENTINEL2_TILES_TO_PROCESS:
+    utm_zone = str(item.properties['mgrs:utm_zone'])
+    latitude_band = item.properties['mgrs:latitude_band']
+    grid_square = item.properties['mgrs:grid_square']
+    tile_location = utm_zone + latitude_band + grid_square
+    if tile_location not in SENTINEL2_TILES_TO_PROCESS:
         log.log(log_level, f'{item.id} disqualifies for processing because it is not from a tile containing land-ice')
         return False
 
