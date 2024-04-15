@@ -202,7 +202,7 @@ def test_get_landsat_pairs_for_reference_scene():
     assert (df['reference'] == reference_item.id).all()
 
 
-def test_deduplicate_hyp3_pairs(pairs=SAMPLE_PAIRS):
+def test_deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
     duplicate_jobs = get_expected_jobs()
 
     main.HYP3 = MagicMock()
@@ -217,7 +217,7 @@ def test_deduplicate_hyp3_pairs(pairs=SAMPLE_PAIRS):
     assert len(p_idx) - 2 == len(np_idx)
 
 
-def test_submit_pairs_for_processing(pairs=SAMPLE_PAIRS):
+def test_submit_pairs_for_processing(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
     jobs_expect = get_expected_jobs()
 
     main.HYP3.submit_prepared_jobs = MagicMock()
