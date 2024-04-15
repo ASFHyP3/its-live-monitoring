@@ -21,7 +21,7 @@ SENTINEL2_COLLECTION = 'sentinel-2-l1c'
 SENTINEL2_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel2_tiles_to_process.json').read_text())
 
 MAX_PAIR_SEPARATION_IN_DAYS = 544
-MAX_CLOUD_COVER_PERCENT = 99
+MAX_CLOUD_COVER_PERCENT = 60
 
 EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
 EARTHDATA_PASSWORD = os.environ.get('EARTHDATA_PASSWORD')

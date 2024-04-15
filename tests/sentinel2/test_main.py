@@ -1,15 +1,16 @@
 import datetime
 import unittest.mock
 from unittest.mock import MagicMock
+from dateutil.tz import tzutc
 
 import geopandas as gpd
 import hyp3_sdk as sdk
 import pystac
 
-from landsat.src import main
+from sentinel2.src import main
 
 
-SENTINEL2_CATALOG_real = main.LANDSAT_CATALOG
+SENTINEL2_CATALOG_real = main.SENTINEL2_CATALOG
 HYP3_real = main.HYP3
 
 # TODO: Make a version of `tests/data/scene1_pair.parquet` for Sentinel-2
@@ -22,8 +23,8 @@ def get_mock_pystac_item() -> unittest.mock.NonCallableMagicMock:
     item.properties = {
         'instruments': ['msi'],
         'mgrs:utm_zone': '19',
-        'mgrs:latitude_band': 'C',
-        'mgrs:grid_square': 'DL',
+        'mgrs:latitude_band': 'D',
+        'mgrs:grid_square': 'EE',
         'eo:cloud_cover': 30,
     }
     return item
@@ -56,27 +57,21 @@ def test_qualifies_for_processing():
     assert main._qualifies_for_processing(item)
 
     item = get_mock_pystac_item()
-    item.properties['landsat:cloud_cover_land'] = - 1
+    item.properties['eo:cloud_cover'] = - 1
     assert not main._qualifies_for_processing(item)
 
 
 def get_expected_item():
     scene = 'S2B_19DEE_20231129_0_L1C'
-    expected_datetime = datetime.datetime(2023, 11, 29, 13, 21, 40, 694000, tzinfo=datetime.timezone.utcoffset(0))
+    expected_datetime = datetime.datetime(2023, 11, 29, 13, 21, 40, 694000, tzinfo=tzutc())
     expected_collection_id =  'sentinel-2-l1c'
     expected_properties = {
         'created': '2023-11-29T18:11:44.670Z',
-        'platform': 'sentinel-2b',
-        'constellation': 'sentinel-2',
         'instruments': ['msi'],
         'eo:cloud_cover': 42.9271415094498,
-        'proj:epsg': 32719,
         'mgrs:utm_zone': 19,
         'mgrs:latitude_band': 'D',
         'mgrs:grid_square': 'EE',
-        'datetime': '2023-11-29T13:21:40.694000Z',
-        'processing:software': {'sentinel2-to-stac': '0.1.1'},
-        'updated': '2023-11-29T18:11:44.670Z'
     }
     expected_item = pystac.item.Item(
         id=scene,
@@ -93,13 +88,11 @@ def test_get_stac_item():
     scene = 'S2B_19DEE_20231129_0_L1C'
     expect_item = get_expected_item()
 
-    main.SENTINEL2_CATALOG = MagicMock()
-    main.SENTINEL2_CATALOG.get_collection().get_item.return_value = expect_item
-
     item = main._get_stac_item(scene)
 
     assert item.collection_id == expect_item.collection_id
     assert item.properties['instruments'] == expect_item.properties['instruments']
+    assert item.properties['created'] == expect_item.properties['created']
     assert item.properties['mgrs:utm_zone'] == expect_item.properties['mgrs:utm_zone']
     assert item.properties['mgrs:latitude_band'] == expect_item.properties['mgrs:latitude_band']
     assert item.properties['mgrs:grid_square'] == expect_item.properties['mgrs:grid_square']
