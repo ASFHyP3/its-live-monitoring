@@ -21,7 +21,6 @@ SENTINEL2_COLLECTION = 'sentinel-2-l1c'
 
 
 def _get_sentinel2_tiles_to_process(s2_geojson: str = 'sentinel2_tiles.geojson') -> str:
-
     gjson = json.loads((Path(__file__).parent / s2_geojson).read_text())
     return [i['properties']['Name'] for i in gjson['features']]
 
@@ -55,7 +54,9 @@ def _qualifies_for_processing(
         return False
 
     tile = (
-        str(item.properties['mgrs:utm_zone']).strip() + item.properties['mgrs:latitude_band'] + item.properties['mgrs:grid_square']
+        str(item.properties['mgrs:utm_zone']).strip()
+        + item.properties['mgrs:latitude_band']
+        + item.properties['mgrs:grid_square']
     )
     if tile not in SENTINEL2_TILES_TO_PROCESS:
         log.log(log_level, f'{item.id} disqualifies for processing because it is not from a tile containing land-ice')
@@ -98,7 +99,7 @@ def get_sentinel2_pairs_for_reference_scene(
         query=[
             f'mgrs:utm_zone={reference.properties["mgrs:utm_zone"]}',
             f'mgrs:latitude_band={reference.properties["mgrs:latitude_band"]}',
-            f'mgrs:grid_square={reference.properties["mgrs:grid_square"]}'
+            f'mgrs:grid_square={reference.properties["mgrs:grid_square"]}',
         ],
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
@@ -141,8 +142,9 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         user_id=EARTHDATA_USERNAME,
     )
 
-    df = pd.DataFrame([[*job.job_parameters['granules'], *[job.job_id]] for job in jobs],
-                      columns=['reference', 'secondary', 'job_id'])
+    df = pd.DataFrame(
+        [[*job.job_parameters['granules'], *[job.job_id]] for job in jobs], columns=['reference', 'secondary', 'job_id']
+    )
 
     df = df.set_index(['reference', 'secondary'])
     pairs = pairs.set_index(['reference', 'secondary'])
