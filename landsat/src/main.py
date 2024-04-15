@@ -102,6 +102,7 @@ def get_landsat_pairs_for_reference_scene(
 
     items = [item for page in results.pages() for item in page if _qualifies_for_processing(item, max_cloud_cover)]
 
+    log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
     if len(items) == 0:
         return gpd.GeoDataFrame()
 
