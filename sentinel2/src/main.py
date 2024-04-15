@@ -18,7 +18,14 @@ import pystac_client
 SENTINEL2_CATALOG_API = 'https://earth-search.aws.element84.com/v1'
 SENTINEL2_CATALOG = pystac_client.Client.open(SENTINEL2_CATALOG_API)
 SENTINEL2_COLLECTION = 'sentinel-2-l1c'
-SENTINEL2_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel2_tiles_to_process.json').read_text())
+
+
+def get_sentinel2_tiles_to_process(s2_geojson):
+    gjson = json.loads((Path(__file__).parent / s2_geojson).read_text())
+    return [i['properties']['Name'] for i in gjson['features']]
+
+
+SENTINEL2_TILES_TO_PROCESS = get_sentinel2_tiles_to_process('sentinel2_tiles.geojson')
 
 MAX_PAIR_SEPARATION_IN_DAYS = 544
 MAX_CLOUD_COVER_PERCENT = 60
@@ -47,7 +54,7 @@ def _qualifies_for_processing(
         return False
 
     tile = (
-        item.properties['mgrs:utm_zone'] + item.properties['mgrs:latitude_band'] + item.properties['mgrs:grid_square']
+        str(item.properties['mgrs:utm_zone']).strip() + item.properties['mgrs:latitude_band'] + item.properties['mgrs:grid_square']
     )
     if tile not in SENTINEL2_TILES_TO_PROCESS:
         log.log(log_level, f'{item.id} disqualifies for processing because it is not from a tile containing land-ice')
