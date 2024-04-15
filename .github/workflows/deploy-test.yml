@@ -23,6 +23,7 @@ jobs:
           EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD }}
           CF_TEMPLATE_BUCKET: cf-templates-3o5lnspmwmzg-us-west-2
           LANDSAT_TOPIC_ARN: arn:aws:sns:us-west-2:986442313181:its-live-notify-test
+          SENTINEL2_TOPIC_ARN: arn:aws:sns:us-west-2:608149789419:cirrus-v0-publish
           HYP3_API: https://hyp3-its-live.asf.alaska.edu
           LAMBDA_LOGGING_LEVEL: DEBUG
           PUBLISH_BUCKET: its-live-data-test
