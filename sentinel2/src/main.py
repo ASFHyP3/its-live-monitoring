@@ -20,12 +20,13 @@ SENTINEL2_CATALOG = pystac_client.Client.open(SENTINEL2_CATALOG_API)
 SENTINEL2_COLLECTION = 'sentinel-2-l1c'
 
 
-def get_sentinel2_tiles_to_process(s2_geojson):
+def _get_sentinel2_tiles_to_process(s2_geojson: str = 'sentinel2_tiles.geojson') -> str:
+
     gjson = json.loads((Path(__file__).parent / s2_geojson).read_text())
     return [i['properties']['Name'] for i in gjson['features']]
 
 
-SENTINEL2_TILES_TO_PROCESS = get_sentinel2_tiles_to_process('sentinel2_tiles.geojson')
+SENTINEL2_TILES_TO_PROCESS = _get_sentinel2_tiles_to_process('sentinel2_tiles.geojson')
 
 MAX_PAIR_SEPARATION_IN_DAYS = 544
 MAX_CLOUD_COVER_PERCENT = 60
