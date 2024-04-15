@@ -95,7 +95,7 @@ def get_landsat_pairs_for_reference_scene(
         query=[
             f'landsat:wrs_path={reference.properties["landsat:wrs_path"]}',
             f'landsat:wrs_row={reference.properties["landsat:wrs_row"]}',
-            f'view:off_nadir={reference.properties["view:off_nadir"]}',
+            'view:off_nadir>0' if reference.properties['view:off_nadir'] > 0 else 'view:off_nadir=0',
         ],
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
