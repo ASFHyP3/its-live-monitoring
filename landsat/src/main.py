@@ -95,7 +95,6 @@ def get_landsat_pairs_for_reference_scene(
         query=[
             f'landsat:wrs_path={reference.properties["landsat:wrs_path"]}',
             f'landsat:wrs_row={reference.properties["landsat:wrs_row"]}',
-            f'view:off_nadir={reference.properties["view:off_nadir"]}',
         ],
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
@@ -138,11 +137,8 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         user_id=EARTHDATA_USERNAME,
     )
 
-    df = pd.DataFrame(
-        [[*job.job_parameters['granules'], *[job.job_id, job.status_code]] for job in jobs],
-        columns=['reference', 'secondary', 'job_id', 'status_code'],
-    )
-    df = df[df.status_code == 'SUCCEEDED']
+    df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
+
     df = df.set_index(['reference', 'secondary'])
     pairs = pairs.set_index(['reference', 'secondary'])
 
