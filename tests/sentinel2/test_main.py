@@ -1,10 +1,10 @@
 import datetime
 import unittest.mock
-from unittest.mock import MagicMock
+# from unittest.mock import MagicMock  # For a TODO
 from dateutil.tz import tzutc
 
-import geopandas as gpd
-import hyp3_sdk as sdk
+# import geopandas as gpd  # For a TODO
+# import hyp3_sdk as sdk  # For a TODO
 import pystac
 
 from sentinel2.src import main
