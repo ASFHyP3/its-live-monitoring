@@ -1,4 +1,4 @@
-"""Lambda function to trigger low-latency Landsat processing from newly acquired scenes."""
+"""Lambda function to trigger low-latency Sentinel-2 processing from newly acquired scenes."""
 
 import argparse
 import json
@@ -91,7 +91,7 @@ def get_sentinel2_pairs_for_reference_scene(
         query=[
             f'mgrs:utm_zone={reference.properties["mgrs:utm_zone"]}',
             f'mgrs:latitude_band={reference.properties["mgrs:latitude_band"]}',
-            f'mgrs:grid_square={reference.properties["mgrs:grid_square"]}'
+            f'mgrs:grid_square={reference.properties["mgrs:grid_square"]}',
         ],
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
@@ -134,8 +134,9 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         user_id=EARTHDATA_USERNAME,
     )
 
-    df = pd.DataFrame([[*job.job_parameters['granules'], *[job.job_id]] for job in jobs],
-                      columns=['reference', 'secondary', 'job_id'])
+    df = pd.DataFrame(
+        [[*job.job_parameters['granules'], *[job.job_id]] for job in jobs], columns=['reference', 'secondary', 'job_id']
+    )
 
     df = df.set_index(['reference', 'secondary'])
     pairs = pairs.set_index(['reference', 'secondary'])

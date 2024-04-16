@@ -1,11 +1,12 @@
 import datetime
 import unittest.mock
-from unittest.mock import MagicMock
-from dateutil.tz import tzutc
 
-import geopandas as gpd
-import hyp3_sdk as sdk
+# import geopandas as gpd  # For a TODO
+# import hyp3_sdk as sdk  # For a TODO
 import pystac
+
+# from unittest.mock import MagicMock  # For a TODO
+from dateutil.tz import tzutc
 
 from sentinel2.src import main
 
@@ -57,14 +58,14 @@ def test_qualifies_for_processing():
     assert main._qualifies_for_processing(item)
 
     item = get_mock_pystac_item()
-    item.properties['eo:cloud_cover'] = - 1
+    item.properties['eo:cloud_cover'] = -1
     assert not main._qualifies_for_processing(item)
 
 
 def get_expected_item():
     scene = 'S2B_19DEE_20231129_0_L1C'
     expected_datetime = datetime.datetime(2023, 11, 29, 13, 21, 40, 694000, tzinfo=tzutc())
-    expected_collection_id =  'sentinel-2-l1c'
+    expected_collection_id = 'sentinel-2-l1c'
     expected_properties = {
         'created': '2023-11-29T18:11:44.670Z',
         'instruments': ['msi'],
