@@ -11,7 +11,7 @@ from landsat.src import main
 
 LANDSAT_CATALOG_real = main.LANDSAT_CATALOG
 HYP3_real = main.HYP3
-SAMPLE_PAIRS = gpd.read_parquet('tests/data/scene1_pair.parquet')
+SAMPLE_PAIRS = gpd.read_parquet('tests/data/landsat/landsat_scene1_pairs.parquet')
 
 
 def get_mock_pystac_item() -> unittest.mock.NonCallableMagicMock:
@@ -188,7 +188,7 @@ def test_get_landsat_pairs_for_reference_scene():
     main.LANDSAT_CATALOG = MagicMock()
     reference_item = get_expected_item()
     results_item_collection = pystac.item_collection.ItemCollection.from_file(
-        'tests/data/scene1_return_itemcollection.json'
+        'tests/data/landsat/landsat_scene1_return_itemcollection.json'
     )
     data_gen = (y for y in [results_item_collection])
     main.LANDSAT_CATALOG.search().pages.return_value = data_gen
