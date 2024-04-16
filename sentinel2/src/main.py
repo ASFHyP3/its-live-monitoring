@@ -1,4 +1,4 @@
-"""Lambda function to trigger low-latency Landsat processing from newly acquired scenes."""
+"""Lambda function to trigger low-latency Sentinel-2 processing from newly acquired scenes."""
 
 import argparse
 import json
