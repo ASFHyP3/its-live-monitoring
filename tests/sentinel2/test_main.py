@@ -1,5 +1,6 @@
 import datetime
 import unittest.mock
+
 # from unittest.mock import MagicMock  # For a TODO
 from dateutil.tz import tzutc
 
