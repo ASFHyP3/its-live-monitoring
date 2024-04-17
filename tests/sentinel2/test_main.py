@@ -1,6 +1,7 @@
 import datetime
 import unittest.mock
 import json
+from pathlib import Path
 
 import geopandas as gpd
 import hyp3_sdk as sdk
@@ -130,7 +131,7 @@ def get_expected_jobs():
 def test_get_landsat_pairs_for_reference_scene():
     main.SENTINEL2_CATALOG = MagicMock()
     reference_item = get_expected_item()
-    with open('tests/data/sentinel2/S2B_13CES_20200315_0_L1C_pages.json', 'r') as f:
+    with Path('tests/data/sentinel2/S2B_13CES_20200315_0_L1C_pages.json').open() as f:
         pages_dict = json.load(f)
         pages = (pystac.item_collection.ItemCollection.from_dict(page) for page in pages_dict)
 
