@@ -1,13 +1,12 @@
 import datetime
-import unittest.mock
 import json
+import unittest.mock
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import geopandas as gpd
 import hyp3_sdk as sdk
 import pystac
-
-from unittest.mock import MagicMock  # For a TODO
 from dateutil.tz import tzutc
 
 from sentinel2.src import main
