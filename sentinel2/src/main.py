@@ -98,6 +98,7 @@ def get_sentinel2_pairs_for_reference_scene(
 
     items = [item for page in results.pages() for item in page if _qualifies_for_processing(item, max_cloud_cover)]
 
+    log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
     if len(items) == 0:
         return gpd.GeoDataFrame()
 
@@ -134,11 +135,12 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         user_id=EARTHDATA_USERNAME,
     )
 
-    df = pd.DataFrame(
-        [[*job.job_parameters['granules'], *[job.job_id]] for job in jobs], columns=['reference', 'secondary', 'job_id']
-    )
+    df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
 
     df = df.set_index(['reference', 'secondary'])
+    # TO Do
+    # pairs['reference'] = pairs[['s2:product_uri']].apply(lambda x: x.split('.')[0])
+    
     pairs = pairs.set_index(['reference', 'secondary'])
 
     duplicates = df.loc[df.index.isin(pairs.index)]

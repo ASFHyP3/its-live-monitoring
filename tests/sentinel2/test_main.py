@@ -1,15 +1,16 @@
 import datetime
 import unittest.mock
+import json
 
-# import geopandas as gpd  # For a TODO
-# import hyp3_sdk as sdk  # For a TODO
+import geopandas as gpd  # For a TODO
+import hyp3_sdk as sdk  # For a TODO
 import pystac
 
-# from unittest.mock import MagicMock  # For a TODO
+from unittest.mock import MagicMock  # For a TODO
 from dateutil.tz import tzutc
 
 from sentinel2.src import main
-
+import pdb
 
 SENTINEL2_CATALOG_real = main.SENTINEL2_CATALOG
 HYP3_real = main.HYP3
@@ -128,46 +129,48 @@ def get_expected_jobs():
     return jobs_expected
 
 
-# def test_get_landsat_pairs_for_reference_scene():
-#     main.SENTINEL2_CATALOG = MagicMock()
-#     reference_item = get_expected_item()
-#     results_item_collection = pystac.item_collection.ItemCollection.from_file(
-#         'tests/data/scene1_return_itemcollection.json'
-#     )
-#     data_gen = (y for y in [results_item_collection])
-#     main.LANDSAT_CATALOG.search().pages.return_value = data_gen
+def test_get_landsat_pairs_for_reference_scene():
+    main.SENTINEL2_CATALOG = MagicMock()
+    reference_item = get_expected_item()
+    with open('tests/data/sentinel2/S2B_19DEE_20231129_0_L1C_pages.json', 'r') as f:
+        pages_dict = json.load(f)
+        pages = (pystac.item_collection.ItemCollection.from_dict(page) for page in pages_dict)
 
-#     df = main.get_landsat_pairs_for_reference_scene(reference_item)
+    main.SENTINEL2_CATALOG.search().pages.return_value = pages
 
-#     assert (df['mgrs:utm_zone'] == reference_item.properties['mgrs:utm_zone']).all()
-#     assert (df['mgrs:latitude_band'] == reference_item.properties['mgrs:latitude_band']).all()
-#     assert (df['mgrs:grid_square'] == reference_item.properties['mgrs:grid_square']).all()
-#     assert (df['instruments'].apply(lambda x: ''.join(x)) == ''.join(reference_item.properties['instruments'])).all()
-#     assert (df['reference'] == reference_item.id).all()
+    df = main.get_sentinel2_pairs_for_reference_scene(reference_item)
 
-
-# def test_deduplicate_hyp3_pairs(pairs=SAMPLE_PAIRS):
-#     duplicate_jobs = get_expected_jobs()
-
-#     main.HYP3 = MagicMock()
-#     main.HYP3.find_jobs.return_value = duplicate_jobs
-
-#     new_pairs = main.deduplicate_hyp3_pairs(pairs)
-#     main.HYP3 = HYP3_real
-
-#     p_idx = pairs.set_index(['reference', 'secondary'])
-#     np_idx = new_pairs.set_index(['reference', 'secondary'])
-#     assert np_idx.isin(p_idx).any().any()
-#     assert len(p_idx) - 2 == len(np_idx)
+    assert (df['mgrs:utm_zone'] == reference_item.properties['mgrs:utm_zone']).all()
+    assert (df['mgrs:latitude_band'] == reference_item.properties['mgrs:latitude_band']).all()
+    assert (df['mgrs:grid_square'] == reference_item.properties['mgrs:grid_square']).all()
+    assert (df['instruments'].apply(lambda x: ''.join(x)) == ''.join(reference_item.properties['instruments'])).all()
+    assert (df['reference'] == reference_item.id).all()
 
 
-# def test_submit_pairs_for_processing(pairs=SAMPLE_PAIRS):
-#     jobs_expect = get_expected_jobs()
+def test_deduplicate_hyp3_pairs(pairs=SAMPLE_PAIRS):
+    pdb.set_trace()
+    duplicate_jobs = get_expected_jobs()
 
-#     main.HYP3.submit_prepared_jobs = MagicMock()
-#     main.HYP3.submit_prepared_jobs.return_value = jobs_expect
+    main.HYP3 = MagicMock()
+    main.HYP3.find_jobs.return_value = duplicate_jobs
 
-#     jobs = main.submit_pairs_for_processing(pairs)
-#     main.HYP3 = HYP3_real
+    new_pairs = main.deduplicate_hyp3_pairs(pairs)
+    main.HYP3 = HYP3_real
 
-#     assert jobs == jobs_expect
+    p_idx = pairs.set_index(['reference', 'secondary'])
+    np_idx = new_pairs.set_index(['reference', 'secondary'])
+    assert np_idx.isin(p_idx).any().any()
+    assert len(p_idx) - 2 == len(np_idx)
+
+
+def test_submit_pairs_for_processing(pairs=SAMPLE_PAIRS):
+    pdb.set_trace()
+    jobs_expect = get_expected_jobs()
+
+    main.HYP3.submit_prepared_jobs = MagicMock()
+    main.HYP3.submit_prepared_jobs.return_value = jobs_expect
+
+    jobs = main.submit_pairs_for_processing(pairs)
+    main.HYP3 = HYP3_real
+
+    assert jobs == jobs_expect
