@@ -1,11 +1,10 @@
 import datetime
 import unittest.mock
+from unittest.mock import MagicMock
 
-# import geopandas as gpd  # For a TODO
-# import hyp3_sdk as sdk  # For a TODO
+import geopandas as gpd
+import hyp3_sdk as sdk
 import pystac
-
-# from unittest.mock import MagicMock  # For a TODO
 from dateutil.tz import tzutc
 
 from sentinel2.src import main
@@ -14,8 +13,7 @@ from sentinel2.src import main
 SENTINEL2_CATALOG_real = main.SENTINEL2_CATALOG
 HYP3_real = main.HYP3
 
-# TODO: Make a version of `tests/data/scene1_pair.parquet` for Sentinel-2
-# SAMPLE_PAIRS = gpd.read_parquet('tests/data/scene1_pair.parquet')
+SAMPLE_PAIRS = gpd.read_parquet('tests/data/sentinel2_sample_pairs.parquet')
 
 
 def get_mock_pystac_item() -> unittest.mock.NonCallableMagicMock:
@@ -100,88 +98,74 @@ def test_get_stac_item():
     assert item.properties['eo:cloud_cover'] == expect_item.properties['eo:cloud_cover']
 
 
-# TODO:  Make a version of `tests/data/scene1_return_itemcollection.json` for Sentinel-2
+def get_expected_jobs():
+    job1 = sdk.jobs.Job.from_dict(
+        {
+            'job_id': 'job_id',
+            'job_type': 'AUTORIFT',
+            'request_time': '2024-01-01T00:00:00+00:00',
+            'status_code': 'SUCCEEDED',
+            'user_id': 'fake_user',
+            'name': 'DUPLICATE_JOB',
+            'job_parameters': {'granules': ['S2B_19DEE_20231129_0_L1C', 'S2B_19DEE_20231118_0_L1C']},
+        }
+    )
+    job2 = sdk.jobs.Job.from_dict(
+        {
+            'job_id': 'job_id',
+            'job_type': 'AUTORIFT',
+            'request_time': '2024-01-01T00:00:00+00:00',
+            'status_code': 'SUCCEEDED',
+            'user_id': 'fake_user',
+            'name': 'NOT_DUPLICATE_JOB',
+            'job_parameters': {'granules': ['S2B_19DEC_20231215_0_L1C', 'S2B_19DEC_20231230_0_L1C']},
+        }
+    )
 
-# def get_expected_jobs():
-#     job1 = sdk.jobs.Job.from_dict(
-#         {
-#             'job_id': '88ea6109-8afa-483a-93d5-7f3231db7751',
-#             'job_type': 'AUTORIFT',
-#             'request_time': '2024-04-09T18:13:41+00:00',
-#             'status_code': 'PENDING',
-#             'user_id': 'cirrusasf',
-#             'name': 'LC08_L1TP_138041_20240128_20240207_02_T1',
-#             'job_parameters': {
-#                 'granules': ['LC08_L1TP_138041_20240128_20240207_02_T1', 'LC09_L1TP_138041_20240120_20240120_02_T1'],
-#                 'parameter_file': '/vsicurl/http://its-live-data.s3.amazonaws.com/'
-#                 'autorift_parameters/v001/autorift_landice_0120m.shp',
-#                 'publish_bucket': '""',
-#             },
-#             'credit_cost': 1,
-#         }
-#     )
-#     job2 = sdk.jobs.Job.from_dict(
-#         {
-#             'job_id': '4eea15af-167a-43b3-b292-aee55b3e893e',
-#             'job_type': 'AUTORIFT',
-#             'request_time': '2024-04-09T18:15:06+00:00',
-#             'status_code': 'PENDING',
-#             'user_id': 'cirrusasf',
-#             'name': 'LC08_L1TP_138041_20240128_20240207_02_T1',
-#             'job_parameters': {
-#                 'granules': ['LC08_L1TP_138041_20240128_20240207_02_T1', 'LC08_L1TP_138041_20231227_20240104_02_T1'],
-#                 'parameter_file': '/vsicurl/http://its-live-data.s3.amazonaws.com/'
-#                 'autorift_parameters/v001/autorift_landice_0120m.shp',
-#                 'publish_bucket': '""',
-#             },
-#             'credit_cost': 1,
-#         }
-#     )
-
-#     jobs_expected = sdk.jobs.Batch([job1, job2])
-#     return jobs_expected
+    jobs_expected = sdk.jobs.Batch([job1, job2])
+    return jobs_expected
 
 
-# def test_get_landsat_pairs_for_reference_scene():
-#     main.SENTINEL2_CATALOG = MagicMock()
-#     reference_item = get_expected_item()
-#     results_item_collection = pystac.item_collection.ItemCollection.from_file(
-#         'tests/data/scene1_return_itemcollection.json'
-#     )
-#     data_gen = (y for y in [results_item_collection])
-#     main.LANDSAT_CATALOG.search().pages.return_value = data_gen
+def test_get_sentinel2_pairs_for_reference_scene():
+    main.SENTINEL2_CATALOG = MagicMock()
+    reference_item = get_expected_item()
+    results_item_collection = pystac.item_collection.ItemCollection.from_file(
+        'tests/data/sentinel2_sample_item_collection.json'
+    )
+    data_gen = (y for y in [results_item_collection])
+    main.SENTINEL2_CATALOG.search().pages.return_value = data_gen
 
-#     df = main.get_landsat_pairs_for_reference_scene(reference_item)
+    df = main.get_sentinel2_pairs_for_reference_scene(reference_item)
 
-#     assert (df['mgrs:utm_zone'] == reference_item.properties['mgrs:utm_zone']).all()
-#     assert (df['mgrs:latitude_band'] == reference_item.properties['mgrs:latitude_band']).all()
-#     assert (df['mgrs:grid_square'] == reference_item.properties['mgrs:grid_square']).all()
-#     assert (df['instruments'].apply(lambda x: ''.join(x)) == ''.join(reference_item.properties['instruments'])).all()
-#     assert (df['reference'] == reference_item.id).all()
-
-
-# def test_deduplicate_hyp3_pairs(pairs=SAMPLE_PAIRS):
-#     duplicate_jobs = get_expected_jobs()
-
-#     main.HYP3 = MagicMock()
-#     main.HYP3.find_jobs.return_value = duplicate_jobs
-
-#     new_pairs = main.deduplicate_hyp3_pairs(pairs)
-#     main.HYP3 = HYP3_real
-
-#     p_idx = pairs.set_index(['reference', 'secondary'])
-#     np_idx = new_pairs.set_index(['reference', 'secondary'])
-#     assert np_idx.isin(p_idx).any().any()
-#     assert len(p_idx) - 2 == len(np_idx)
+    assert (df['mgrs:utm_zone'] == reference_item.properties['mgrs:utm_zone']).all()
+    assert (df['mgrs:latitude_band'] == reference_item.properties['mgrs:latitude_band']).all()
+    assert (df['mgrs:grid_square'] == reference_item.properties['mgrs:grid_square']).all()
+    assert (df['instruments'].apply(lambda x: ''.join(x)) == ''.join(reference_item.properties['instruments'])).all()
+    assert (df['reference'] == reference_item.id).all()
 
 
-# def test_submit_pairs_for_processing(pairs=SAMPLE_PAIRS):
-#     jobs_expect = get_expected_jobs()
+def test_deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
+    duplicate_jobs = get_expected_jobs()  # 1 job is a duplicate, 1 is not.
 
-#     main.HYP3.submit_prepared_jobs = MagicMock()
-#     main.HYP3.submit_prepared_jobs.return_value = jobs_expect
+    main.HYP3 = MagicMock()
+    main.HYP3.find_jobs.return_value = duplicate_jobs
 
-#     jobs = main.submit_pairs_for_processing(pairs)
-#     main.HYP3 = HYP3_real
+    new_pairs = main.deduplicate_hyp3_pairs(pairs)
+    main.HYP3 = HYP3_real
 
-#     assert jobs == jobs_expect
+    p_idx = pairs.set_index(['reference', 'secondary'])
+    np_idx = new_pairs.set_index(['reference', 'secondary'])
+    assert np_idx.isin(p_idx).any().any()
+    assert len(p_idx) - 1 == len(np_idx)
+
+
+def test_submit_pairs_for_processing(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
+    jobs_expect = get_expected_jobs()
+
+    main.HYP3.submit_prepared_jobs = MagicMock()
+    main.HYP3.submit_prepared_jobs.return_value = jobs_expect
+
+    jobs = main.submit_pairs_for_processing(pairs)
+    main.HYP3 = HYP3_real
+
+    assert jobs == jobs_expect
