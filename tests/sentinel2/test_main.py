@@ -103,24 +103,48 @@ def test_get_stac_item():
 
 def get_expected_jobs():
     job1 = sdk.jobs.Job.from_dict(
-         {'job_id': 'f95a5921-0987-46fe-a43b-1cd4bd07cc02', 'job_type': 'AUTORIFT',
-         'request_time': '2024-04-16T00:27:24+00:00', 'status_code': 'FAILED',
-         'user_id': 'cirrusasf', 'name': 'jz_s2_t1',
-         'job_parameters': {'granules':
-         ['S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115',
-         'S2B_MSIL1C_20190211T142249_N0207_R067_T13CES_20190211T185312']},
-         'logs': ['https://d1riv60tezqha9.cloudfront.net/f95a5921-0987-46fe-a43b-1cd4bd07cc02/f95a5921-0987-46fe-a43b-1cd4bd07cc02.log'],
-         'expiration_time': '2024-05-01T00:00:00+00:00', 'processing_times': [105.39], 'credit_cost': 25}
+        {
+            'job_id': 'f95a5921-0987-46fe-a43b-1cd4bd07cc02',
+            'job_type': 'AUTORIFT',
+            'request_time': '2024-04-16T00:27:24+00:00',
+            'status_code': 'FAILED',
+            'user_id': 'cirrusasf',
+            'name': 'jz_s2_t1',
+            'job_parameters': {
+                'granules': [
+                    'S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115',
+                    'S2B_MSIL1C_20190211T142249_N0207_R067_T13CES_20190211T185312',
+                ]
+            },
+            'logs': [
+                'https://d1riv60tezqha9.cloudfront.net/f95a5921-0987-46fe-a43b-1cd4bd07cc02/f95a5921-0987-46fe-a43b-1cd4bd07cc02.log'
+            ],
+            'expiration_time': '2024-05-01T00:00:00+00:00',
+            'processing_times': [105.39],
+            'credit_cost': 25,
+        }
     )
     job2 = sdk.jobs.Job.from_dict(
-        {'job_id': 'a3fea943-ad61-4a45-a05f-b19ce4a817ef', 'job_type': 'AUTORIFT',
-        'request_time': '2024-04-16T00:28:32+00:00', 'status_code': 'FAILED',
-        'user_id': 'cirrusasf', 'name': 'jz_s2_t2',
-        'job_parameters': {'granules':
-        ['S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115',
-        'S2B_MSIL1C_20200201T151249_N0500_R139_T13CES_20230425T114956']},
-        'logs': ['https://d1riv60tezqha9.cloudfront.net/a3fea943-ad61-4a45-a05f-b19ce4a817ef/a3fea943-ad61-4a45-a05f-b19ce4a817ef.log'],
-        'expiration_time': '2024-05-01T00:00:00+00:00', 'processing_times': [2.076], 'credit_cost': 25}
+        {
+            'job_id': 'a3fea943-ad61-4a45-a05f-b19ce4a817ef',
+            'job_type': 'AUTORIFT',
+            'request_time': '2024-04-16T00:28:32+00:00',
+            'status_code': 'FAILED',
+            'user_id': 'cirrusasf',
+            'name': 'jz_s2_t2',
+            'job_parameters': {
+                'granules': [
+                    'S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115',
+                    'S2B_MSIL1C_20200201T151249_N0500_R139_T13CES_20230425T114956',
+                ]
+            },
+            'logs': [
+                'https://d1riv60tezqha9.cloudfront.net/a3fea943-ad61-4a45-a05f-b19ce4a817ef/a3fea943-ad61-4a45-a05f-b19ce4a817ef.log'
+            ],
+            'expiration_time': '2024-05-01T00:00:00+00:00',
+            'processing_times': [2.076],
+            'credit_cost': 25,
+        }
     )
 
     jobs_expected = sdk.jobs.Batch([job1, job2])
