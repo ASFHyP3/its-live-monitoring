@@ -2,20 +2,19 @@ import datetime
 import unittest.mock
 import json
 
-import geopandas as gpd  # For a TODO
-import hyp3_sdk as sdk  # For a TODO
+import geopandas as gpd
+import hyp3_sdk as sdk
 import pystac
 
 from unittest.mock import MagicMock  # For a TODO
 from dateutil.tz import tzutc
 
 from sentinel2.src import main
-import pdb
+
 
 SENTINEL2_CATALOG_real = main.SENTINEL2_CATALOG
 HYP3_real = main.HYP3
 
-# TODO: Make a version of `tests/data/scene1_pair.parquet` for Sentinel-2
 SAMPLE_PAIRS = gpd.read_parquet('tests/data/sentinel2/S2B_13CES_20200315_0_L1C_pairs.parquet')
 
 
@@ -63,25 +62,18 @@ def test_qualifies_for_processing():
     assert not main._qualifies_for_processing(item)
 
 
-def get_expected_item1():
-    f1=open('tests/data/sentinel2/S2B_13CES_20200315_0_L1C_scene.json', 'r')
-    item_dict = json.load(f1)
-    f1.close()
-    item = pystac.item.Item.from_dict(item_dict)
-    return item
-
-
 def get_expected_item():
-    scene = 'S2B_19DEE_20231129_0_L1C'
-    expected_datetime = datetime.datetime(2023, 11, 29, 13, 21, 40, 694000, tzinfo=tzutc())
+    scene = 'S2B_13CES_20200315_0_L1C'
+    expected_datetime = datetime.datetime(2020, 3, 15, 15, 24, 29, 455000, tzinfo=tzutc())
     expected_collection_id = 'sentinel-2-l1c'
     expected_properties = {
-        'created': '2023-11-29T18:11:44.670Z',
+        'created': '2022-11-06T07:09:52.078Z',
         'instruments': ['msi'],
-        'eo:cloud_cover': 42.9271415094498,
-        'mgrs:utm_zone': 19,
-        'mgrs:latitude_band': 'D',
-        'mgrs:grid_square': 'EE',
+        'eo:cloud_cover': 28.1884,
+        'mgrs:utm_zone': 13,
+        'mgrs:latitude_band': 'C',
+        'mgrs:grid_square': 'ES',
+        's2:product_uri': '2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115.SAFE',
     }
     expected_item = pystac.item.Item(
         id=scene,
@@ -95,7 +87,7 @@ def get_expected_item():
 
 
 def test_get_stac_item():
-    scene = 'S2B_19DEE_20231129_0_L1C'
+    scene = 'S2B_13CES_20200315_0_L1C'
     expect_item = get_expected_item()
 
     item = main._get_stac_item(scene)
@@ -109,9 +101,12 @@ def test_get_stac_item():
     assert item.properties['eo:cloud_cover'] == expect_item.properties['eo:cloud_cover']
 
 
-# TODO:  Make a version of `tests/data/scene1_return_itemcollection.json` for Sentinel-2
-
 def get_expected_jobs():
+    '''
+    Jobs for the reference scene S2B_13CES_20200315_0_L1C
+    Returns:
+    expected jobs in the object of the type of sdk.jobs.Batch
+    '''
     job1 = sdk.jobs.Job.from_dict(
          {'job_id': 'f95a5921-0987-46fe-a43b-1cd4bd07cc02', 'job_type': 'AUTORIFT',
          'request_time': '2024-04-16T00:27:24+00:00', 'status_code': 'FAILED',
@@ -138,9 +133,8 @@ def get_expected_jobs():
 
 
 def test_get_landsat_pairs_for_reference_scene():
-    pdb.set_trace()
     main.SENTINEL2_CATALOG = MagicMock()
-    reference_item = get_expected_item1()
+    reference_item = get_expected_item()
     with open('tests/data/sentinel2/S2B_13CES_20200315_0_L1C_pages.json', 'r') as f:
         pages_dict = json.load(f)
         pages = (pystac.item_collection.ItemCollection.from_dict(page) for page in pages_dict)
@@ -153,11 +147,10 @@ def test_get_landsat_pairs_for_reference_scene():
     assert (df['mgrs:latitude_band'] == reference_item.properties['mgrs:latitude_band']).all()
     assert (df['mgrs:grid_square'] == reference_item.properties['mgrs:grid_square']).all()
     assert (df['instruments'].apply(lambda x: ''.join(x)) == ''.join(reference_item.properties['instruments'])).all()
-    assert (df['reference'] == reference_item.id).all()
+    assert (df['referenceId'] == reference_item.id).all()
 
 
 def test_deduplicate_hyp3_pairs(pairs=SAMPLE_PAIRS):
-    # pdb_set_trace()
     duplicate_jobs = get_expected_jobs()
 
     main.HYP3 = MagicMock()
