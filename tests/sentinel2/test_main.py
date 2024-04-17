@@ -16,7 +16,7 @@ SENTINEL2_CATALOG_real = main.SENTINEL2_CATALOG
 HYP3_real = main.HYP3
 
 # TODO: Make a version of `tests/data/scene1_pair.parquet` for Sentinel-2
-SAMPLE_PAIRS = gpd.read_parquet('tests/data/sentinel2/s2_scene1_pairs.parquet')
+SAMPLE_PAIRS = gpd.read_parquet('tests/data/sentinel2/S2B_13CES_20200315_0_L1C_pairs.parquet')
 
 
 def get_mock_pystac_item() -> unittest.mock.NonCallableMagicMock:
@@ -61,6 +61,14 @@ def test_qualifies_for_processing():
     item = get_mock_pystac_item()
     item.properties['eo:cloud_cover'] = -1
     assert not main._qualifies_for_processing(item)
+
+
+def get_expected_item1():
+    f1=open('tests/data/sentinel2/S2B_13CES_20200315_0_L1C_scene.json', 'r')
+    item_dict = json.load(f1)
+    f1.close()
+    item = pystac.item.Item.from_dict(item_dict)
+    return item
 
 
 def get_expected_item():
@@ -130,9 +138,10 @@ def get_expected_jobs():
 
 
 def test_get_landsat_pairs_for_reference_scene():
+    pdb.set_trace()
     main.SENTINEL2_CATALOG = MagicMock()
-    reference_item = get_expected_item()
-    with open('tests/data/sentinel2/S2B_19DEE_20231129_0_L1C_pages.json', 'r') as f:
+    reference_item = get_expected_item1()
+    with open('tests/data/sentinel2/S2B_13CES_20200315_0_L1C_pages.json', 'r') as f:
         pages_dict = json.load(f)
         pages = (pystac.item_collection.ItemCollection.from_dict(page) for page in pages_dict)
 
@@ -148,7 +157,7 @@ def test_get_landsat_pairs_for_reference_scene():
 
 
 def test_deduplicate_hyp3_pairs(pairs=SAMPLE_PAIRS):
-    pdb.set_trace()
+    # pdb_set_trace()
     duplicate_jobs = get_expected_jobs()
 
     main.HYP3 = MagicMock()
@@ -164,7 +173,6 @@ def test_deduplicate_hyp3_pairs(pairs=SAMPLE_PAIRS):
 
 
 def test_submit_pairs_for_processing(pairs=SAMPLE_PAIRS):
-    pdb.set_trace()
     jobs_expect = get_expected_jobs()
 
     main.HYP3.submit_prepared_jobs = MagicMock()

@@ -105,9 +105,11 @@ def get_sentinel2_pairs_for_reference_scene(
     features = []
     for item in items:
         feature = item.to_dict()
-        feature['properties']['reference'] = reference.id
+        feature['properties']['referenceId'] = reference.id
+        feature['properties']['reference'] = reference.properties['s2:product_uri'].split('.')[0]
         feature['properties']['reference_acquisition'] = reference.datetime
-        feature['properties']['secondary'] = item.id
+        feature['properties']['secondaryId'] = item.id
+        feature['properties']['secondary'] = item.properties['s2:product_uri'].split('.')[0]
         features.append(feature)
 
     df = gpd.GeoDataFrame.from_features(features)
@@ -131,7 +133,7 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     jobs = HYP3.find_jobs(
         job_type='AUTORIFT',
         start=pairs.iloc[0].reference_acquisition,
-        name=pairs.iloc[0].reference,
+        name=pairs.iloc[0].referenceId,
         user_id=EARTHDATA_USERNAME,
     )
 
