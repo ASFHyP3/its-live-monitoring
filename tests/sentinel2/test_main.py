@@ -102,11 +102,6 @@ def test_get_stac_item():
 
 
 def get_expected_jobs():
-    '''
-    Jobs for the reference scene S2B_13CES_20200315_0_L1C
-    Returns:
-    expected jobs in the object of the type of sdk.jobs.Batch
-    '''
     job1 = sdk.jobs.Job.from_dict(
          {'job_id': 'f95a5921-0987-46fe-a43b-1cd4bd07cc02', 'job_type': 'AUTORIFT',
          'request_time': '2024-04-16T00:27:24+00:00', 'status_code': 'FAILED',
@@ -150,7 +145,7 @@ def test_get_landsat_pairs_for_reference_scene():
     assert (df['referenceId'] == reference_item.id).all()
 
 
-def test_deduplicate_hyp3_pairs(pairs=SAMPLE_PAIRS):
+def test_deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
     duplicate_jobs = get_expected_jobs()
 
     main.HYP3 = MagicMock()
@@ -165,7 +160,7 @@ def test_deduplicate_hyp3_pairs(pairs=SAMPLE_PAIRS):
     assert len(p_idx) - 2 == len(np_idx)
 
 
-def test_submit_pairs_for_processing(pairs=SAMPLE_PAIRS):
+def test_submit_pairs_for_processing(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
     jobs_expect = get_expected_jobs()
 
     main.HYP3.submit_prepared_jobs = MagicMock()
