@@ -140,9 +140,6 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
 
     df = df.set_index(['reference', 'secondary'])
-    # TO Do
-    # pairs['reference'] = pairs[['s2:product_uri']].apply(lambda x: x.split('.')[0])
-    
     pairs = pairs.set_index(['reference', 'secondary'])
 
     duplicates = df.loc[df.index.isin(pairs.index)]
