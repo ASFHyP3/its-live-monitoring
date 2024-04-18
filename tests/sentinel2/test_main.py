@@ -2,6 +2,7 @@ import datetime
 import json
 import unittest.mock
 from pathlib import Path
+
 from unittest.mock import MagicMock
 
 import geopandas as gpd
@@ -16,6 +17,7 @@ SENTINEL2_CATALOG_real = main.SENTINEL2_CATALOG
 HYP3_real = main.HYP3
 
 SAMPLE_PAIRS = gpd.read_parquet('tests/data/sentinel2/S2B_13CES_20200315_0_L1C_pairs.parquet')
+
 
 
 def get_mock_pystac_item() -> unittest.mock.NonCallableMagicMock:
@@ -160,6 +162,7 @@ def test_get_landsat_pairs_for_reference_scene():
 
     main.SENTINEL2_CATALOG.search().pages.return_value = pages
 
+
     df = main.get_sentinel2_pairs_for_reference_scene(reference_item)
 
     assert (df['mgrs:utm_zone'] == reference_item.properties['mgrs:utm_zone']).all()
@@ -182,6 +185,7 @@ def test_deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
     np_idx = new_pairs.set_index(['reference', 'secondary'])
     assert np_idx.isin(p_idx).any().any()
     assert len(p_idx) - 2 == len(np_idx)
+
 
 
 def test_submit_pairs_for_processing(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
