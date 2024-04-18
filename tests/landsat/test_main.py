@@ -76,6 +76,10 @@ def test_qualifies_for_processing(pystac_item_factory):
     item.properties['landsat:cloud_cover_land'] = main.MAX_CLOUD_COVER_PERCENT + 1
     assert not main._qualifies_for_processing(item)
 
+    item = deepcopy(good_item)
+    item.properties['view:off_nadir'] = 14.065
+    assert main._qualifies_for_processing(item)
+
 
 def test_get_stac_item(pystac_item_factory):
     scene = 'LC08_L1TP_138041_20240128_20240207_02_T1'
@@ -135,6 +139,49 @@ def test_get_landsat_pairs_for_reference_scene(pystac_item_factory):
     assert (df['landsat:wrs_path'] == ref_item.properties['landsat:wrs_path']).all()
     assert (df['landsat:wrs_row'] == ref_item.properties['landsat:wrs_row']).all()
     assert (df['view:off_nadir'] == ref_item.properties['view:off_nadir']).all()
+    assert (df['instruments'].apply(lambda x: ''.join(x)) == ''.join(ref_item.properties['instruments'])).all()
+    assert (df['reference'] == ref_item.id).all()
+
+
+def test_get_landsat_pairs_for_off_nadir_reference_scene(pystac_item_factory):
+    properties = {
+        'instruments': ['OLI'],
+        'landsat:collection_category': 'T1',
+        'landsat:wrs_path': '001',
+        'landsat:wrs_row': '005',
+        'landsat:cloud_cover_land': 50,
+        'view:off_nadir': 14.065,
+    }
+    collection = 'landsat-c2l1'
+
+    ref_item = pystac_item_factory(
+        id='LC08_L1TP_138041_20240128_20240207_02_T1',
+        datetime='2024-01-28T04:29:49.361022Z',
+        properties=properties,
+        collection=collection,
+    )
+
+    sec_scenes = [
+        'LC09_L1TP_138041_20240120_20240120_02_T1',
+        'LC08_L1TP_138041_20240112_20240123_02_T1',
+        'LC09_L1TP_138041_20240104_20240104_02_T1',
+    ]
+    sec_date_times = ['2024-01-20T04:30:03.658618Z', '2024-01-12T04:29:55.948514Z', '2024-01-04T04:30:03.184014Z']
+    sec_off_nadir_angles = [14.049, 14.147, 14.100]
+    sec_items = []
+    for scene, date_time, off_nadir in zip(sec_scenes, sec_date_times, sec_off_nadir_angles):
+        props = deepcopy(properties)
+        props['view:off_nadir'] = off_nadir
+        sec_items.append(pystac_item_factory(id=scene, datetime=date_time, properties=props, collection=collection))
+
+    with patch('main.LANDSAT_CATALOG', MagicMock()):
+        main.LANDSAT_CATALOG.search().pages.return_value = (sec_items,)
+        df = main.get_landsat_pairs_for_reference_scene(ref_item)
+
+    assert (df['view:off_nadir'] > 0).all()
+
+    assert (df['landsat:wrs_path'] == ref_item.properties['landsat:wrs_path']).all()
+    assert (df['landsat:wrs_row'] == ref_item.properties['landsat:wrs_row']).all()
     assert (df['instruments'].apply(lambda x: ''.join(x)) == ''.join(ref_item.properties['instruments'])).all()
     assert (df['reference'] == ref_item.id).all()
 
