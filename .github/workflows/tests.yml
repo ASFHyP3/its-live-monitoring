@@ -1,6 +1,14 @@
 name: Tests
 
-on: push
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
 
 jobs:
   tests:
@@ -15,3 +23,6 @@ jobs:
       - run: make install
 
       - run: make test
+        env:
+          EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_LOGIN_USERNAME }}
+          EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_LOGIN_PASSWORD }}
