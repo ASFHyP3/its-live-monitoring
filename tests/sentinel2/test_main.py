@@ -2,7 +2,6 @@ import datetime
 import json
 import unittest.mock
 from pathlib import Path
-
 from unittest.mock import MagicMock
 
 import geopandas as gpd
