@@ -19,7 +19,9 @@ def test_qualifies_for_processing(pystac_item_factory):
     }
     collection = 'landsat-c2l1'
 
-    good_item = pystac_item_factory(id='landsat-scene', datetime=datetime.now(), properties=properties, collection=collection)
+    good_item = pystac_item_factory(
+        id='landsat-scene', datetime=datetime.now(), properties=properties, collection=collection
+    )
     assert main._qualifies_for_processing(good_item)
 
     item = deepcopy(good_item)
@@ -110,10 +112,15 @@ def test_get_landsat_pairs_for_reference_scene(pystac_item_factory):
     ref_item = pystac_item_factory(
         id='LC08_L1TP_138041_20240128_20240207_02_T1',
         datetime=date_parser('2024-01-28T04:29:49.361022Z'),
-        properties=properties, collection=collection
+        properties=properties,
+        collection=collection,
     )
 
-    sec_scenes = ['LC09_L1TP_138041_20240120_20240120_02_T1', 'LC08_L1TP_138041_20240112_20240123_02_T1', 'LC08_L1TP_138041_20240112_20240123_02_T1']
+    sec_scenes = [
+        'LC09_L1TP_138041_20240120_20240120_02_T1',
+        'LC08_L1TP_138041_20240112_20240123_02_T1',
+        'LC08_L1TP_138041_20240112_20240123_02_T1',
+    ]
     sec_date_times = ['2024-01-20T04:30:03.658618Z', '2024-01-12T04:29:55.948514Z', '2024-01-04T04:30:03.184014Z']
     sec_items = []
     for scene, date_time in zip(sec_scenes, sec_date_times):
@@ -133,12 +140,18 @@ def test_get_landsat_pairs_for_reference_scene(pystac_item_factory):
 
 
 def test_deduplicate_hyp3_pairs(hyp3_batch_factory):
-    sec_scenes = ['LC09_L1TP_138041_20240120_20240120_02_T1', 'LC08_L1TP_138041_20240112_20240123_02_T1', 'LC08_L1TP_138041_20240112_20240123_02_T1']
+    sec_scenes = [
+        'LC09_L1TP_138041_20240120_20240120_02_T1',
+        'LC08_L1TP_138041_20240112_20240123_02_T1',
+        'LC08_L1TP_138041_20240112_20240123_02_T1',
+    ]
     ref_scenes = ['LC08_L1TP_138041_20240128_20240207_02_T1'] * 3
     ref_acquisitions = ['2024-01-28T04:29:49.361022Z'] * 3
 
     landsat_jobs = hyp3_batch_factory(zip(ref_scenes, sec_scenes))
-    landsat_pairs = gpd.GeoDataFrame({'reference': ref_scenes, 'reference_acquisition': ref_acquisitions, 'secondary': sec_scenes})
+    landsat_pairs = gpd.GeoDataFrame(
+        {'reference': ref_scenes, 'reference_acquisition': ref_acquisitions, 'secondary': sec_scenes}
+    )
 
     with patch('main.HYP3.find_jobs', MagicMock(return_value=landsat_jobs)):
         new_pairs = main.deduplicate_hyp3_pairs(landsat_pairs)
@@ -147,7 +160,11 @@ def test_deduplicate_hyp3_pairs(hyp3_batch_factory):
 
 
 def test_submit_pairs_for_processing(hyp3_batch_factory):
-    sec_scenes = ['LC09_L1TP_138041_20240120_20240120_02_T1', 'LC08_L1TP_138041_20240112_20240123_02_T1', 'LC08_L1TP_138041_20240112_20240123_02_T1']
+    sec_scenes = [
+        'LC09_L1TP_138041_20240120_20240120_02_T1',
+        'LC08_L1TP_138041_20240112_20240123_02_T1',
+        'LC08_L1TP_138041_20240112_20240123_02_T1',
+    ]
     ref_scenes = ['LC08_L1TP_138041_20240128_20240207_02_T1'] * 3
 
     landsat_jobs = hyp3_batch_factory(zip(ref_scenes, sec_scenes))
