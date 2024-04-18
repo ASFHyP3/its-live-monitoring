@@ -24,5 +24,5 @@ jobs:
 
       - run: make test
         env:
-          EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_LOGIN_USERNAME }}
+          EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_LOGIN_USER }}
           EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_LOGIN_PASSWORD }}
