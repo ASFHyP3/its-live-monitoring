@@ -98,15 +98,18 @@ def get_sentinel2_pairs_for_reference_scene(
 
     items = [item for page in results.pages() for item in page if _qualifies_for_processing(item, max_cloud_cover)]
 
+    log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
     if len(items) == 0:
         return gpd.GeoDataFrame()
 
     features = []
     for item in items:
         feature = item.to_dict()
-        feature['properties']['reference'] = reference.id
+        feature['properties']['referenceId'] = reference.id
+        feature['properties']['reference'] = reference.properties['s2:product_uri'].split('.')[0]
         feature['properties']['reference_acquisition'] = reference.datetime
-        feature['properties']['secondary'] = item.id
+        feature['properties']['secondaryId'] = item.id
+        feature['properties']['secondary'] = item.properties['s2:product_uri'].split('.')[0]
         features.append(feature)
 
     df = gpd.GeoDataFrame.from_features(features)
@@ -130,13 +133,11 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     jobs = HYP3.find_jobs(
         job_type='AUTORIFT',
         start=pairs.iloc[0].reference_acquisition,
-        name=pairs.iloc[0].reference,
+        name=pairs.iloc[0].referenceId,
         user_id=EARTHDATA_USERNAME,
     )
 
-    df = pd.DataFrame(
-        [[*job.job_parameters['granules'], *[job.job_id]] for job in jobs], columns=['reference', 'secondary', 'job_id']
-    )
+    df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
 
     df = df.set_index(['reference', 'secondary'])
     pairs = pairs.set_index(['reference', 'secondary'])

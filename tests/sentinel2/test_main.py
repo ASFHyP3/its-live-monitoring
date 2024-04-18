@@ -1,5 +1,7 @@
 import datetime
+import json
 import unittest.mock
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import geopandas as gpd
@@ -13,7 +15,7 @@ from sentinel2.src import main
 SENTINEL2_CATALOG_real = main.SENTINEL2_CATALOG
 HYP3_real = main.HYP3
 
-SAMPLE_PAIRS = gpd.read_parquet('tests/data/sentinel2_sample_pairs.parquet')
+SAMPLE_PAIRS = gpd.read_parquet('tests/data/sentinel2/S2B_13CES_20200315_0_L1C_pairs.parquet')
 
 
 def get_mock_pystac_item() -> unittest.mock.NonCallableMagicMock:
@@ -61,16 +63,17 @@ def test_qualifies_for_processing():
 
 
 def get_expected_item():
-    scene = 'S2B_19DEE_20231129_0_L1C'
-    expected_datetime = datetime.datetime(2023, 11, 29, 13, 21, 40, 694000, tzinfo=tzutc())
+    scene = 'S2B_13CES_20200315_0_L1C'
+    expected_datetime = datetime.datetime(2020, 3, 15, 15, 24, 29, 455000, tzinfo=tzutc())
     expected_collection_id = 'sentinel-2-l1c'
     expected_properties = {
-        'created': '2023-11-29T18:11:44.670Z',
+        'created': '2022-11-06T07:09:52.078Z',
         'instruments': ['msi'],
-        'eo:cloud_cover': 42.9271415094498,
-        'mgrs:utm_zone': 19,
-        'mgrs:latitude_band': 'D',
-        'mgrs:grid_square': 'EE',
+        'eo:cloud_cover': 28.1884,
+        'mgrs:utm_zone': 13,
+        'mgrs:latitude_band': 'C',
+        'mgrs:grid_square': 'ES',
+        's2:product_uri': '2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115.SAFE',
     }
     expected_item = pystac.item.Item(
         id=scene,
@@ -84,7 +87,7 @@ def get_expected_item():
 
 
 def test_get_stac_item():
-    scene = 'S2B_19DEE_20231129_0_L1C'
+    scene = 'S2B_13CES_20200315_0_L1C'
     expect_item = get_expected_item()
 
     item = main._get_stac_item(scene)
@@ -101,24 +104,46 @@ def test_get_stac_item():
 def get_expected_jobs():
     job1 = sdk.jobs.Job.from_dict(
         {
-            'job_id': 'job_id',
+            'job_id': 'f95a5921-0987-46fe-a43b-1cd4bd07cc02',
             'job_type': 'AUTORIFT',
-            'request_time': '2024-01-01T00:00:00+00:00',
-            'status_code': 'SUCCEEDED',
-            'user_id': 'fake_user',
-            'name': 'DUPLICATE_JOB',
-            'job_parameters': {'granules': ['S2B_19DEE_20231129_0_L1C', 'S2B_19DEE_20231118_0_L1C']},
+            'request_time': '2024-04-16T00:27:24+00:00',
+            'status_code': 'FAILED',
+            'user_id': 'cirrusasf',
+            'name': 'jz_s2_t1',
+            'job_parameters': {
+                'granules': [
+                    'S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115',
+                    'S2B_MSIL1C_20190211T142249_N0207_R067_T13CES_20190211T185312',
+                ]
+            },
+            'logs': [
+                'https://d1riv60tezqha9.cloudfront.net/f95a5921-0987-46fe-a43b-1cd4bd07cc02/f95a5921-0987-46fe-a43b-1cd4bd07cc02.log'
+            ],
+            'expiration_time': '2024-05-01T00:00:00+00:00',
+            'processing_times': [105.39],
+            'credit_cost': 25,
         }
     )
     job2 = sdk.jobs.Job.from_dict(
         {
-            'job_id': 'job_id',
+            'job_id': 'a3fea943-ad61-4a45-a05f-b19ce4a817ef',
             'job_type': 'AUTORIFT',
-            'request_time': '2024-01-01T00:00:00+00:00',
-            'status_code': 'SUCCEEDED',
-            'user_id': 'fake_user',
-            'name': 'NOT_DUPLICATE_JOB',
-            'job_parameters': {'granules': ['S2B_19DEC_20231215_0_L1C', 'S2B_19DEC_20231230_0_L1C']},
+            'request_time': '2024-04-16T00:28:32+00:00',
+            'status_code': 'FAILED',
+            'user_id': 'cirrusasf',
+            'name': 'jz_s2_t2',
+            'job_parameters': {
+                'granules': [
+                    'S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115',
+                    'S2B_MSIL1C_20200201T151249_N0500_R139_T13CES_20230425T114956',
+                ]
+            },
+            'logs': [
+                'https://d1riv60tezqha9.cloudfront.net/a3fea943-ad61-4a45-a05f-b19ce4a817ef/a3fea943-ad61-4a45-a05f-b19ce4a817ef.log'
+            ],
+            'expiration_time': '2024-05-01T00:00:00+00:00',
+            'processing_times': [2.076],
+            'credit_cost': 25,
         }
     )
 
@@ -126,14 +151,14 @@ def get_expected_jobs():
     return jobs_expected
 
 
-def test_get_sentinel2_pairs_for_reference_scene():
+def test_get_landsat_pairs_for_reference_scene():
     main.SENTINEL2_CATALOG = MagicMock()
     reference_item = get_expected_item()
-    results_item_collection = pystac.item_collection.ItemCollection.from_file(
-        'tests/data/sentinel2_sample_item_collection.json'
-    )
-    data_gen = (y for y in [results_item_collection])
-    main.SENTINEL2_CATALOG.search().pages.return_value = data_gen
+    with Path('tests/data/sentinel2/S2B_13CES_20200315_0_L1C_pages.json').open() as f:
+        pages_dict = json.load(f)
+        pages = (pystac.item_collection.ItemCollection.from_dict(page) for page in pages_dict)
+
+    main.SENTINEL2_CATALOG.search().pages.return_value = pages
 
     df = main.get_sentinel2_pairs_for_reference_scene(reference_item)
 
@@ -141,11 +166,11 @@ def test_get_sentinel2_pairs_for_reference_scene():
     assert (df['mgrs:latitude_band'] == reference_item.properties['mgrs:latitude_band']).all()
     assert (df['mgrs:grid_square'] == reference_item.properties['mgrs:grid_square']).all()
     assert (df['instruments'].apply(lambda x: ''.join(x)) == ''.join(reference_item.properties['instruments'])).all()
-    assert (df['reference'] == reference_item.id).all()
+    assert (df['referenceId'] == reference_item.id).all()
 
 
 def test_deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
-    duplicate_jobs = get_expected_jobs()  # 1 job is a duplicate, 1 is not.
+    duplicate_jobs = get_expected_jobs()
 
     main.HYP3 = MagicMock()
     main.HYP3.find_jobs.return_value = duplicate_jobs
@@ -156,7 +181,7 @@ def test_deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
     p_idx = pairs.set_index(['reference', 'secondary'])
     np_idx = new_pairs.set_index(['reference', 'secondary'])
     assert np_idx.isin(p_idx).any().any()
-    assert len(p_idx) - 1 == len(np_idx)
+    assert len(p_idx) - 2 == len(np_idx)
 
 
 def test_submit_pairs_for_processing(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
