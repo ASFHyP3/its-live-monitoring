@@ -3,3 +3,4 @@
 cfn-lint
 ruff
 pytest
+pyarrow

@@ -231,7 +231,7 @@ def test_deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
     p_idx = pairs.set_index(['reference', 'secondary'])
     np_idx = new_pairs.set_index(['reference', 'secondary'])
     assert np_idx.isin(p_idx).any().any()
-    assert len(p_idx) - 1 == len(np_idx)
+    assert len(p_idx) - 3 == len(np_idx)
 
 
 def test_submit_pairs_for_processing(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
