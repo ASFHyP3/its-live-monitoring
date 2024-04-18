@@ -6,6 +6,7 @@ import pystac
 import pytest
 from dateutil.parser import parse as date_parser
 
+
 @pytest.fixture
 def pystac_item_factory():
     def create_pystac_item(
@@ -14,7 +15,6 @@ def pystac_item_factory():
         properties: dict,
         collection: str,
     ) -> pystac.item.Item:
-
         if isinstance(datetime, str):
             datetime = date_parser(datetime)
 
