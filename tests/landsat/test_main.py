@@ -156,7 +156,7 @@ def test_get_landsat_pairs_for_off_nadir_reference_scene(pystac_item_factory):
 
     ref_item = pystac_item_factory(
         id='LC08_L1TP_138041_20240128_20240207_02_T1',
-        datetime=date_parser('2024-01-28T04:29:49.361022Z'),
+        datetime='2024-01-28T04:29:49.361022Z',
         properties=properties,
         collection=collection,
     )
@@ -173,7 +173,7 @@ def test_get_landsat_pairs_for_off_nadir_reference_scene(pystac_item_factory):
         props = deepcopy(properties)
         props['view:off_nadir'] = off_nadir
         sec_items.append(
-            pystac_item_factory(id=scene, datetime=date_parser(date_time), properties=props, collection=collection)
+            pystac_item_factory(id=scene, datetime=date_time, properties=props, collection=collection)
         )
 
     with patch('main.LANDSAT_CATALOG', MagicMock()):
