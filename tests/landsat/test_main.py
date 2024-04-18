@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 
 import geopandas as gpd
 import hyp3_sdk as sdk
-from dateutil.parser import parse as date_parser
 
 import main
 
@@ -112,7 +111,7 @@ def test_get_landsat_pairs_for_reference_scene(pystac_item_factory):
 
     ref_item = pystac_item_factory(
         id='LC08_L1TP_138041_20240128_20240207_02_T1',
-        datetime=date_parser('2024-01-28T04:29:49.361022Z'),
+        datetime='2024-01-28T04:29:49.361022Z',
         properties=properties,
         collection=collection,
     )
@@ -126,7 +125,7 @@ def test_get_landsat_pairs_for_reference_scene(pystac_item_factory):
     sec_items = []
     for scene, date_time in zip(sec_scenes, sec_date_times):
         sec_items.append(
-            pystac_item_factory(id=scene, datetime=date_parser(date_time), properties=properties, collection=collection)
+            pystac_item_factory(id=scene, datetime=date_time, properties=properties, collection=collection)
         )
 
     with patch('main.LANDSAT_CATALOG', MagicMock()):

@@ -4,16 +4,20 @@ from unittest.mock import NonCallableMock
 import hyp3_sdk as sdk
 import pystac
 import pytest
-
+from dateutil.parser import parse as date_parser
 
 @pytest.fixture
 def pystac_item_factory():
     def create_pystac_item(
         id: str,
-        datetime: dt.datetime,
+        datetime: str | dt.datetime,
         properties: dict,
         collection: str,
     ) -> pystac.item.Item:
+
+        if isinstance(datetime, str):
+            datetime = date_parser(datetime)
+
         expected_item = pystac.item.Item(
             id=id,
             geometry=None,
@@ -22,6 +26,7 @@ def pystac_item_factory():
             properties=properties,
             collection=collection,
         )
+
         return expected_item
 
     return create_pystac_item
