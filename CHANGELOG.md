@@ -6,8 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0]
 
-### Fixed
-- Off-naider scenes will now be processed and will only be paired with other off-nadir scenes.
+### Added
+- Off-nadir scenes will now be processed and will only be paired with other off-nadir scenes.
 
 ## [0.3.0]
 
