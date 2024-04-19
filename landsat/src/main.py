@@ -104,7 +104,7 @@ def get_landsat_pairs_for_reference_scene(
 
     log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
     if len(items) == 0:
-        return gpd.GeoDataFrame()
+        return gpd.GeoDataFrame({'reference': [], 'secondary': []})
 
     features = []
     for item in items:
@@ -198,10 +198,12 @@ def process_scene(
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
         log.debug(pairs.loc[:, ['reference', 'secondary']])
 
-    pairs = deduplicate_hyp3_pairs(pairs)
-    log.info(f'Deduplicated pairs; {len(pairs)} remaining')
-    with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
-        log.debug(pairs.loc[:, ['reference', 'secondary']])
+    if len(pairs) > 0:
+        pairs = deduplicate_hyp3_pairs(pairs)
+
+        log.info(f'Deduplicated pairs; {len(pairs)} remaining')
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
+            log.debug(pairs.loc[:, ['reference', 'secondary']])
 
     jobs = sdk.Batch()
     if submit:
