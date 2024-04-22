@@ -2,6 +2,9 @@ Parameters:
   LandsatTopicArn:
     Type: String
 
+  Sentinel2TopicArn:
+    Type: String
+
   Hyp3Api:
     Type: String
 
@@ -56,13 +59,15 @@ Resources:
               Service: sns.amazonaws.com
             Action: sqs:SendMessage
             Resource: !GetAtt Queue.Arn
-            Condition:
+            Condition: !Or
               ArnEquals:
                 aws:SourceArn: !Ref LandsatTopicArn
+              ArnEquals:
+                aws:SourceArn: !Ref Sentinel2TopicArn
       Queues:
         - !Ref Queue
 
-  Subscription:
+  LandsatSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       TopicArn: !Ref LandsatTopicArn
@@ -75,10 +80,22 @@ Resources:
           "s3_location": [{"prefix": "s3://usgs-landsat/collection02/level-1/standard/oli-tirs/"}]
         }
 
+  Sentinel2Subscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref Sentinel2TopicArn
+      Protocol: sqs
+      Endpoint: !GetAtt Queue.Arn
+      FilterPolicyScope: MessageBody
+      FilterPolicy: |
+        {
+          "collection": ["sentinel-2-l1c"]
+        }
+
   Lambda:
     Type: AWS::Lambda::Function
     Properties:
-      Code: landsat/src/
+      Code: its_live_monitoring/src/
       Handler: main.lambda_handler
       MemorySize: 128
       Role: !GetAtt LambdaRole.Arn

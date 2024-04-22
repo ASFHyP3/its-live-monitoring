@@ -93,11 +93,11 @@ def get_landsat_pairs_for_reference_scene(
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
 
-    items = [item for page in results.pages() for item in page if qualifies_for_landsat_processing(item, max_cloud_cover)]
+    items = [item for page in results.pages() for item in page if _qualifies_for_processing(item, max_cloud_cover)]
 
     log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
     if len(items) == 0:
-        return gpd.GeoDataFrame()
+        return gpd.GeoDataFrame({'reference': [], 'secondary': []})
 
     features = []
     for item in items:

@@ -9,11 +9,11 @@ import hyp3_sdk as sdk
 import pystac
 from dateutil.tz import tzutc
 
-from sentinel2.src import main
+from src import sentinel2
 
 
-SENTINEL2_CATALOG_real = main.SENTINEL2_CATALOG
-HYP3_real = main.HYP3
+SENTINEL2_CATALOG_real = sentinel2.SENTINEL2_CATALOG
+HYP3_real = sentinel2.HYP3
 
 SAMPLE_PAIRS = gpd.read_parquet('tests/data/sentinel2/S2B_13CES_20200315_0_L1C_pairs.parquet')
 
@@ -33,33 +33,33 @@ def get_mock_pystac_item() -> unittest.mock.NonCallableMagicMock:
 
 def test_qualifies_for_processing():
     item = get_mock_pystac_item()
-    assert main._qualifies_for_processing(item)
+    assert sentinel2._qualifies_for_processing(item)
 
     item = get_mock_pystac_item()
     item.collection_id = 'foo'
-    assert not main._qualifies_for_processing(item)
+    assert not sentinel2._qualifies_for_processing(item)
 
     item = get_mock_pystac_item()
     item.properties['instruments'] = ['mis']
-    assert not main._qualifies_for_processing(item)
+    assert not sentinel2._qualifies_for_processing(item)
 
     item = get_mock_pystac_item()
     item.properties['mgrs:utm_zone'] = '30'
     item.properties['mgrs:latitude_band'] = 'B'
     item.properties['mgrs:grid_square'] = 'ZZ'
-    assert not main._qualifies_for_processing(item)
+    assert not sentinel2._qualifies_for_processing(item)
 
     item = get_mock_pystac_item()
     item.properties['eo:cloud_cover'] = 75
-    assert not main._qualifies_for_processing(item)
+    assert not sentinel2._qualifies_for_processing(item)
 
     item = get_mock_pystac_item()
     item.properties['eo:cloud_cover'] = 0
-    assert main._qualifies_for_processing(item)
+    assert sentinel2._qualifies_for_processing(item)
 
     item = get_mock_pystac_item()
     item.properties['eo:cloud_cover'] = -1
-    assert not main._qualifies_for_processing(item)
+    assert not sentinel2._qualifies_for_processing(item)
 
 
 def get_expected_item():
@@ -90,7 +90,7 @@ def test_get_stac_item():
     scene = 'S2B_13CES_20200315_0_L1C'
     expect_item = get_expected_item()
 
-    item = main._get_stac_item(scene)
+    item = sentinel2._get_stac_item(scene)
 
     assert item.collection_id == expect_item.collection_id
     assert item.properties['instruments'] == expect_item.properties['instruments']
@@ -152,15 +152,15 @@ def get_expected_jobs():
 
 
 def test_get_landsat_pairs_for_reference_scene():
-    main.SENTINEL2_CATALOG = MagicMock()
+    sentinel2.SENTINEL2_CATALOG = MagicMock()
     reference_item = get_expected_item()
     with Path('tests/data/sentinel2/S2B_13CES_20200315_0_L1C_pages.json').open() as f:
         pages_dict = json.load(f)
         pages = (pystac.item_collection.ItemCollection.from_dict(page) for page in pages_dict)
 
-    main.SENTINEL2_CATALOG.search().pages.return_value = pages
+    sentinel2.SENTINEL2_CATALOG.search().pages.return_value = pages
 
-    df = main.get_sentinel2_pairs_for_reference_scene(reference_item)
+    df = sentinel2.get_sentinel2_pairs_for_reference_scene(reference_item)
 
     assert (df['mgrs:utm_zone'] == reference_item.properties['mgrs:utm_zone']).all()
     assert (df['mgrs:latitude_band'] == reference_item.properties['mgrs:latitude_band']).all()
@@ -172,11 +172,11 @@ def test_get_landsat_pairs_for_reference_scene():
 def test_deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
     duplicate_jobs = get_expected_jobs()
 
-    main.HYP3 = MagicMock()
-    main.HYP3.find_jobs.return_value = duplicate_jobs
+    sentinel2.HYP3 = MagicMock()
+    sentinel2.HYP3.find_jobs.return_value = duplicate_jobs
 
-    new_pairs = main.deduplicate_hyp3_pairs(pairs)
-    main.HYP3 = HYP3_real
+    new_pairs = sentinel2.deduplicate_hyp3_pairs(pairs)
+    sentinel2.HYP3 = HYP3_real
 
     p_idx = pairs.set_index(['reference', 'secondary'])
     np_idx = new_pairs.set_index(['reference', 'secondary'])
@@ -187,10 +187,10 @@ def test_deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
 def test_submit_pairs_for_processing(pairs: gpd.GeoDataFrame = SAMPLE_PAIRS):
     jobs_expect = get_expected_jobs()
 
-    main.HYP3.submit_prepared_jobs = MagicMock()
-    main.HYP3.submit_prepared_jobs.return_value = jobs_expect
+    sentinel2.HYP3.submit_prepared_jobs = MagicMock()
+    sentinel2.HYP3.submit_prepared_jobs.return_value = jobs_expect
 
-    jobs = main.submit_pairs_for_processing(pairs)
-    main.HYP3 = HYP3_real
+    jobs = sentinel2.submit_pairs_for_processing(pairs)
+    sentinel2.HYP3 = HYP3_real
 
     assert jobs == jobs_expect

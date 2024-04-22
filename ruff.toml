@@ -1,5 +1,5 @@
 line-length = 120
-src = ["landsat/src", "tests", "sentinel2/src"]
+src = ["its_live_monitoring/src", "tests"]
 
 [format]
 indent-style = "space"
@@ -22,5 +22,4 @@ case-sensitive = true
 lines-after-imports = 2
 
 [lint.extend-per-file-ignores]
-"tests/*" = ["D100", "D103", "ANN201"]
-
+"tests/*" = ["D100", "D103", "ANN"]

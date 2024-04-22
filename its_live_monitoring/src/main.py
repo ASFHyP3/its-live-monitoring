@@ -13,8 +13,8 @@ import pystac
 import pystac.item_collection
 import pystac_client
 
-from src.landsat import _qualifies_for_landsat_processing, get_landsat_pairs_for_reference_scene
-from src.sentinel2 import _qualifies_for_sentinel2_processing, get_sentinel2_pairs_for_reference_scene
+from src.landsat import qualifies_for_landsat_processing, get_landsat_pairs_for_reference_scene
+from src.sentinel2 import qualifies_for_sentinel2_processing, get_sentinel2_pairs_for_reference_scene
 
 MAX_PAIR_SEPARATION_IN_DAYS = 544
 MAX_CLOUD_COVER_PERCENT = 60
@@ -68,7 +68,6 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     )
 
     df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
-
     df = df.set_index(['reference', 'secondary'])
     pairs = pairs.set_index(['reference', 'secondary'])
 
@@ -117,12 +116,12 @@ def process_scene(
         Jobs submitted to HyP3 for processing.
     """
 
-    if _qualifies_for_sentinel2_processing(reference, max_cloud_cover, logging.INFO):
+    if qualifies_for_sentinel2_processing(reference, max_cloud_cover, logging.INFO):
         reference = _get_stac_item(scene, SENTINEL2_CATALOG.get_collection(SENTINEL2_COLLECTION))
         pairs = get_sentinel2_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
-    elif _qualifies_for_landsat_processing(reference, max_cloud_cover, logging.INFO):
+    elif qualifies_for_landsat_processing(reference, max_cloud_cover, logging.INFO):
         reference = _get_stac_item(scene, LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION))
-        pairs = get_sentinel2_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
+        pairs = get_landsat_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
     else:
         return sdk.Batch()
 
@@ -160,7 +159,8 @@ def lambda_handler(event: dict, context: object) -> dict:
         try:
             body = json.loads(record['body'])
             message = json.loads(body['Message'])
-            _ = process_scene(message['landsat_product_id'])
+            product_id = 'landsat_product_id' if 'landsat_product_id' in message.keys() else 'sentinel2_product_id'
+            _ = process_scene(message[product_id])
         except Exception:
             log.exception(f'Could not process message {record["messageId"]}')
             batch_item_failures.append({'itemIdentifier': record['messageId']})
