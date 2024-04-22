@@ -14,8 +14,6 @@ import pandas as pd
 import pystac
 import pystac_client
 
-from src.main import process_scene
-
 SENTINEL2_CATALOG_API = 'https://earth-search.aws.element84.com/v1'
 SENTINEL2_CATALOG = pystac_client.Client.open(SENTINEL2_CATALOG_API)
 SENTINEL2_COLLECTION = 'sentinel-2-l1c'
@@ -109,34 +107,3 @@ def get_sentinel2_pairs_for_reference_scene(
     df['datetime'] = pd.to_datetime(df.datetime)
 
     return df
-
-
-def main() -> None:
-    """Command Line wrapper around `process_scene`."""
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('reference', help='Reference Sentinel-2 scene name to build pairs for')
-    parser.add_argument(
-        '--max-pair-separation',
-        type=int,
-        default=MAX_PAIR_SEPARATION_IN_DAYS,
-        help="How many days back from a reference scene's acquisition date to search for secondary scenes",
-    )
-    parser.add_argument(
-        '--max-cloud-cover',
-        type=int,
-        default=MAX_CLOUD_COVER_PERCENT,
-        help='The maximum percent a Landsat scene can be covered by clouds',
-    )
-    parser.add_argument('--submit', action='store_true', help='Submit pairs to HyP3 for processing')
-    parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
-    args = parser.parse_args()
-
-    level = logging.DEBUG if args.verbose else logging.INFO
-    logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=level)
-    log.debug(' '.join(sys.argv))
-
-    _ = process_scene(args.reference, timedelta(days=args.max_pair_separation), args.max_cloud_cover, args.submit)
-
-
-if __name__ == '__main__':
-    main()
