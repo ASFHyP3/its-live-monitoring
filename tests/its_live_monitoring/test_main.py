@@ -42,19 +42,14 @@ def test_get_sentinel2_stac_item(pystac_item_factory):
     }
     collection = 'sentinel-2-l1c'
     dt = datetime.datetime(2020, 3, 15, 15, 24, 29, 455000, tzinfo=tzutc())
-    ref_scene = pystac_item_factory(id=scene, datetime=dt, properties=properties, collection=collection)
-    
-    sec_scenes = [
-        ''
-    ]
+    expected_item = pystac_item_factory(id=scene, datetime=dt, properties=properties, collection=collection)
 
-    assert item.collection_id == expected_item.collection_id
-    assert item.properties['instruments'] == expected_item.properties['instruments']
-    assert item.properties['created'] == expected_item.properties['created']
-    assert item.properties['mgrs:utm_zone'] == expected_item.properties['mgrs:utm_zone']
-    assert item.properties['mgrs:latitude_band'] == expected_item.properties['mgrs:latitude_band']
-    assert item.properties['mgrs:grid_square'] == expected_item.properties['mgrs:grid_square']
-    assert item.properties['eo:cloud_cover'] == expected_item.properties['eo:cloud_cover']
+    with patch('main.SENTINEL2_CATALOG', MagicMock()):
+        main.SENTINEL2_CATALOG.get_collection().get_item.return_value = expected_item
+        item = main._get_stac_item(scene)
+
+    assert item.collection_id == collection
+    assert item.properties == properties
 
 
 def test_deduplicate_hyp3_pairs(hyp3_batch_factory):
