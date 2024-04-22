@@ -13,8 +13,8 @@ import pystac
 import pystac.item_collection
 import pystac_client
 
-from src.landsat import qualifies_for_landsat_processing, get_landsat_pairs_for_reference_scene
-from src.sentinel2 import qualifies_for_sentinel2_processing, get_sentinel2_pairs_for_reference_scene
+from its_live_monitoring.src.landsat import qualifies_for_landsat_processing, get_landsat_pairs_for_reference_scene
+from its_live_monitoring.src.sentinel2 import qualifies_for_sentinel2_processing, get_sentinel2_pairs_for_reference_scene
 
 MAX_PAIR_SEPARATION_IN_DAYS = 544
 MAX_CLOUD_COVER_PERCENT = 60
@@ -165,3 +165,31 @@ def lambda_handler(event: dict, context: object) -> dict:
             log.exception(f'Could not process message {record["messageId"]}')
             batch_item_failures.append({'itemIdentifier': record['messageId']})
     return {'batchItemFailures': batch_item_failures}
+
+
+def main() -> None:
+    """Command Line wrapper around `process_scene`."""
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('reference', help='Reference Landsat scene name to build pairs for')
+    parser.add_argument(
+        '--max-pair-separation',
+        type=int,
+        default=MAX_PAIR_SEPARATION_IN_DAYS,
+        help="How many days back from a reference scene's acquisition date to search for secondary scenes",
+    )
+    parser.add_argument(
+        '--max-cloud-cover',
+        type=int,
+        default=MAX_CLOUD_COVER_PERCENT,
+        help='The maximum percent a Landsat scene can be covered by clouds',
+    )
+    parser.add_argument('--submit', action='store_true', help='Submit pairs to HyP3 for processing')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
+    args = parser.parse_args()
+
+    logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
+    if args.verbose:
+        log.setLevel(logging.DEBUG)
+
+    log.debug(' '.join(sys.argv))
+    _ = process_scene(args.reference, timedelta(days=args.max_pair_separation), args.max_cloud_cover, args.submit)
