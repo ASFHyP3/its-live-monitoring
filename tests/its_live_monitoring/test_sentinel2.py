@@ -39,7 +39,11 @@ def test_qualifies_for_processing(pystac_item_factory):
     assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['eo:cloud_cover'] = 75
+    del item.properties['eo:cloud_cover']
+    assert not sentinel2.qualifies_for_sentinel2_processing(item)
+
+    item = deepcopy(good_item)
+    item.properties['eo:cloud_cover'] = -1
     assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
@@ -47,7 +51,19 @@ def test_qualifies_for_processing(pystac_item_factory):
     assert sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['eo:cloud_cover'] = -1
+    item.properties['eo:cloud_cover'] = 1
+    assert sentinel2.qualifies_for_sentinel2_processing(item)
+
+    item = deepcopy(good_item)
+    item.properties['eo:cloud_cover'] = sentinel2.MAX_CLOUD_COVER_PERCENT - 1
+    assert sentinel2.qualifies_for_sentinel2_processing(item)
+
+    item = deepcopy(good_item)
+    item.properties['eo:cloud_cover'] = sentinel2.MAX_CLOUD_COVER_PERCENT
+    assert sentinel2.qualifies_for_sentinel2_processing(item)
+
+    item = deepcopy(good_item)
+    item.properties['eo:cloud_cover'] = sentinel2.MAX_CLOUD_COVER_PERCENT + 1
     assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
 
