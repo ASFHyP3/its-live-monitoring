@@ -1,4 +1,4 @@
-export PYTHONPATH = ${PWD}/landsat/src
+export PYTHONPATH = ${PWD}/its_live_monitoring/src
 TEST_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-test
 
 install:
