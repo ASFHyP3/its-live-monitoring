@@ -9,7 +9,6 @@ import sentinel2
 
 
 def test_qualifies_for_processing(pystac_item_factory):
-    collection = 'sentinel-2-l1c'
     properties = {
         'instruments': ['msi'],
         'mgrs:utm_zone': '19',
@@ -17,10 +16,10 @@ def test_qualifies_for_processing(pystac_item_factory):
         'mgrs:grid_square': 'EE',
         'eo:cloud_cover': 30,
     }
+    collection = 'sentinel-2-l1c'
     good_item = pystac_item_factory(
         id='sentinel2-scene', datetime=datetime.now(), properties=properties, collection=collection
     )
-    item = deepcopy(good_item)
     assert sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
