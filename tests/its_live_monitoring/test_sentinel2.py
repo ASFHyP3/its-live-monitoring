@@ -1,20 +1,11 @@
-from copy import deepcopy
 import datetime
-import json
 import unittest.mock
-from pathlib import Path
+from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
-import geopandas as gpd
-import hyp3_sdk as sdk
-import pystac
 from dateutil.tz import tzutc
 
 import sentinel2
-
-
-# SENTINEL2_CATALOG_real = sentinel2.SENTINEL2_CATALOG
-# HYP3_real = sentinel2.HYP3
 
 
 def get_mock_pystac_item() -> unittest.mock.NonCallableMagicMock:
@@ -81,7 +72,11 @@ def test_get_sentinel2_pairs_for_reference_scene(pystac_item_factory):
         'S2B_13CES_20200211_0_L1C',
         'S2B_13CES_20200201_0_L1C',
     ]
-    sec_date_times = ['2020-02-24 15:24:28.312000+00:00', '2020-02-11 15:14:28.467000+00:00', '2020-02-01 15:14:26.405000+00:00']
+    sec_date_times = [
+        '2020-02-24 15:24:28.312000+00:00',
+        '2020-02-11 15:14:28.467000+00:00',
+        '2020-02-01 15:14:26.405000+00:00',
+    ]
     sec_items = []
     for scene, date_time in zip(sec_scenes, sec_date_times):
         props = deepcopy(properties)

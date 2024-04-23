@@ -1,22 +1,31 @@
+"""Lambda function to trigger low-latency Landsat and Sentinel-2 processing from newly acquired scenes."""
+
 import argparse
 import json
 import logging
 import os
 import sys
 from datetime import timedelta
-from pathlib import Path
 
 import geopandas as gpd
 import hyp3_sdk as sdk
 import pandas as pd
 import pystac
 import pystac.item_collection
-import pystac_client
 
-from landsat import qualifies_for_landsat_processing, get_landsat_pairs_for_reference_scene
-from landsat import LANDSAT_CATALOG, LANDSAT_COLLECTION
-from sentinel2 import qualifies_for_sentinel2_processing, get_sentinel2_pairs_for_reference_scene
-from sentinel2 import SENTINEL2_CATALOG, SENTINEL2_COLLECTION
+from landsat import (
+    LANDSAT_CATALOG,
+    LANDSAT_COLLECTION,
+    get_landsat_pairs_for_reference_scene,
+    qualifies_for_landsat_processing,
+)
+from sentinel2 import (
+    SENTINEL2_CATALOG,
+    SENTINEL2_COLLECTION,
+    get_sentinel2_pairs_for_reference_scene,
+    qualifies_for_sentinel2_processing,
+)
+
 
 MAX_PAIR_SEPARATION_IN_DAYS = 544
 MAX_CLOUD_COVER_PERCENT = 60
@@ -107,11 +116,10 @@ def process_scene(
     Returns:
         Jobs submitted to HyP3 for processing.
     """
-
-    if qualifies_for_sentinel2_processing(reference, max_cloud_cover, logging.INFO):
+    if qualifies_for_sentinel2_processing(scene, max_cloud_cover, logging.INFO):
         reference = _get_stac_item(scene, SENTINEL2_CATALOG.get_collection(SENTINEL2_COLLECTION))
         pairs = get_sentinel2_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
-    elif qualifies_for_landsat_processing(reference, max_cloud_cover, logging.INFO):
+    elif qualifies_for_landsat_processing(scene, max_cloud_cover, logging.INFO):
         reference = _get_stac_item(scene, LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION))
         pairs = get_landsat_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
     else:

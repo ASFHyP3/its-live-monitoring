@@ -1,18 +1,16 @@
 """Lambda function to trigger low-latency Landsat processing from newly acquired scenes."""
 
-import argparse
 import json
 import logging
 import os
-import sys
 from datetime import timedelta
 from pathlib import Path
 
 import geopandas as gpd
-import hyp3_sdk as sdk
 import pandas as pd
 import pystac
 import pystac_client
+
 
 LANDSAT_STAC_API = 'https://landsatlook.usgs.gov/stac-server'
 LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_STAC_API)
@@ -29,6 +27,16 @@ log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 def qualifies_for_landsat_processing(
     item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT, log_level: int = logging.DEBUG
 ) -> bool:
+    """Determines whether a scene is a valid landsat product for processing.
+    
+    Args:
+        item: STAC item of the desired Landsat scene
+        max_cloud_cover: The maximum allowable percentage of cloud cover.
+        log_level: The logging level
+
+    Returns:
+        A bool that is True if the scene qualifies for Landsat processing, else False.
+    """
     if item.collection_id != LANDSAT_COLLECTION:
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
         return False
@@ -83,7 +91,9 @@ def get_landsat_pairs_for_reference_scene(
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
 
-    items = [item for page in results.pages() for item in page if qualifies_for_landsat_processing(item, max_cloud_cover)]
+    items = [
+        item for page in results.pages() for item in page if qualifies_for_landsat_processing(item, max_cloud_cover)
+    ]
 
     log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
     if len(items) == 0:

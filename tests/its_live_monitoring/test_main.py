@@ -1,11 +1,12 @@
 from datetime import datetime
-from dateutil.tz import tzutc
 from unittest.mock import MagicMock, patch
 
 import geopandas as gpd
 import hyp3_sdk as sdk
+from dateutil.tz import tzutc
 
 import main
+
 
 def test_get_landsat_stac_item(pystac_item_factory):
     scene = 'LC08_L1TP_138041_20240128_20240207_02_T1'
