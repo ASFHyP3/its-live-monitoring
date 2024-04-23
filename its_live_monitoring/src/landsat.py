@@ -28,7 +28,7 @@ def qualifies_for_landsat_processing(
     item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT, log_level: int = logging.DEBUG
 ) -> bool:
     """Determines whether a scene is a valid landsat product for processing.
-    
+
     Args:
         item: STAC item of the desired Landsat scene
         max_cloud_cover: The maximum allowable percentage of cloud cover.

@@ -28,7 +28,7 @@ def qualifies_for_sentinel2_processing(
     item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT, log_level: int = logging.DEBUG
 ) -> bool:
     """Determines whether a scene is a valid Sentinel-2 product for processing.
-    
+
     Args:
         item: STAC item of the desired Sentinel-2 scene
         max_cloud_cover: The maximum allowable percentage of cloud cover.
