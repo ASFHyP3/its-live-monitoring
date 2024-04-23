@@ -1,4 +1,3 @@
-import unittest.mock
 from copy import deepcopy
 from datetime import datetime
 from unittest.mock import MagicMock, patch
