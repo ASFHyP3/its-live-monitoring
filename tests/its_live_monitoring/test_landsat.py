@@ -2,7 +2,7 @@ from copy import deepcopy
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from its_live_monitoring.src import landsat
+import landsat
 
 
 def test_qualifies_for_processing(pystac_item_factory):
@@ -19,63 +19,63 @@ def test_qualifies_for_processing(pystac_item_factory):
     good_item = pystac_item_factory(
         id='landsat-scene', datetime=datetime.now(), properties=properties, collection=collection
     )
-    assert landsat._qualifies_for_processing(good_item)
+    assert landsat.qualifies_for_landsat_processing(good_item)
 
     item = deepcopy(good_item)
     item.collection_id = 'foo'
-    assert not landsat._qualifies_for_processing(item)
+    assert not landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
     item.properties['instruments'] = ['TIRS']
-    assert not landsat._qualifies_for_processing(item)
+    assert not landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
     item.properties['landsat:collection_category'] = 'T2'
-    assert landsat._qualifies_for_processing(item)
+    assert landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
     item.properties['landsat:collection_category'] = 'RT'
-    assert not landsat._qualifies_for_processing(item)
+    assert not landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
     item.properties['landsat:wrs_path'] = 'foo'
-    assert not landsat._qualifies_for_processing(item)
+    assert not landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
     item.properties['landsat:wrs_row'] = 'foo'
-    assert not landsat._qualifies_for_processing(item)
+    assert not landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
     del item.properties['landsat:cloud_cover_land']
-    assert not landsat._qualifies_for_processing(item)
+    assert not landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
     item.properties['landsat:cloud_cover_land'] = -1
-    assert not landsat._qualifies_for_processing(item)
+    assert not landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
     item.properties['landsat:cloud_cover_land'] = 0
-    assert landsat._qualifies_for_processing(item)
+    assert landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
     item.properties['landsat:cloud_cover_land'] = 1
-    assert landsat._qualifies_for_processing(item)
+    assert landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
     item.properties['landsat:cloud_cover_land'] = landsat.MAX_CLOUD_COVER_PERCENT - 1
-    assert landsat._qualifies_for_processing(item)
+    assert landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
     item.properties['landsat:cloud_cover_land'] = landsat.MAX_CLOUD_COVER_PERCENT
-    assert landsat._qualifies_for_processing(item)
+    assert landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
     item.properties['landsat:cloud_cover_land'] = landsat.MAX_CLOUD_COVER_PERCENT + 1
-    assert not landsat._qualifies_for_processing(item)
+    assert not landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
     item.properties['view:off_nadir'] = 14.065
-    assert landsat._qualifies_for_processing(item)
+    assert landsat.qualifies_for_landsat_processing(item)
 
 
 def test_get_landsat_pairs_for_reference_scene(pystac_item_factory):
@@ -108,7 +108,7 @@ def test_get_landsat_pairs_for_reference_scene(pystac_item_factory):
             pystac_item_factory(id=scene, datetime=date_time, properties=properties, collection=collection)
         )
 
-    with patch('main.LANDSAT_CATALOG', MagicMock()):
+    with patch('landsat.LANDSAT_CATALOG', MagicMock()):
         landsat.LANDSAT_CATALOG.search().pages.return_value = (sec_items,)
         df = landsat.get_landsat_pairs_for_reference_scene(ref_item)
 
@@ -150,7 +150,7 @@ def test_get_landsat_pairs_for_off_nadir_reference_scene(pystac_item_factory):
         props['view:off_nadir'] = off_nadir
         sec_items.append(pystac_item_factory(id=scene, datetime=date_time, properties=props, collection=collection))
 
-    with patch('main.LANDSAT_CATALOG', MagicMock()):
+    with patch('landsat.LANDSAT_CATALOG', MagicMock()):
         landsat.LANDSAT_CATALOG.search().pages.return_value = (sec_items,)
         df = landsat.get_landsat_pairs_for_reference_scene(ref_item)
 

@@ -5,8 +5,7 @@ from unittest.mock import MagicMock, patch
 import geopandas as gpd
 import hyp3_sdk as sdk
 
-from its_live_monitoring.src import main
-
+import main
 
 def test_get_landsat_stac_item(pystac_item_factory):
     scene = 'LC08_L1TP_138041_20240128_20240207_02_T1'
@@ -23,7 +22,7 @@ def test_get_landsat_stac_item(pystac_item_factory):
 
     with patch('main.LANDSAT_CATALOG', MagicMock()):
         main.LANDSAT_CATALOG.get_collection().get_item.return_value = expected_item
-        item = main._get_stac_item(scene)
+        item = main._get_stac_item(scene, main.LANDSAT_CATALOG.get_collection())
 
     assert item.collection_id == collection
     assert item.properties == properties
@@ -41,12 +40,12 @@ def test_get_sentinel2_stac_item(pystac_item_factory):
         's2:product_uri': '2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115.SAFE',
     }
     collection = 'sentinel-2-l1c'
-    dt = datetime.datetime(2020, 3, 15, 15, 24, 29, 455000, tzinfo=tzutc())
+    dt = datetime(2020, 3, 15, 15, 24, 29, 455000, tzinfo=tzutc())
     expected_item = pystac_item_factory(id=scene, datetime=dt, properties=properties, collection=collection)
 
     with patch('main.SENTINEL2_CATALOG', MagicMock()):
         main.SENTINEL2_CATALOG.get_collection().get_item.return_value = expected_item
-        item = main._get_stac_item(scene)
+        item = main._get_stac_item(scene, main.SENTINEL2_CATALOG.get_collection())
 
     assert item.collection_id == collection
     assert item.properties == properties
