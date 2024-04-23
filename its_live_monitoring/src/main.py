@@ -159,7 +159,7 @@ def lambda_handler(event: dict, context: object) -> dict:
         try:
             body = json.loads(record['body'])
             message = json.loads(body['Message'])
-            product_id = 'landsat_product_id' if 'landsat_product_id' in message.keys() else 'sentinel2_product_id'
+            product_id = 'landsat_product_id' if 'landsat_product_id' in message.keys() else 'id'
             _ = process_scene(message[product_id])
         except Exception:
             log.exception(f'Could not process message {record["messageId"]}')
