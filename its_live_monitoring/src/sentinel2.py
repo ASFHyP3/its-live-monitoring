@@ -11,14 +11,13 @@ import pandas as pd
 import pystac
 import pystac_client
 
+from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
+
 
 SENTINEL2_CATALOG_API = 'https://earth-search.aws.element84.com/v1'
 SENTINEL2_CATALOG = pystac_client.Client.open(SENTINEL2_CATALOG_API)
 SENTINEL2_COLLECTION = 'sentinel-2-l1c'
 SENTINEL2_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel2_tiles_to_process.json').read_text())
-
-MAX_PAIR_SEPARATION_IN_DAYS = 544
-MAX_CLOUD_COVER_PERCENT = 60
 
 log = logging.getLogger()
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))

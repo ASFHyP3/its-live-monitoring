@@ -13,6 +13,7 @@ import pandas as pd
 import pystac
 import pystac.item_collection
 
+from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
 from landsat import (
     LANDSAT_CATALOG,
     LANDSAT_COLLECTION,
@@ -26,9 +27,6 @@ from sentinel2 import (
     qualifies_for_sentinel2_processing,
 )
 
-
-MAX_PAIR_SEPARATION_IN_DAYS = 544
-MAX_CLOUD_COVER_PERCENT = 60
 
 EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
 EARTHDATA_PASSWORD = os.environ.get('EARTHDATA_PASSWORD')
