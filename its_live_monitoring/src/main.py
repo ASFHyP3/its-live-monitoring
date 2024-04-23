@@ -196,5 +196,6 @@ def main() -> None:
     log.debug(' '.join(sys.argv))
     _ = process_scene(args.reference, timedelta(days=args.max_pair_separation), args.max_cloud_cover, args.submit)
 
+
 if __name__ == '__main__':
     main()
