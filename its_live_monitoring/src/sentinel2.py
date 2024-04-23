@@ -52,7 +52,11 @@ def qualifies_for_sentinel2_processing(
         log.log(log_level, f'{item.id} disqualifies for processing because it is not from a tile containing land-ice')
         return False
 
-    if item.properties['eo:cloud_cover'] > max_cloud_cover or item.properties['eo:cloud_cover'] < 0:
+    if item.properties['eo:cloud_cover'] < 0:
+        log.log(log_level, f'{item.id} disqualifies for processing because cloud coverage is unknown')
+        return False    
+
+    if item.properties['eo:cloud_cover'] > max_cloud_cover:
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
         return False
 
