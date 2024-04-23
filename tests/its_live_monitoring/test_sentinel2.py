@@ -17,6 +17,7 @@ def test_qualifies_for_processing(pystac_item_factory):
         'eo:cloud_cover': 30,
     }
     collection = 'sentinel-2-l1c'
+
     good_item = pystac_item_factory(
         id='sentinel2-scene', datetime=datetime.now(), properties=properties, collection=collection
     )
