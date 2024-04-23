@@ -20,7 +20,8 @@ def test_qualifies_for_processing(pystac_item_factory):
     good_item = pystac_item_factory(
         id='sentinel2-scene', datetime=datetime.now(), properties=properties, collection=collection
     )
-    assert sentinel2.qualifies_for_sentinel2_processing(item)
+
+    assert sentinel2.qualifies_for_sentinel2_processing(good_item)
 
     item = deepcopy(good_item)
     item.collection_id = 'foo'
