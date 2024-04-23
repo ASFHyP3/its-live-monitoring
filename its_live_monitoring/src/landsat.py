@@ -22,14 +22,6 @@ LANDSAT_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'landsat_tiles_to
 MAX_PAIR_SEPARATION_IN_DAYS = 544
 MAX_CLOUD_COVER_PERCENT = 60
 
-EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
-EARTHDATA_PASSWORD = os.environ.get('EARTHDATA_PASSWORD')
-HYP3 = sdk.HyP3(
-    os.environ.get('HYP3_API', 'https://hyp3-its-live.asf.alaska.edu'),
-    username=EARTHDATA_USERNAME,
-    password=EARTHDATA_PASSWORD,
-)
-
 log = logging.getLogger(__name__)
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
@@ -37,7 +29,7 @@ log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 def qualifies_for_landsat_processing(
     item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT, log_level: int = logging.DEBUG
 ) -> bool:
-    if item.collection_id != 'landsat-c2l1':
+    if item.collection_id != LANDSAT_COLLECTION:
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
         return False
 

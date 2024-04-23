@@ -13,21 +13,13 @@ import pystac
 import pystac.item_collection
 import pystac_client
 
-from its_live_monitoring.src.landsat import qualifies_for_landsat_processing, get_landsat_pairs_for_reference_scene
-from its_live_monitoring.src.sentinel2 import qualifies_for_sentinel2_processing, get_sentinel2_pairs_for_reference_scene
+from landsat import qualifies_for_landsat_processing, get_landsat_pairs_for_reference_scene
+from landsat import LANDSAT_CATALOG, LANDSAT_COLLECTION
+from sentinel2 import qualifies_for_sentinel2_processing, get_sentinel2_pairs_for_reference_scene
+from sentinel2 import SENTINEL2_CATALOG, SENTINEL2_COLLECTION
 
 MAX_PAIR_SEPARATION_IN_DAYS = 544
 MAX_CLOUD_COVER_PERCENT = 60
-
-LANDSAT_STAC_API = 'https://landsatlook.usgs.gov/stac-server'
-LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_STAC_API)
-LANDSAT_COLLECTION = 'landsat-c2l1'
-LANDSAT_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'landsat_tiles_to_process.json').read_text())
-
-SENTINEL2_CATALOG_API = 'https://earth-search.aws.element84.com/v1'
-SENTINEL2_CATALOG = pystac_client.Client.open(SENTINEL2_CATALOG_API)
-SENTINEL2_COLLECTION = 'sentinel-2-l1c'
-SENTINEL2_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel2_tiles_to_process.json').read_text())
 
 EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
 EARTHDATA_PASSWORD = os.environ.get('EARTHDATA_PASSWORD')

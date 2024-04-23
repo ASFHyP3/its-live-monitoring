@@ -22,14 +22,6 @@ SENTINEL2_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel2_tile
 MAX_PAIR_SEPARATION_IN_DAYS = 544
 MAX_CLOUD_COVER_PERCENT = 60
 
-EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
-EARTHDATA_PASSWORD = os.environ.get('EARTHDATA_PASSWORD')
-HYP3 = sdk.HyP3(
-    os.environ.get('HYP3_API', 'https://hyp3-its-live.asf.alaska.edu'),
-    username=EARTHDATA_USERNAME,
-    password=EARTHDATA_PASSWORD,
-)
-
 log = logging.getLogger()
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
