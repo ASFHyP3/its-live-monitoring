@@ -54,7 +54,7 @@ def qualifies_for_sentinel2_processing(
 
     if item.properties['eo:cloud_cover'] < 0:
         log.log(log_level, f'{item.id} disqualifies for processing because cloud coverage is unknown')
-        return False    
+        return False
 
     if item.properties['eo:cloud_cover'] > max_cloud_cover:
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
