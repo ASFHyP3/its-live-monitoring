@@ -96,7 +96,7 @@ def get_sentinel2_pairs_for_reference_scene(
 
     log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
     if len(items) == 0:
-        return gpd.GeoDataFrame()
+       return gpd.GeoDataFrame({'reference': [], 'secondary': []})
 
     features = []
     for item in items:
