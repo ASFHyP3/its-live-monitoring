@@ -114,13 +114,16 @@ def process_scene(
     Returns:
         Jobs submitted to HyP3 for processing.
     """
-    if qualifies_for_sentinel2_processing(scene, max_cloud_cover, logging.INFO):
-        reference = _get_stac_item(scene, SENTINEL2_CATALOG.get_collection(SENTINEL2_COLLECTION))
-        pairs = get_sentinel2_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
-    elif qualifies_for_landsat_processing(scene, max_cloud_cover, logging.INFO):
-        reference = _get_stac_item(scene, LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION))
-        pairs = get_landsat_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
+    pairs = None
+    if scene.startswith('S2'):
+        reference = _get_stac_item(scene+'.SAFE', SENTINEL2_CATALOG.get_collection(SENTINEL2_COLLECTION))
+        if qualifies_for_sentinel2_processing(reference, max_cloud_cover, logging.INFO):
+            pairs = get_sentinel2_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
     else:
+        reference = _get_stac_item(scene, LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION))
+        if qualifies_for_landsat_processing(scene, max_cloud_cover, logging.INFO):
+            pairs = get_landsat_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
+    if pairs == None:
         return sdk.Batch()
 
     log.info(f'Found {len(pairs)} pairs for {scene}')
@@ -159,7 +162,7 @@ def lambda_handler(event: dict, context: object) -> dict:
         try:
             body = json.loads(record['body'])
             message = json.loads(body['Message'])
-            product_id = 'landsat_product_id' if 'landsat_product_id' in message.keys() else 'id'
+            product_id = 'landsat_product_id' if 'landsat_product_id' in message.keys() else 'name'
             _ = process_scene(message[product_id])
         except Exception:
             log.exception(f'Could not process message {record["messageId"]}')
