@@ -13,10 +13,9 @@ import pystac_client
 
 from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
 
-
-SENTINEL2_CATALOG_API = 'https://earth-search.aws.element84.com/v1'
+SENTINEL2_CATALOG_API = 'https://catalogue.dataspace.copernicus.eu/stac'
 SENTINEL2_CATALOG = pystac_client.Client.open(SENTINEL2_CATALOG_API)
-SENTINEL2_COLLECTION = 'sentinel-2-l1c'
+SENTINEL2_COLLECTION = 'SENTINEL-2'
 SENTINEL2_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel2_tiles_to_process.json').read_text())
 
 log = logging.getLogger()
@@ -38,25 +37,25 @@ def qualifies_for_sentinel2_processing(
     """
     if item.collection_id != SENTINEL2_COLLECTION:
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
+        print("collection_id")
         return False
 
-    if 'msi' not in item.properties['instruments']:
+    if 'L1C' not in item.id:
+        log.log(log_level, f'{item.id} disqualifies for processing because it is the wrong product type.')
+
+    if 'MSI' not in item.properties['instrumentShortName']:
         log.log(log_level, f'{item.id} disqualifies for processing because it was not imaged with the right instrument')
         return False
 
-    utm_zone = str(item.properties['mgrs:utm_zone'])
-    latitude_band = item.properties['mgrs:latitude_band']
-    grid_square = item.properties['mgrs:grid_square']
-    tile_location = utm_zone + latitude_band + grid_square
-    if tile_location not in SENTINEL2_TILES_TO_PROCESS:
+    if item.properties['tileId'] not in SENTINEL2_TILES_TO_PROCESS:
         log.log(log_level, f'{item.id} disqualifies for processing because it is not from a tile containing land-ice')
         return False
 
-    if item.properties.get('eo:cloud_cover', -1) < 0:
+    if item.properties.get('cloudCover', -1) < 0:
         log.log(log_level, f'{item.id} disqualifies for processing because cloud coverage is unknown')
         return False
 
-    if item.properties['eo:cloud_cover'] > max_cloud_cover:
+    if item.properties['cloudCover'] > max_cloud_cover:
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
         return False
 
@@ -83,9 +82,7 @@ def get_sentinel2_pairs_for_reference_scene(
     results = SENTINEL2_CATALOG.search(
         collections=[reference.collection_id],
         query=[
-            f'mgrs:utm_zone={reference.properties["mgrs:utm_zone"]}',
-            f'mgrs:latitude_band={reference.properties["mgrs:latitude_band"]}',
-            f'mgrs:grid_square={reference.properties["mgrs:grid_square"]}',
+            f'tileId={reference.properties["tileId"]}'
         ],
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
@@ -101,11 +98,9 @@ def get_sentinel2_pairs_for_reference_scene(
     features = []
     for item in items:
         feature = item.to_dict()
-        feature['properties']['referenceId'] = reference.id
-        feature['properties']['reference'] = reference.properties['s2:product_uri'].split('.')[0]
+        feature['properties']['reference'] = reference.id.split('.')[0]
         feature['properties']['reference_acquisition'] = reference.datetime
-        feature['properties']['secondaryId'] = item.id
-        feature['properties']['secondary'] = item.properties['s2:product_uri'].split('.')[0]
+        feature['properties']['secondary'] = item.id.split('.')[0]
         features.append(feature)
 
     df = gpd.GeoDataFrame.from_features(features)
