@@ -13,6 +13,7 @@ import pystac_client
 
 from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
 
+
 SENTINEL2_CATALOG_API = 'https://catalogue.dataspace.copernicus.eu/stac'
 SENTINEL2_CATALOG = pystac_client.Client.open(SENTINEL2_CATALOG_API)
 SENTINEL2_COLLECTION = 'SENTINEL-2'
@@ -37,11 +38,11 @@ def qualifies_for_sentinel2_processing(
     """
     if item.collection_id != SENTINEL2_COLLECTION:
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
-        print("collection_id")
         return False
 
     if 'L1C' not in item.id:
         log.log(log_level, f'{item.id} disqualifies for processing because it is the wrong product type.')
+        return False
 
     if 'MSI' not in item.properties['instrumentShortName']:
         log.log(log_level, f'{item.id} disqualifies for processing because it was not imaged with the right instrument')
@@ -81,9 +82,7 @@ def get_sentinel2_pairs_for_reference_scene(
     """
     results = SENTINEL2_CATALOG.search(
         collections=[reference.collection_id],
-        query=[
-            f'tileId={reference.properties["tileId"]}'
-        ],
+        query=[f'tileId={reference.properties["tileId"]}'],
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
 

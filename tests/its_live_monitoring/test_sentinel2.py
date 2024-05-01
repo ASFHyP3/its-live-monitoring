@@ -2,94 +2,89 @@ from copy import deepcopy
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from dateutil.tz import tzutc
-
 import sentinel2
 
 
 def test_qualifies_for_processing(pystac_item_factory):
     properties = {
-        'instruments': ['msi'],
-        'mgrs:utm_zone': '19',
-        'mgrs:latitude_band': 'D',
-        'mgrs:grid_square': 'EE',
-        'eo:cloud_cover': 30,
+        'instrumentShortName': 'MSI',
+        'tileId': '19DEE',
+        'cloudCover': 30,
     }
-    collection = 'sentinel-2-l1c'
+    collection = 'SENTINEL-2'
 
     good_item = pystac_item_factory(
-        id='sentinel2-scene', datetime=datetime.now(), properties=properties, collection=collection
+        id='XXX_XXXL1C_XXXX', datetime=datetime.now(), properties=properties, collection=collection
     )
 
     assert sentinel2.qualifies_for_sentinel2_processing(good_item)
+
+    item = deepcopy(good_item)
+    item.id = 'XXX_XXXL2A_XXXX'
+    assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
     item.collection_id = 'foo'
     assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['instruments'] = ['mis']
+    item.properties['instrumentShortName'] = 'MIS'
     assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['mgrs:utm_zone'] = '30'
-    item.properties['mgrs:latitude_band'] = 'B'
-    item.properties['mgrs:grid_square'] = 'ZZ'
+    item.properties['tileId'] = '30BZZ'
     assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
-    del item.properties['eo:cloud_cover']
+    del item.properties['cloudCover']
     assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['eo:cloud_cover'] = -1
+    item.properties['cloudCover'] = -1
     assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['eo:cloud_cover'] = 0
+    item.properties['cloudCover'] = 0
     assert sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['eo:cloud_cover'] = 1
+    item.properties['cloudCover'] = 1
     assert sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['eo:cloud_cover'] = sentinel2.MAX_CLOUD_COVER_PERCENT - 1
+    item.properties['cloudCover'] = sentinel2.MAX_CLOUD_COVER_PERCENT - 1
     assert sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['eo:cloud_cover'] = sentinel2.MAX_CLOUD_COVER_PERCENT
+    item.properties['cloudCover'] = sentinel2.MAX_CLOUD_COVER_PERCENT
     assert sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['eo:cloud_cover'] = sentinel2.MAX_CLOUD_COVER_PERCENT + 1
+    item.properties['cloudCover'] = sentinel2.MAX_CLOUD_COVER_PERCENT + 1
     assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
 
 def test_get_sentinel2_pairs_for_reference_scene(pystac_item_factory):
-    scene = 'S2B_13CES_20200315_0_L1C'
+    scene = 'S2B_MSIL1C_20240430T143829_N0510_R139_T22TCR_20240430T162923.SAFE'
     properties = {
-        'created': '2022-11-06T07:09:52.078Z',
-        'instruments': ['msi'],
-        'eo:cloud_cover': 28.1884,
-        'mgrs:utm_zone': 13,
-        'mgrs:latitude_band': 'C',
-        'mgrs:grid_square': 'ES',
-        's2:product_uri': '2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115.SAFE',
+        'datetime': '2024-04-30T14:38:29.024Z',
+        'instrumentShortName': 'MSI',
+        'cloudCover': 28.1884,
+        'tileId': '13CES',
     }
-    collection = 'sentinel-2-l1c'
-    dt = datetime(2020, 3, 15, 15, 24, 29, 455000, tzinfo=tzutc())
+    collection = 'SENTINEL-2'
+    dt = '2024-04-30T14:38:29.024Z'
     ref_item = pystac_item_factory(id=scene, datetime=dt, properties=properties, collection=collection)
 
     sec_scenes = [
-        'S2B_13CES_20200224_0_L1C',
-        'S2B_13CES_20200211_0_L1C',
-        'S2B_13CES_20200201_0_L1C',
+        'S2B_MSIL1C_20240130T000000_N0510_R139_T22TCR_20240430T000000',
+        'S2A_MSIL1C_20230824T000000_N0510_R139_T22TCR_20230824T000000',
+        'S2B_MSIL1C_20220101T000000_N0510_R139_T22TCR_20220101T000000',
     ]
     sec_date_times = [
-        '2020-02-24 15:24:28.312000+00:00',
-        '2020-02-11 15:14:28.467000+00:00',
-        '2020-02-01 15:14:26.405000+00:00',
+        '2024-01-30T00:00:00.000Z',
+        '2023-08-24T00:00:00.000Z',
+        '2022-01-01T00:00:00.000Z',
     ]
     sec_items = []
     for scene, date_time in zip(sec_scenes, sec_date_times):
@@ -100,8 +95,6 @@ def test_get_sentinel2_pairs_for_reference_scene(pystac_item_factory):
         sentinel2.SENTINEL2_CATALOG.search().pages.return_value = (sec_items,)
         df = sentinel2.get_sentinel2_pairs_for_reference_scene(ref_item)
 
-    assert (df['mgrs:utm_zone'] == ref_item.properties['mgrs:utm_zone']).all()
-    assert (df['mgrs:latitude_band'] == ref_item.properties['mgrs:latitude_band']).all()
-    assert (df['mgrs:grid_square'] == ref_item.properties['mgrs:grid_square']).all()
-    assert (df['instruments'].apply(lambda x: ''.join(x)) == ''.join(ref_item.properties['instruments'])).all()
-    assert (df['referenceId'] == ref_item.id).all()
+    assert (df['tileId'] == ref_item.properties['tileId']).all()
+    assert (df['instrumentShortName'] == ref_item.properties['instrumentShortName']).all()
+    assert (df['reference_acquisition'] == ref_item.datetime).all()
