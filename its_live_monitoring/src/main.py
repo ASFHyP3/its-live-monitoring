@@ -116,14 +116,14 @@ def process_scene(
     """
     pairs = None
     if scene.startswith('S2'):
-        reference = _get_stac_item(scene+'.SAFE', SENTINEL2_CATALOG.get_collection(SENTINEL2_COLLECTION))
+        reference = _get_stac_item(scene + '.SAFE', SENTINEL2_CATALOG.get_collection(SENTINEL2_COLLECTION))
         if qualifies_for_sentinel2_processing(reference, max_cloud_cover, logging.INFO):
             pairs = get_sentinel2_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
     else:
         reference = _get_stac_item(scene, LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION))
         if qualifies_for_landsat_processing(scene, max_cloud_cover, logging.INFO):
             pairs = get_landsat_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
-    if pairs == None:
+    if pairs is None:
         return sdk.Batch()
 
     log.info(f'Found {len(pairs)} pairs for {scene}')
