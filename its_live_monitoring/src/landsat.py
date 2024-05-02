@@ -14,13 +14,24 @@ import pystac_client
 from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
 
 
-LANDSAT_STAC_API = 'https://landsatlook.usgs.gov/stac-server'
-LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_STAC_API)
-LANDSAT_COLLECTION = 'landsat-c2l1'
+LANDSAT_CATALOG_API = 'https://landsatlook.usgs.gov/stac-server'
+LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_CATALOG_API)
+LANDSAT_COLLECTION_NAME = 'landsat-c2l1'
+LANDSAT_COLLECTION = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION_NAME)
 LANDSAT_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'landsat_tiles_to_process.json').read_text())
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
+
+
+def get_landsat_stac_item(scene: str) -> pystac.Item:  # noqa: D103
+    item = LANDSAT_COLLECTION.get_item(scene)
+    if item is None:
+        raise ValueError(
+            f'Scene {scene} not found in Landsat STAC collection: '
+            f'{LANDSAT_CATALOG_API}/collections/{LANDSAT_COLLECTION_NAME}'
+        )
+    return item
 
 
 def qualifies_for_landsat_processing(
@@ -36,7 +47,7 @@ def qualifies_for_landsat_processing(
     Returns:
         A bool that is True if the scene qualifies for Landsat processing, else False.
     """
-    if item.collection_id != LANDSAT_COLLECTION:
+    if item.collection_id != LANDSAT_COLLECTION_NAME:
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
         return False
 

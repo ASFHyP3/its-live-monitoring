@@ -10,20 +10,16 @@ from datetime import timedelta
 import geopandas as gpd
 import hyp3_sdk as sdk
 import pandas as pd
-import pystac
-import pystac.item_collection
 
 from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
 from landsat import (
-    LANDSAT_CATALOG,
-    LANDSAT_COLLECTION,
     get_landsat_pairs_for_reference_scene,
+    get_landsat_stac_item,
     qualifies_for_landsat_processing,
 )
 from sentinel2 import (
-    SENTINEL2_CATALOG,
-    SENTINEL2_COLLECTION,
     get_sentinel2_pairs_for_reference_scene,
+    get_sentinel2_stac_item,
     qualifies_for_sentinel2_processing,
 )
 
@@ -36,15 +32,8 @@ HYP3 = sdk.HyP3(
     password=EARTHDATA_PASSWORD,
 )
 
-log = logging.getLogger()
+log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
-
-
-def _get_stac_item(scene: str, collection: pystac.item_collection.ItemCollection) -> pystac.item.Item:
-    item = collection.get_item(scene)
-    if item is None:
-        raise ValueError(f'Scene {scene} not found in STAC catalog')
-    return item
 
 
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
@@ -116,13 +105,15 @@ def process_scene(
     """
     pairs = None
     if scene.startswith('S2'):
-        reference = _get_stac_item(scene + '.SAFE', SENTINEL2_CATALOG.get_collection(SENTINEL2_COLLECTION))
+        reference = get_sentinel2_stac_item(f'{scene}.SAFE')
         if qualifies_for_sentinel2_processing(reference, max_cloud_cover, logging.INFO):
             pairs = get_sentinel2_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
+
     else:
-        reference = _get_stac_item(scene, LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION))
-        if qualifies_for_landsat_processing(scene, max_cloud_cover, logging.INFO):
+        reference = get_landsat_stac_item(scene)
+        if qualifies_for_landsat_processing(reference, max_cloud_cover, logging.INFO):
             pairs = get_landsat_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
+
     if pairs is None:
         return sdk.Batch()
 

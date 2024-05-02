@@ -89,7 +89,7 @@ Resources:
       FilterPolicyScope: MessageBody
       FilterPolicy: |
         {
-          "collection": ["sentinel-2-l1c"]
+          "name": [{"prefix": "S2A_MSIL1C_"}, {"prefix": "S2B_MSIL1C_"}]
         }
 
   Lambda:

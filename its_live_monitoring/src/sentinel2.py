@@ -16,11 +16,22 @@ from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
 
 SENTINEL2_CATALOG_API = 'https://catalogue.dataspace.copernicus.eu/stac'
 SENTINEL2_CATALOG = pystac_client.Client.open(SENTINEL2_CATALOG_API)
-SENTINEL2_COLLECTION = 'SENTINEL-2'
+SENTINEL2_COLLECTION_NAME = 'SENTINEL-2'
+SENTINEL2_COLLECTION = SENTINEL2_CATALOG.get_collection(SENTINEL2_COLLECTION_NAME)
 SENTINEL2_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel2_tiles_to_process.json').read_text())
 
-log = logging.getLogger()
+log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
+
+
+def get_sentinel2_stac_item(scene: str) -> pystac.Item:  # noqa: D103
+    item = SENTINEL2_COLLECTION.get_item(scene)
+    if item is None:
+        raise ValueError(
+            f'Scene {scene} not found in Sentinel-2 STAC collection: '
+            f'{SENTINEL2_CATALOG_API}/collections/{SENTINEL2_COLLECTION_NAME}'
+        )
+    return item
 
 
 def qualifies_for_sentinel2_processing(
@@ -36,15 +47,15 @@ def qualifies_for_sentinel2_processing(
     Returns:
         A bool that is True if the scene qualifies for Sentinel-2 processing, else False.
     """
-    if item.collection_id != SENTINEL2_COLLECTION:
+    if item.collection_id != SENTINEL2_COLLECTION_NAME:
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
         return False
 
-    if 'L1C' not in item.id:
+    if not item.properties['processingLevel'].endswith('1C'):
         log.log(log_level, f'{item.id} disqualifies for processing because it is the wrong product type.')
         return False
 
-    if 'MSI' not in item.properties['instrumentShortName']:
+    if item.properties['instrumentShortName'] != 'MSI':
         log.log(log_level, f'{item.id} disqualifies for processing because it was not imaged with the right instrument')
         return False
 
@@ -69,26 +80,34 @@ def get_sentinel2_pairs_for_reference_scene(
     max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION_IN_DAYS),
     max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
 ) -> gpd.GeoDataFrame:
-    """Generate potential ITS_LIVE velocity pairs for a given Sentinel 2 scene.
+    """Generate potential ITS_LIVE velocity pairs for a given Sentinel-2 scene.
 
     Args:
-        reference: STAC item of the Sentinel 2 reference scene to find pairs for
+        reference: STAC item of the Sentinel-2 reference scene to find pairs for
         max_pair_separation: How many days back from a reference scene's acquisition date to search for secondary scenes
         max_cloud_cover: The maximum percent of the secondary scene that can be covered by clouds
 
     Returns:
-        A DataFrame with all potential pairs for a sentinel 2 reference scene. Metadata in the columns will be for the
+        A DataFrame with all potential pairs for a sentinel-2 reference scene. Metadata in the columns will be for the
         *secondary* scene unless specified otherwise.
     """
     results = SENTINEL2_CATALOG.search(
         collections=[reference.collection_id],
-        query=[f'tileId={reference.properties["tileId"]}'],
+        bbox=reference.bbox,
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
 
-    items = [
-        item for page in results.pages() for item in page if qualifies_for_sentinel2_processing(item, max_cloud_cover)
-    ]
+    items = []
+    for page in results.pages():
+        for item in page:
+            if item.properties['tileId'] != reference.properties['tileId']:
+                log.debug(f'{item.id} disqualifies because it is from a different tile than the reference scene')
+                continue
+
+            if not qualifies_for_sentinel2_processing(item, max_cloud_cover):
+                continue
+
+            items.append(item)
 
     log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
     if len(items) == 0:
@@ -97,9 +116,9 @@ def get_sentinel2_pairs_for_reference_scene(
     features = []
     for item in items:
         feature = item.to_dict()
-        feature['properties']['reference'] = reference.id.split('.')[0]
+        feature['properties']['reference'] = reference.id.rstrip('.SAFE')
         feature['properties']['reference_acquisition'] = reference.datetime
-        feature['properties']['secondary'] = item.id.split('.')[0]
+        feature['properties']['secondary'] = item.id.rstrip('.SAFE')
         features.append(feature)
 
     df = gpd.GeoDataFrame.from_features(features)
