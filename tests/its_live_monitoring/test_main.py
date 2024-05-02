@@ -1,55 +1,9 @@
-from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import geopandas as gpd
 import hyp3_sdk as sdk
-from dateutil.tz import tzutc
 
 import main
-
-
-def test_get_landsat_stac_item(pystac_item_factory):
-    scene = 'LC08_L1TP_138041_20240128_20240207_02_T1'
-    properties = {
-        'instruments': ['OLI'],
-        'landsat:collection_category': 'T1',
-        'landsat:wrs_path': '001',
-        'landsat:wrs_row': '005',
-        'landsat:cloud_cover_land': 50,
-        'view:off_nadir': 0,
-    }
-    collection = 'landsat-c2l1'
-    expected_item = pystac_item_factory(id=scene, datetime=datetime.now(), properties=properties, collection=collection)
-
-    with patch('main.LANDSAT_CATALOG', MagicMock()):
-        main.LANDSAT_CATALOG.get_collection().get_item.return_value = expected_item
-        item = main._get_stac_item(scene, main.LANDSAT_CATALOG.get_collection())
-
-    assert item.collection_id == collection
-    assert item.properties == properties
-
-
-def test_get_sentinel2_stac_item(pystac_item_factory):
-    scene = 'S2B_13CES_20200315_0_L1C'
-    properties = {
-        'created': '2022-11-06T07:09:52.078Z',
-        'instruments': ['msi'],
-        'eo:cloud_cover': 28.1884,
-        'mgrs:utm_zone': 13,
-        'mgrs:latitude_band': 'C',
-        'mgrs:grid_square': 'ES',
-        's2:product_uri': '2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115.SAFE',
-    }
-    collection = 'sentinel-2-l1c'
-    dt = datetime(2020, 3, 15, 15, 24, 29, 455000, tzinfo=tzutc())
-    expected_item = pystac_item_factory(id=scene, datetime=dt, properties=properties, collection=collection)
-
-    with patch('main.SENTINEL2_CATALOG', MagicMock()):
-        main.SENTINEL2_CATALOG.get_collection().get_item.return_value = expected_item
-        item = main._get_stac_item(scene, main.SENTINEL2_CATALOG.get_collection())
-
-    assert item.collection_id == collection
-    assert item.properties == properties
 
 
 def test_deduplicate_hyp3_pairs(hyp3_batch_factory):

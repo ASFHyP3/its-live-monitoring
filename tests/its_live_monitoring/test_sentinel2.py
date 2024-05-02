@@ -5,11 +5,32 @@ from unittest.mock import MagicMock, patch
 import sentinel2
 
 
+def test_get_sentinel2_stac_item(pystac_item_factory):
+    scene = 'S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115.SAFE'
+    properties = {
+        'tileId': '13CES',
+        'cloudCover': 28.188400000000005,
+        'productType': 'S2MSI1C',
+        'instrumentShortName': 'MSI',
+    }
+    collection = 'SENTINEL-2'
+    date_time = '2020-03-15T15:22:59.024Z'
+    expected_item = pystac_item_factory(id=scene, datetime=date_time, properties=properties, collection=collection)
+
+    with patch('sentinel2.SENTINEL2_COLLECTION', MagicMock()):
+        sentinel2.SENTINEL2_COLLECTION.get_item.return_value = expected_item
+        item = sentinel2.get_sentinel2_stac_item(scene)
+
+    assert item.collection_id == collection
+    assert item.properties == properties
+
+
 def test_qualifies_for_processing(pystac_item_factory):
     properties = {
-        'instrumentShortName': 'MSI',
         'tileId': '19DEE',
         'cloudCover': 30,
+        'productType': 'S2MSI1C',
+        'instrumentShortName': 'MSI',
     }
     collection = 'SENTINEL-2'
 
@@ -20,11 +41,11 @@ def test_qualifies_for_processing(pystac_item_factory):
     assert sentinel2.qualifies_for_sentinel2_processing(good_item)
 
     item = deepcopy(good_item)
-    item.id = 'XXX_XXXL2A_XXXX'
+    item.collection_id = 'foo'
     assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
-    item.collection_id = 'foo'
+    item.properties['productType'] = 'S2MSI2A'
     assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
@@ -67,14 +88,14 @@ def test_qualifies_for_processing(pystac_item_factory):
 def test_get_sentinel2_pairs_for_reference_scene(pystac_item_factory):
     scene = 'S2B_MSIL1C_20240430T143829_N0510_R139_T22TCR_20240430T162923.SAFE'
     properties = {
-        'datetime': '2024-04-30T14:38:29.024Z',
-        'instrumentShortName': 'MSI',
         'cloudCover': 28.1884,
         'tileId': '13CES',
+        'productType': 'S2MSI1C',
+        'instrumentShortName': 'MSI',
     }
     collection = 'SENTINEL-2'
-    dt = '2024-04-30T14:38:29.024Z'
-    ref_item = pystac_item_factory(id=scene, datetime=dt, properties=properties, collection=collection)
+    date_time = '2024-04-30T14:38:29.024Z'
+    ref_item = pystac_item_factory(id=scene, datetime=date_time, properties=properties, collection=collection)
 
     sec_scenes = [
         'S2B_MSIL1C_20240130T000000_N0510_R139_T22TCR_20240430T000000',

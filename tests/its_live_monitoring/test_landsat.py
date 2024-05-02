@@ -5,6 +5,27 @@ from unittest.mock import MagicMock, patch
 import landsat
 
 
+def test_get_landsat_stac_item(pystac_item_factory):
+    scene = 'LC08_L1TP_138041_20240128_20240207_02_T1'
+    properties = {
+        'instruments': ['OLI'],
+        'landsat:collection_category': 'T1',
+        'landsat:wrs_path': '001',
+        'landsat:wrs_row': '005',
+        'landsat:cloud_cover_land': 50,
+        'view:off_nadir': 0,
+    }
+    collection = 'landsat-c2l1'
+    expected_item = pystac_item_factory(id=scene, datetime=datetime.now(), properties=properties, collection=collection)
+
+    with patch('landsat.LANDSAT_COLLECTION', MagicMock()):
+        landsat.LANDSAT_COLLECTION.get_item.return_value = expected_item
+        item = landsat.get_landsat_stac_item(scene)
+
+    assert item.collection_id == collection
+    assert item.properties == properties
+
+
 def test_qualifies_for_processing(pystac_item_factory):
     properties = {
         'instruments': ['OLI'],
