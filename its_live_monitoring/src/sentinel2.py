@@ -51,6 +51,17 @@ def qualifies_for_sentinel2_processing(
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
         return False
 
+    if item.id.split('_')[3] == 'N0500':
+        # Reprocessing activity: https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-2-msi/copernicus-sentinel-2-collection-1-availability-status
+        # Naming convention: https://sentinels.copernicus.eu/web/sentinel/user-guides/sentinel-2-msi/naming-convention
+        # Processing baselines: https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-2-msi/processing-baseline
+        log.log(
+            log_level,
+            f'{item.id} disqualifies for processing because the processing baseline identifier '
+            f'indicates it is a product from a reprocessing activity',
+        )
+        return False
+
     if not item.properties['productType'].endswith('1C'):
         log.log(log_level, f'{item.id} disqualifies for processing because it is the wrong product type.')
         return False
