@@ -51,7 +51,7 @@ def qualifies_for_sentinel2_processing(
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
         return False
 
-    if not item.properties['processingLevel'].endswith('1C'):
+    if not item.properties['productType'].endswith('1C'):
         log.log(log_level, f'{item.id} disqualifies for processing because it is the wrong product type.')
         return False
 

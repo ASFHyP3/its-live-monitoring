@@ -10,7 +10,7 @@ def test_get_sentinel2_stac_item(pystac_item_factory):
     properties = {
         'tileId': '13CES',
         'cloudCover': 28.188400000000005,
-        'processingLevel': 'S2MSI1C',
+        'productType': 'S2MSI1C',
         'instrumentShortName': 'MSI',
     }
     collection = 'SENTINEL-2'
@@ -29,7 +29,7 @@ def test_qualifies_for_processing(pystac_item_factory):
     properties = {
         'tileId': '19DEE',
         'cloudCover': 30,
-        'processingLevel': 'S2MSI1C',
+        'productType': 'S2MSI1C',
         'instrumentShortName': 'MSI',
     }
     collection = 'SENTINEL-2'
@@ -45,7 +45,7 @@ def test_qualifies_for_processing(pystac_item_factory):
     assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['processingLevel'] = 'S2MSI2A'
+    item.properties['productType'] = 'S2MSI2A'
     assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
     item = deepcopy(good_item)
@@ -90,7 +90,7 @@ def test_get_sentinel2_pairs_for_reference_scene(pystac_item_factory):
     properties = {
         'cloudCover': 28.1884,
         'tileId': '13CES',
-        'processingLevel': 'S2MSI1C',
+        'productType': 'S2MSI1C',
         'instrumentShortName': 'MSI',
     }
     collection = 'SENTINEL-2'
