@@ -59,10 +59,9 @@ Resources:
               Service: sns.amazonaws.com
             Action: sqs:SendMessage
             Resource: !GetAtt Queue.Arn
-            Condition: !Or [
-              !Equals [aws:SourceArn, !Ref LandsatTopicArn],
-              !Equals [aws:SourceArn, !Ref Sentinel2TopicArn]
-            ]
+            Condition:
+              ArnEquals: 
+                aws:SourceArn: [!Ref LandsatTopicArn, !Ref Sentinel2TopicArn]
       Queues:
         - !Ref Queue
 
