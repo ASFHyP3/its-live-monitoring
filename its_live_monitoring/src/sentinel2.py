@@ -106,6 +106,8 @@ def get_sentinel2_pairs_for_reference_scene(
         collections=[reference.collection_id],
         bbox=reference.bbox,
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
+        limit=1000,
+        method='GET'
     )
 
     items = []
