@@ -25,7 +25,7 @@ log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
 
-def raise_for_missing_in_google_cloud(scene_name):
+def raise_for_missing_in_google_cloud(scene_name: str) -> None:  # noqa: D103
     root_url = 'https://storage.googleapis.com/gcp-public-data-sentinel-2/tiles'
     tile = f'{scene_name[39:41]}/{scene_name[41:42]}/{scene_name[42:44]}'
 

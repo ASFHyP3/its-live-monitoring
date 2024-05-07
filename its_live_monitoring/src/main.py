@@ -21,7 +21,7 @@ from sentinel2 import (
     get_sentinel2_pairs_for_reference_scene,
     get_sentinel2_stac_item,
     qualifies_for_sentinel2_processing,
-    raise_for_missing_in_google_cloud
+    raise_for_missing_in_google_cloud,
 )
 
 
