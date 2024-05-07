@@ -119,14 +119,14 @@ def process_scene(
 
     log.info(f'Found {len(pairs)} pairs for {scene}')
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
-        log.debug(pairs.loc[:, ['reference', 'secondary']])
+        log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
     if len(pairs) > 0:
         pairs = deduplicate_hyp3_pairs(pairs)
 
         log.info(f'Deduplicated pairs; {len(pairs)} remaining')
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
-            log.debug(pairs.loc[:, ['reference', 'secondary']])
+            log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
     jobs = sdk.Batch()
     if submit:
