@@ -10,6 +10,7 @@ import geopandas as gpd
 import pandas as pd
 import pystac
 import pystac_client
+import requests
 
 from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
 
@@ -22,6 +23,15 @@ SENTINEL2_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel2_tile
 
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
+
+
+def raise_for_missing_in_google_cloud(scene_name: str) -> None:  # noqa: D103
+    root_url = 'https://storage.googleapis.com/gcp-public-data-sentinel-2/tiles'
+    tile = f'{scene_name[39:41]}/{scene_name[41:42]}/{scene_name[42:44]}'
+
+    manifest_url = f'{root_url}/{tile}/{scene_name}.SAFE/manifest.safe'
+    response = requests.head(manifest_url)
+    response.raise_for_status()
 
 
 def get_sentinel2_stac_item(scene: str) -> pystac.Item:  # noqa: D103

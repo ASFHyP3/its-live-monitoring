@@ -43,10 +43,10 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600
-      VisibilityTimeout: 300
+      VisibilityTimeout: 28800
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
-        maxReceiveCount: 2
+        maxReceiveCount: 3
 
   QueuePolicy:
     Type: AWS::SQS::QueuePolicy
@@ -60,7 +60,7 @@ Resources:
             Action: sqs:SendMessage
             Resource: !GetAtt Queue.Arn
             Condition:
-              ArnEquals: 
+              ArnEquals:
                 aws:SourceArn: [!Ref LandsatTopicArn, !Ref Sentinel2TopicArn]
       Queues:
         - !Ref Queue
