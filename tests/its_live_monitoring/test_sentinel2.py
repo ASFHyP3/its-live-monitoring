@@ -2,7 +2,27 @@ from copy import deepcopy
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
+import pytest
+import requests
+import responses
+
 import sentinel2
+
+
+@responses.activate
+def test_raise_for_missing_in_google_cloud():
+    existing_scene = 'S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115'
+    missing_scene = 'S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_00010101T000000'
+
+    root_url = 'https://storage.googleapis.com/gcp-public-data-sentinel-2/tiles'
+
+    responses.head(f'{root_url}/13/C/ES/{existing_scene}.SAFE/manifest.safe', status=200)
+    responses.head(f'{root_url}/13/C/ES/{missing_scene}.SAFE/manifest.safe', status=404)
+
+    assert sentinel2.raise_for_missing_in_google_cloud(existing_scene) is None
+
+    with pytest.raises(requests.HTTPError):
+        sentinel2.raise_for_missing_in_google_cloud(missing_scene)
 
 
 def test_get_sentinel2_stac_item(pystac_item_factory):

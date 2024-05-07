@@ -21,6 +21,7 @@ from sentinel2 import (
     get_sentinel2_pairs_for_reference_scene,
     get_sentinel2_stac_item,
     qualifies_for_sentinel2_processing,
+    raise_for_missing_in_google_cloud
 )
 
 
@@ -107,6 +108,9 @@ def process_scene(
     if scene.startswith('S2'):
         reference = get_sentinel2_stac_item(f'{scene}.SAFE')
         if qualifies_for_sentinel2_processing(reference, max_cloud_cover, logging.INFO):
+            # hyp3-its-live will pull scenes from Google Cloud; ensure the new scene is there before processing
+            # Note: Time between attempts is controlled by they SQS VisibilityTimout
+            _ = raise_for_missing_in_google_cloud(scene)
             pairs = get_sentinel2_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
 
     else:
