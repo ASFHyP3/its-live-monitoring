@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.0]
 
 ### Added
-- Support for Sentinel-2
+- Support for processing Sentinel-2 SNS messages and submitting jobs to hyp3-its-live has been added
+
+### Changed
+- To manage any lag between Sentinel-2 messages being published in AWS and scenes being available in Google Cloud, which is where hyp3-autorift pulls scenes from, the message failure handling has been changed:
+  - The visibility timeout (time between attempts) has been extended from 5 minutes to 8 hours
+  - Processing messages will be attempted 3 times before being driven to the dead letter queue
 
 ## [0.4.0]
 
