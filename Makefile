@@ -15,10 +15,15 @@ test_file ?= 'tests/'
 test:
 	pytest $(test_file)
 
-integration:
+landsat-integration:
 	export AWS_PAGER='' && \
-	$(foreach file, $(wildcard tests/integration/landsat*.json), aws sns publish --profile saml-pub --topic-arn ${LANDSAT_TOPIC_ARN} --message file://${file} --output json;) && \
+	$(foreach file, $(wildcard tests/integration/landsat*.json), aws sns publish --profile saml-pub --topic-arn ${LANDSAT_TOPIC_ARN} --message file://${file} --output json;)
+
+sentinel2-integration:
+	export AWS_PAGER='' && \
 	$(foreach file, $(wildcard tests/integration/sentinel2*.json), aws sns publish --profile saml-pub --topic-arn ${SENTINEL2_TOPIC_ARN} --message file://${file} --output json;)
+
+integration: landsat-integration sentinel2-integration
 
 static: ruff-check cfn-lint
 
