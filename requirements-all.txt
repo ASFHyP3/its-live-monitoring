@@ -1,5 +1,6 @@
--r requirements-landsat.txt
+-r requirements-its_live_monitoring.txt
 -r requirements-status-messages.txt
 cfn-lint
 ruff
 pytest
+responses

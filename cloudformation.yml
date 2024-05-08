@@ -2,6 +2,9 @@ Parameters:
   LandsatTopicArn:
     Type: String
 
+  Sentinel2TopicArn:
+    Type: String
+
   Hyp3Api:
     Type: String
 
@@ -40,10 +43,10 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600
-      VisibilityTimeout: 300
+      VisibilityTimeout: 28800
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
-        maxReceiveCount: 2
+        maxReceiveCount: 3
 
   QueuePolicy:
     Type: AWS::SQS::QueuePolicy
@@ -58,11 +61,11 @@ Resources:
             Resource: !GetAtt Queue.Arn
             Condition:
               ArnEquals:
-                aws:SourceArn: !Ref LandsatTopicArn
+                aws:SourceArn: [!Ref LandsatTopicArn, !Ref Sentinel2TopicArn]
       Queues:
         - !Ref Queue
 
-  Subscription:
+  LandsatSubscription:
     Type: AWS::SNS::Subscription
     Properties:
       TopicArn: !Ref LandsatTopicArn
@@ -75,15 +78,27 @@ Resources:
           "s3_location": [{"prefix": "s3://usgs-landsat/collection02/level-1/standard/oli-tirs/"}]
         }
 
+  Sentinel2Subscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref Sentinel2TopicArn
+      Protocol: sqs
+      Endpoint: !GetAtt Queue.Arn
+      FilterPolicyScope: MessageBody
+      FilterPolicy: |
+        {
+          "name": [{"prefix": "S2A_MSIL1C_"}, {"prefix": "S2B_MSIL1C_"}]
+        }
+
   Lambda:
     Type: AWS::Lambda::Function
     Properties:
-      Code: landsat/src/
+      Code: its_live_monitoring/src/
       Handler: main.lambda_handler
       MemorySize: 128
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.12
-      Timeout: 300
+      Timeout: 900
       Environment:
         Variables:
           HYP3_API: !Ref Hyp3Api

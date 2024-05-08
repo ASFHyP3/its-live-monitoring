@@ -12,6 +12,8 @@ inputs:
     required: true
   LANDSAT_TOPIC_ARN:
     required: true
+  SENTINEL2_TOPIC_ARN:
+    required: true
   HYP3_API:
     required: true
   LAMBDA_LOGGING_LEVEL:
@@ -56,6 +58,7 @@ runs:
           --capabilities CAPABILITY_IAM \
           --parameter-overrides \
             LandsatTopicArn=${{ inputs.LANDSAT_TOPIC_ARN }} \
+            Sentinel2TopicArn=${{ inputs.SENTINEL2_TOPIC_ARN }} \
             Hyp3Api=${{ inputs.HYP3_API }} \
             LambdaLoggingLevel=${{ inputs.LAMBDA_LOGGING_LEVEL }} \
             EarthdataUsername=${{ inputs.EARTHDATA_USERNAME }} \
