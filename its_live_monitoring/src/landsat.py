@@ -1,4 +1,4 @@
-"""Lambda function to trigger low-latency Landsat processing from newly acquired scenes."""
+"""Functions to support Landsat processing."""
 
 import json
 import logging
@@ -37,7 +37,7 @@ def get_landsat_stac_item(scene: str) -> pystac.Item:  # noqa: D103
 def qualifies_for_landsat_processing(
     item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT, log_level: int = logging.DEBUG
 ) -> bool:
-    """Determines whether a scene is a valid landsat product for processing.
+    """Determines whether a scene is a valid Landsat product for processing.
 
     Args:
         item: STAC item of the desired Landsat scene
@@ -88,7 +88,7 @@ def get_landsat_pairs_for_reference_scene(
         max_cloud_cover: The maximum percent of the secondary scene that can be covered by clouds
 
     Returns:
-        A DataFrame with all potential pairs for a landsat reference scene. Metadata in the columns will be for the
+        A DataFrame with all potential pairs for a Landsat reference scene. Metadata in the columns will be for the
         *secondary* scene unless specified otherwise.
     """
     results = LANDSAT_CATALOG.search(

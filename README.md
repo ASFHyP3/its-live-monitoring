@@ -44,21 +44,21 @@ The Lambda functions can be run locally from the command line, or by calling the
 > [!NOTE]
 > To call the functions in the python console, you'll need to add all the `src` directories to your `PYTHONPATH`. With PyCharm, you can accomplish this by marking all such directories as "Sources Root" and enabling the "Add source roots to PYTHONPATH" Python Console setting.
 
-#### Landsat
+#### its_live_monitoring
 
-To show the help text for the [`landsat`](landsat/src/main.py) Lambda function, which is used to submit new Landsat 8/9 scenes for processing:
+To show the help text for the [`its_live_monitoring`](its_live_monitoring/src/main.py) Lambda function, which is used to submit new Landsat 8/9 scenes for processing:
 ```shell
-python landsat/src/main.py -h
+python its_live_monitoring/src/main.py -h
 ```
 
 For example, processing a valid scene:
 ```shell
-python landsat/src/main.py LC08_L1TP_138041_20240128_20240207_02_T1
+python its_live_monitoring/src/main.py LC08_L1TP_138041_20240128_20240207_02_T1
 ```
 
 ### Integration tests
 
-The Landsat monitoring Lambda can be tested by manually publishing a message to the test SNS topic which was manually deployed with [`test-sns-cf.yml`](scripts/test-sns-cf.yml).
+The `its_live_monitoring` monitoring Lambda can be tested by manually publishing messages to the test SNS topics which was manually provisioned in the AWS Console.
 
 ```shell
 aws sns publish \
@@ -70,11 +70,21 @@ where `TOPIC_ARN` is the ARN of the test topic and `MESSAGE_FILE` is the path to
 * [`landsat-l8-valid.json`](tests/integration/landsat-l8-valid.json) - A message containing a Landsat 9 scene over ice that *should* be processed.
 * [`landsat-l9-wrong-tier.json`](tests/integration/landsat-l9-wrong-tier.json) - A message containing a Landsat 9 scene *not* over ice that should be *filtered out* and *not* processed.
 
-To submit all the integration test payloads to the default test SNS topic, run:
+To submit the Landsat integration test payloads to the default Landsat test SNS topic, run:
+```shell
+make landsat-integration
+```
+Likewise, to submit the Sentinel-2 integration test payloads to the default Sentinel-2 test SNS topic, run:
+```shell
+make Sentinel2-integration
+```
+
+To submit **all** the integration test payloads to the default test SNS topic, run:
 ```shell
 make integration
 ```
 or, you can submit to an alternative SNS topic like:
 ```shell
-TEST_TOPIC_ARN=foobar make integration
+LANDSAT_TOPIC_ARN=foobar make landsat-integration
+SENTINEL2_TOPIC_ARN=foobar make sentinel2-integration
 ```
