@@ -98,7 +98,7 @@ Resources:
       MemorySize: 128
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.12
-      Timeout: 300
+      Timeout: 900
       Environment:
         Variables:
           HYP3_API: !Ref Hyp3Api
