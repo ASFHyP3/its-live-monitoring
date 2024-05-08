@@ -25,6 +25,6 @@ jobs:
           LANDSAT_TOPIC_ARN: arn:aws:sns:us-west-2:986442313181:its-live-notify-landsat-test
           SENTINEL2_TOPIC_ARN: arn:aws:sns:us-west-2:986442313181:its-live-notify-sentinel2-test
           HYP3_API: https://hyp3-its-live.asf.alaska.edu
-          LAMBDA_LOGGING_LEVEL: DEBUG
+          LAMBDA_LOGGING_LEVEL: INFO
           PUBLISH_BUCKET: its-live-data-test
           MATTERMOST_PAT: ${{ secrets.MATTERMOST_PAT }}
