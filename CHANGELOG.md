@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - To manage any lag between Sentinel-2 messages being published in AWS and scenes being available in Google Cloud, which is where hyp3-autorift pulls scenes from, the message failure handling has been changed:
   - The visibility timeout (time between attempts) has been extended from 5 minutes to 8 hours
   - Processing messages will be attempted 3 times before being driven to the dead letter queue
+- The `its_live_monitoring` lambda timeout has been increased to 900 seconds, from 300 seconds, because pair picking for Sentinel-2 takes significantly longer due to the Copernicus Dataspace STAC catalog not supporting metadata queries  
 
 ## [0.4.0]
 
