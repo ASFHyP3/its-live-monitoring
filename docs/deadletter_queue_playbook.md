@@ -7,7 +7,7 @@
 5. For each message: 
    1. copy the scene ID and run its-live-monitoring. For Example:
       ```
-      python landsat/src/main.py -v [SCENE_ID]
+      python its_live_monitoring/src/main.py -v [SCENE_ID]
       ```
    2. Fix any issues that arise when running its-live-monitoring
    3. Add a unit or integration test to catch this issue in the future
