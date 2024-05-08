@@ -1,4 +1,4 @@
-"""Lambda function to trigger low-latency Sentinel-2 processing from newly acquired scenes."""
+"""Functions to support Sentinel-2 processing."""
 
 import json
 import logging
