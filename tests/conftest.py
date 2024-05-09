@@ -14,14 +14,16 @@ def pystac_item_factory():
         datetime: str | dt.datetime,
         properties: dict,
         collection: str,
+        geometry: dict | None = None,
+        bbox: list | None = None,
     ) -> pystac.item.Item:
         if isinstance(datetime, str):
             datetime = date_parser(datetime)
 
         expected_item = pystac.item.Item(
             id=id,
-            geometry=None,
-            bbox=None,
+            geometry=geometry,
+            bbox=bbox,
             datetime=datetime,
             properties=properties,
             collection=collection,
