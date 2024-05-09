@@ -11,6 +11,7 @@ import pandas as pd
 import pystac
 import pystac_client
 import requests
+from shapely.geometry import shape
 
 from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
 
@@ -112,9 +113,14 @@ def get_sentinel2_pairs_for_reference_scene(
         A DataFrame with all potential pairs for a sentinel-2 reference scene. Metadata in the columns will be for the
         *secondary* scene unless specified otherwise.
     """
+    # Sentinel-2 tiles overlap by 10 km, so searching by bbox or geometry, will pull in results from multiple tiles.
+    # Since tiles are all 110 km in their UTM zone, they will be at least 1 deg x 1 deg in lat lon.
+    # Thus, drawing a 0.25 degree square around a tile centroid should limit the search to a single tile.
+    search_bbox = shape(reference.geometry).centroid.buffer(0.25, cap_style='square').bounds
+
     results = SENTINEL2_CATALOG.search(
         collections=[reference.collection_id],
-        bbox=reference.bbox,
+        bbox=search_bbox,
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
         limit=1000,
         method='GET',
