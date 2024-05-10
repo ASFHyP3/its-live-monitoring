@@ -33,7 +33,6 @@ Parameters:
     NoEcho: true
 
 Resources:
-
   DeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -76,18 +75,6 @@ Resources:
         {
           "landsat_product_id": [{"suffix": "_T1"}, {"suffix": "_T2"}],
           "s3_location": [{"prefix": "s3://usgs-landsat/collection02/level-1/standard/oli-tirs/"}]
-        }
-
-  Sentinel2Subscription:
-    Type: AWS::SNS::Subscription
-    Properties:
-      TopicArn: !Ref Sentinel2TopicArn
-      Protocol: sqs
-      Endpoint: !GetAtt Queue.Arn
-      FilterPolicyScope: MessageBody
-      FilterPolicy: |
-        {
-          "name": [{"prefix": "S2A_MSIL1C_"}, {"prefix": "S2B_MSIL1C_"}]
         }
 
   Lambda:
@@ -163,3 +150,8 @@ Resources:
         MattermostPAT: !Ref MattermostPAT
         LambdaLoggingLevel: !Ref LambdaLoggingLevel
       TemplateURL: status-messages/cloudformation.yml
+
+Outputs:
+  ItsLiveMonitoringQueueArn:
+    Description: "The ARN for its-live-monitoring's SQS queue"
+    Value: !GetAtt Queue.Arn

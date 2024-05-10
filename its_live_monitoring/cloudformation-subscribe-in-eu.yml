@@ -1,0 +1,19 @@
+Parameters:
+  Sentinel2TopicArn:
+    Type: String
+
+  ItsLiveMonitoringQueueArn:
+    Type: String
+
+Resources:
+  Sentinel2Subscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref Sentinel2TopicArn
+      Protocol: sqs
+      Endpoint: !Ref ItsLiveMonitoringQueueArn
+      FilterPolicyScope: MessageBody
+      FilterPolicy: |
+        {
+          "name": [{"prefix": "S2A_MSIL1C_"}, {"prefix": "S2B_MSIL1C_"}]
+        }
