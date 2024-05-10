@@ -72,6 +72,7 @@ runs:
         )
 
         aws cloudformation deploy \
+            --template-file its_live_monitoring/cloudformation-subscribe-in-eu.yml \
             --region=eu-west-1 \
             --stack-name=${{ inputs.STACK_NAME }} \
             --s3-bucket=${{ inputs.CF_TEMPLATE_BUCKET }} \
