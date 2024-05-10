@@ -1,6 +1,6 @@
 export PYTHONPATH = ${PWD}/its_live_monitoring/src
 LANDSAT_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-landsat-test
-SENTINEL2_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-sentinel2-test
+SENTINEL2_TOPIC_ARN ?= arn:aws:sns:eu-west-1:986442313181:its-live-notify-sentinel2-test
 
 install:
 	python -m pip install --upgrade pip && \

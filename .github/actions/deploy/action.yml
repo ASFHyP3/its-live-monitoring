@@ -51,17 +51,30 @@ runs:
           --template-file cloudformation.yml \
           --s3-bucket=${{ inputs.CF_TEMPLATE_BUCKET }} \
           --output-template-file packaged.yml
-        
+
         aws cloudformation deploy \
           --template-file packaged.yml \
           --stack-name=${{ inputs.STACK_NAME }} \
           --capabilities CAPABILITY_IAM \
           --parameter-overrides \
             LandsatTopicArn=${{ inputs.LANDSAT_TOPIC_ARN }} \
-            Sentinel2TopicArn=${{ inputs.SENTINEL2_TOPIC_ARN }} \
             Hyp3Api=${{ inputs.HYP3_API }} \
             LambdaLoggingLevel=${{ inputs.LAMBDA_LOGGING_LEVEL }} \
             EarthdataUsername=${{ inputs.EARTHDATA_USERNAME }} \
             EarthdataPassword=${{ inputs.EARTHDATA_PASSWORD }} \
             PublishBucket=${{ inputs.PUBLISH_BUCKET }} \
             MattermostPAT=${{ inputs.MATTERMOST_PAT }}
+
+        export ITS_LIVE_MONITORING_QUEUE_ARN=$( \
+          aws cloudformation describe-stacks \
+          --query "Stacks[?StackName=='${{ inputs.STACK_NAME }}'][].Outputs[?OutputKey=='ItsLiveMonitoringQueueArn'].OutputValue" \
+          --output text \
+        )
+
+        aws cloudformation deploy \
+            --region=eu-west-1 \
+            --stack-name=${{ inputs.STACK_NAME }} \
+            --s3-bucket=${{ inputs.CF_TEMPLATE_BUCKET }} \
+            --parameter-overrides \
+              Sentinel2TopicArn=${{ inputs.SENTINEL2_TOPIC_ARN }} \
+              ItsLiveMonitoringQueueArn=${ITS_LIVE_MONITORING_QUEUE_ARN}
