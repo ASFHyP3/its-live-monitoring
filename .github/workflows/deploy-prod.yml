@@ -28,10 +28,3 @@ jobs:
           LAMBDA_LOGGING_LEVEL: INFO
           PUBLISH_BUCKET: its-live-data
           MATTERMOST_PAT: ${{ secrets.MATTERMOST_PAT }}
-
-
-  call-bump-version-workflow:
-    needs: deploy
-    uses: ASFHyP3/actions/.github/workflows/reusable-bump-version.yml@v0.11.0
-    secrets:
-      USER_TOKEN: ${{ secrets.TOOLS_BOT_PAK }}
