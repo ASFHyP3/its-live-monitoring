@@ -51,7 +51,7 @@ runs:
           --template-file cloudformation.yml \
           --s3-bucket=${{ inputs.CF_TEMPLATE_BUCKET }} \
           --output-template-file packaged.yml
-        
+
         aws cloudformation deploy \
           --template-file packaged.yml \
           --stack-name=${{ inputs.STACK_NAME }} \
@@ -65,3 +65,19 @@ runs:
             EarthdataPassword=${{ inputs.EARTHDATA_PASSWORD }} \
             PublishBucket=${{ inputs.PUBLISH_BUCKET }} \
             MattermostPAT=${{ inputs.MATTERMOST_PAT }}
+
+        export CF_TEMPLATE_BUCKET=${{ inputs.CF_TEMPLATE_BUCKET }}
+        export ITS_LIVE_MONITORING_QUEUE_ARN=$( \
+          aws cloudformation describe-stacks \
+          --query "Stacks[?StackName=='${{ inputs.STACK_NAME }}'][].Outputs[?OutputKey=='ItsLiveMonitoringQueueArn'].OutputValue" \
+          --output text \
+        )
+
+        aws cloudformation deploy \
+            --template-file its_live_monitoring/cloudformation-subscribe-in-eu.yml \
+            --region=eu-west-1 \
+            --stack-name=${{ inputs.STACK_NAME }} \
+            --s3-bucket=${CF_TEMPLATE_BUCKET/us-west-2/eu-west-1} \
+            --parameter-overrides \
+              Sentinel2TopicArn=${{ inputs.SENTINEL2_TOPIC_ARN }} \
+              ItsLiveMonitoringQueueArn=${ITS_LIVE_MONITORING_QUEUE_ARN}
