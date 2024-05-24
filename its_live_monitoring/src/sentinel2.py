@@ -1,5 +1,4 @@
 """Functions to support Sentinel-2 processing."""
-
 import logging
 import os
 from datetime import timedelta
@@ -46,17 +45,25 @@ def get_sentinel2_stac_item(scene: str) -> pystac.Item:  # noqa: D103
 
 
 def get_data_coverage(item: pystac.Item) -> float:
-    # MMM_MSIXXX_YYYYMMDDHHMMSS_Nxxyy_ROOO_Txxxxx_<Product Discriminator>.SAFE
-    MMM, MSIXXX, YYYYMMDDHHMMSS, Nxxyy, ROOO, Txxxxx, prod_discriminator = item.id.split('_')
-    id = f'{MMM}_{Txxxxx[1:]}_{YYYYMMDDHHMMSS[:8]}_0_L1C'
-    URL = f'https://earth-search.aws.element84.com/v0/collections/sentinel-s2-l1c/items/{id}'
-    response = requests.get(URL)
+    """Get the data cover percentage of the scene
+
+    Args:
+        item: STAC item of the desired Sentinel-2 scene
+
+    Returns:
+        data cover percentage of the scene
+    """
+    mmm, msixxx, yyyymmddhhmmss, nxxyy, rooo, txxxxx, prod_discriminator = item.id.split('_')
+    id = f'{mmm}_{txxxxx[1:]}_{yyyymmddhhmmss[:8]}_0_L1C'
+    url = f'https://earth-search.aws.element84.com/v0/collections/sentinel-s2-l1c/items/{id}'
+
+    response = requests.get(url)
     if response.status_code != 200:
-        yyyy, mm, dd = YYYYMMDDHHMMSS[:4], YYYYMMDDHHMMSS[4:6], YYYYMMDDHHMMSS[6:8]
-        # https://roda.sentinel-hub.com/sentinel-s2-l1c/tiles/50/R/LR/2021/6/8/0/tileInfo.json
-        substr = f'{Txxxxx[1:3]}/{Txxxxx[3]}/{Txxxxx[4:6]}/{yyyy}/{str(int(mm))}/{str(int(dd))}/0'
-        URL2 = f'https://roda.sentinel-hub.com/sentinel-s2-l1c/tiles/{substr}/tileInfo.json'
-        response = requests.get(URL2)
+        yyyy, mm, dd = yyyymmddhhmmss[:4], yyyymmddhhmmss[4:6], yyyymmddhhmmss[6:8]
+        substr = f'{txxxxx[1:3]}/{txxxxx[3]}/{txxxxx[4:6]}/{yyyy}/{str(int(mm))}/{str(int(dd))}/0'
+        url2 = f'https://roda.sentinel-hub.com/sentinel-s2-l1c/tiles/{substr}/tileInfo.json'
+
+        response = requests.get(url2)
         if response.status_code != 200:
             return None
         else:
