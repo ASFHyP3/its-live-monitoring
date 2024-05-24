@@ -1,6 +1,5 @@
 """Functions to support Sentinel-2 processing."""
 
-import json
 import logging
 import os
 from datetime import timedelta
@@ -14,7 +13,7 @@ import requests
 import json
 from shapely.geometry import shape
 
-from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
+from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS, MAX_DATA_COVER_PERCENTAGE
 
 
 SENTINEL2_CATALOG_API = 'https://catalogue.dataspace.copernicus.eu/stac'
@@ -52,8 +51,20 @@ def get_data_coverage(item: pystac.Item) -> float:
     id = f'{MMM}_{Txxxxx[1:]}_{YYYYMMDDHHMMSS[:8]}_0_L1C'
     URL = f'https://earth-search.aws.element84.com/v0/collections/sentinel-s2-l1c/items/{id}'
     response = requests.get(URL)
-    response_data = json.loads(response.text)
-    return response_data['properties']['sentinel:data_coverage']
+    if response.status_code != 200:
+        yyyy, mm, dd = YYYYMMDDHHMMSS[:4], YYYYMMDDHHMMSS[4:6], YYYYMMDDHHMMSS[6:8]
+        # https://roda.sentinel-hub.com/sentinel-s2-l1c/tiles/50/R/LR/2021/6/8/0/tileInfo.json
+        substr = f'{Txxxxx[1:3]}/{Txxxxx[3]}/{Txxxxx[4:6]}/{yyyy}/{str(int(mm))}/{str(int(dd))}/0'
+        URL2 = f'https://roda.sentinel-hub.com/sentinel-s2-l1c/tiles/{substr}/tileInfo.json'
+        response = requests.get(URL2)
+        if response.status_code != 200:
+            return None
+        else:
+            dic = response.json()
+            return dic['dataCoveragePercentage']
+    else:
+        response_data = json.loads(response.text)
+        return response_data['properties']['sentinel:data_coverage']
 
 
 def qualifies_for_sentinel2_processing(
@@ -104,8 +115,9 @@ def qualifies_for_sentinel2_processing(
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
         return False
 
-    if get_data_coverage(item) <= 0.7:
+    if get_data_coverage(item) and get_data_coverage(item) <= MAX_DATA_COVER_PERCENTAGE:
         log.log(log_level, f'{item.id} disqualifies for processing because its data coverage is too small')
+        return False
 
     log.log(log_level, f'{item.id} qualifies for processing')
     return True
