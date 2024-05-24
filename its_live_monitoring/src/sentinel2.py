@@ -1,4 +1,6 @@
 """Functions to support Sentinel-2 processing."""
+
+import json
 import logging
 import os
 from datetime import timedelta
@@ -9,10 +11,9 @@ import pandas as pd
 import pystac
 import pystac_client
 import requests
-import json
 from shapely.geometry import shape
 
-from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS, MAX_DATA_COVER_PERCENTAGE
+from constants import MAX_CLOUD_COVER_PERCENT, MAX_DATA_COVER_PERCENTAGE, MAX_PAIR_SEPARATION_IN_DAYS
 
 
 SENTINEL2_CATALOG_API = 'https://catalogue.dataspace.copernicus.eu/stac'
