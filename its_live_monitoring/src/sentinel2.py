@@ -45,13 +45,13 @@ def get_sentinel2_stac_item(scene: str) -> pystac.Item:  # noqa: D103
 
 
 def get_data_coverage(item: pystac.Item) -> float:
-    """Get the data cover percentage of the scene
+    """Get the data cover percentage of the scene.
 
     Args:
-        item: STAC item of the desired Sentinel-2 scene
+        item: STAC item of the desired Sentinel-2 scene.
 
     Returns:
-        data cover percentage of the scene
+        data cover percentage of the scene.
     """
     mmm, msixxx, yyyymmddhhmmss, nxxyy, rooo, txxxxx, prod_discriminator = item.id.split('_')
     id = f'{mmm}_{txxxxx[1:]}_{yyyymmddhhmmss[:8]}_0_L1C'
