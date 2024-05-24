@@ -11,6 +11,7 @@ import pandas as pd
 import pystac
 import pystac_client
 import requests
+import json
 from shapely.geometry import shape
 
 from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
@@ -43,6 +44,16 @@ def get_sentinel2_stac_item(scene: str) -> pystac.Item:  # noqa: D103
             f'{SENTINEL2_CATALOG_API}/collections/{SENTINEL2_COLLECTION_NAME}'
         )
     return item
+
+
+def get_data_coverage(item: pystac.Item) -> float:
+    # MMM_MSIXXX_YYYYMMDDHHMMSS_Nxxyy_ROOO_Txxxxx_<Product Discriminator>.SAFE
+    MMM, MSIXXX, YYYYMMDDHHMMSS, Nxxyy, ROOO, Txxxxx, prod_discriminator = item.id.split('_')
+    id = f'{MMM}_{Txxxxx[1:]}_{YYYYMMDDHHMMSS[:8]}_0_L1C'
+    URL = f'https://earth-search.aws.element84.com/v0/collections/sentinel-s2-l1c/items/{id}'
+    response = requests.get(URL)
+    response_data = json.loads(response.text)
+    return response_data['properties']['sentinel:data_coverage']
 
 
 def qualifies_for_sentinel2_processing(
@@ -92,6 +103,9 @@ def qualifies_for_sentinel2_processing(
     if item.properties['cloudCover'] > max_cloud_cover:
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
         return False
+
+    if get_data_coverage(item) <= 0.7:
+        log.log(log_level, f'{item.id} disqualifies for processing because its data coverage is too small')
 
     log.log(log_level, f'{item.id} qualifies for processing')
     return True
