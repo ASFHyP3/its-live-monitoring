@@ -54,9 +54,11 @@ def test_qualifies_for_processing(pystac_item_factory):
     }
     collection = 'SENTINEL-2'
 
+
     good_item = pystac_item_factory(
         id='XXX_XXXL1C_XXXX_XXXX_XXXX', datetime=datetime.now(), properties=properties, collection=collection
     )
+    # s2_tile_path = f'tiles/19/D/EE/2024/4/30/1'
 
     assert sentinel2.qualifies_for_sentinel2_processing(good_item)
 

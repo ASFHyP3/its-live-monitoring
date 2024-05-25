@@ -56,13 +56,7 @@ def _get_data_coverage(s2_tile_path: str) -> float:
         return res_dic['dataCoveragePercentage']
 
 
-def qualifies_for_sentinel2_processing(
-    item: pystac.item.Item,
-    s2_tile_path: str,
-    max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
-    min_data_cover: int = MIN_DATA_COVER_PERCENT,
-    log_level: int = logging.DEBUG,
-) -> bool:
+def qualifies_for_sentinel2_processing(item: pystac.item.Item, s2_tile_path: str = None, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT, min_data_cover: int = MIN_DATA_COVER_PERCENT, log_level: int = logging.DEBUG,) -> bool:
     """Determines whether a scene is a valid Sentinel-2 product for processing.
 
     Args:
@@ -110,9 +104,10 @@ def qualifies_for_sentinel2_processing(
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
         return False
 
-    data_cover_percentage = _get_data_coverage(s2_tile_path)
-    if data_cover_percentage is None or data_cover_percentage <= min_data_cover:
-        log.log(log_level, f'{item.id} disqualifies for processing because its data coverage is too small')
+    if s2_tile_path:
+        data_cover_percentage = _get_data_coverage(s2_tile_path)
+        if data_cover_percentage is None or data_cover_percentage <= min_data_cover:
+            log.log(log_level, f'{item.id} disqualifies for processing because its data coverage is too small')
         return False
 
     log.log(log_level, f'{item.id} qualifies for processing')
