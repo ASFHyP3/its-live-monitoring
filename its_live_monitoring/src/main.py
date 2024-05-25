@@ -6,12 +6,13 @@ import logging
 import os
 import sys
 from datetime import timedelta
+from typing import Optional
 
 import geopandas as gpd
 import hyp3_sdk as sdk
 import pandas as pd
 
-from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
+from constants import MAX_CLOUD_COVER_PERCENT, MIN_DATA_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
 from landsat import (
     get_landsat_pairs_for_reference_scene,
     get_landsat_stac_item,
@@ -86,12 +87,12 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
     return jobs
 
 
-def process_scene(
-    scene: str,
-    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION_IN_DAYS),
-    max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
-    submit: bool = True,
-) -> sdk.Batch:
+def process_scene(scene: str,
+                  max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION_IN_DAYS),
+                  max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
+                  min_data_cover: int = MIN_DATA_COVER_PERCENT,
+                  s2_tile_path: str = None,
+                  submit: bool = True,) -> sdk.Batch:
     """Trigger Landsat processing for a scene.
 
     Args:
@@ -99,6 +100,8 @@ def process_scene(
         max_pair_separation: How many days back from a reference scene's acquisition date to search for secondary
          scenes.
         max_cloud_cover: The maximum percent a Landsat scene can be covered by clouds.
+        min_data_cover: The minimum percent of data coverage of the sentinel-2 scene
+        s2_tile_path: The path for the tile of the sentinel2 scene.
         submit: Submit pairs to HyP3 for processing.
 
     Returns:
@@ -107,7 +110,7 @@ def process_scene(
     pairs = None
     if scene.startswith('S2'):
         reference = get_sentinel2_stac_item(f'{scene}.SAFE')
-        if qualifies_for_sentinel2_processing(reference, max_cloud_cover, logging.INFO):
+        if qualifies_for_sentinel2_processing(reference, s2_tile_path, max_cloud_cover, min_data_cover, logging.INFO):
             # hyp3-its-live will pull scenes from Google Cloud; ensure the new scene is there before processing
             # Note: Time between attempts is controlled by they SQS VisibilityTimout
             _ = raise_for_missing_in_google_cloud(scene)
@@ -158,7 +161,12 @@ def lambda_handler(event: dict, context: object) -> dict:
             body = json.loads(record['body'])
             message = json.loads(body['Message'])
             product_id = 'landsat_product_id' if 'landsat_product_id' in message.keys() else 'name'
-            _ = process_scene(message[product_id])
+
+            s2_tile_path = None
+            if message[product_id].startswith('S2'):
+                s2_tile_path = message['tiles'][0]['path']
+
+            _ = process_scene(message[product_id], s2_tile_path=s2_tile_path)
         except Exception:
             log.exception(f'Could not process message {record["messageId"]}')
             batch_item_failures.append({'itemIdentifier': record['messageId']})

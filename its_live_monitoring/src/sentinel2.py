@@ -13,7 +13,7 @@ import pystac_client
 import requests
 from shapely.geometry import shape
 
-from constants import MAX_CLOUD_COVER_PERCENT, MAX_DATA_COVER_PERCENTAGE, MAX_PAIR_SEPARATION_IN_DAYS
+from constants import MAX_CLOUD_COVER_PERCENT, MIN_DATA_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
 
 
 SENTINEL2_CATALOG_API = 'https://catalogue.dataspace.copernicus.eu/stac'
@@ -45,44 +45,29 @@ def get_sentinel2_stac_item(scene: str) -> pystac.Item:  # noqa: D103
     return item
 
 
-def get_data_coverage(item: pystac.Item) -> float:
-    """Get the data cover percentage of the scene.
-
-    Args:
-        item: STAC item of the desired Sentinel-2 scene.
-
-    Returns:
-        data cover percentage of the scene.
-    """
-    mmm, msixxx, yyyymmddhhmmss, nxxyy, rooo, txxxxx, prod_discriminator = item.id.split('_')
-    id = f'{mmm}_{txxxxx[1:]}_{yyyymmddhhmmss[:8]}_0_L1C'
-    url = f'https://earth-search.aws.element84.com/v0/collections/sentinel-s2-l1c/items/{id}'
+def _get_data_coverage(s2_tile_path: str) -> float:
+    url = f'https://roda.sentinel-hub.com/sentinel-s2-l1c/{s2_tile_path}/tileInfo.json'
 
     response = requests.get(url)
     if response.status_code != 200:
-        yyyy, mm, dd = yyyymmddhhmmss[:4], yyyymmddhhmmss[4:6], yyyymmddhhmmss[6:8]
-        substr = f'{txxxxx[1:3]}/{txxxxx[3]}/{txxxxx[4:6]}/{yyyy}/{str(int(mm))}/{str(int(dd))}/0'
-        url2 = f'https://roda.sentinel-hub.com/sentinel-s2-l1c/tiles/{substr}/tileInfo.json'
-
-        response = requests.get(url2)
-        if response.status_code != 200:
-            return None
-        else:
-            dic = response.json()
-            return dic['dataCoveragePercentage']
+        return None
     else:
-        response_data = json.loads(response.text)
-        return response_data['properties']['sentinel:data_coverage']
+        res_dic = response.json()
+        return res_dic['dataCoveragePercentage']
 
 
 def qualifies_for_sentinel2_processing(
-    item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT, log_level: int = logging.DEBUG
-) -> bool:
+    item: pystac.item.Item, s2_tile_path: str,
+        max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
+        min_data_cover: int = MIN_DATA_COVER_PERCENT,
+        log_level: int = logging.DEBUG) -> bool:
     """Determines whether a scene is a valid Sentinel-2 product for processing.
 
     Args:
-        item: STAC item of the desired Sentinel-2 scene
+        item: STAC item of the desired Sentinel-2 scene.
+        s2_tile_path: The path of the tile of sentinel-2 scene.
         max_cloud_cover: The maximum allowable percentage of cloud cover.
+        min_data_cover: The minimum allowable percentage of data cover.
         log_level: The logging level
 
     Returns:
@@ -123,7 +108,8 @@ def qualifies_for_sentinel2_processing(
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
         return False
 
-    if get_data_coverage(item) and get_data_coverage(item) <= MAX_DATA_COVER_PERCENTAGE:
+    data_cover_percentage = _get_data_coverage(s2_tile_path)
+    if data_cover_percentage is None or data_cover_percentage <= min_data_cover:
         log.log(log_level, f'{item.id} disqualifies for processing because its data coverage is too small')
         return False
 
