@@ -150,7 +150,7 @@ def get_sentinel2_pairs_for_reference_scene(
                 log.debug(f'{item.id} disqualifies because it is from a different tile than the reference scene')
                 continue
 
-            if not qualifies_for_sentinel2_processing(item, max_cloud_cover):
+            if not qualifies_for_sentinel2_processing(item, max_cloud_cover=max_cloud_cover):
                 continue
 
             items.append(item)
