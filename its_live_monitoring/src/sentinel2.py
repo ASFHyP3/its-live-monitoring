@@ -57,10 +57,12 @@ def _get_data_coverage(s2_tile_path: str) -> float:
 
 
 def qualifies_for_sentinel2_processing(
-    item: pystac.item.Item, s2_tile_path: str,
+        item: pystac.item.Item,
+        s2_tile_path: str,
         max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
         min_data_cover: int = MIN_DATA_COVER_PERCENT,
-        log_level: int = logging.DEBUG) -> bool:
+        log_level: int = logging.DEBUG)\
+        -> bool:
     """Determines whether a scene is a valid Sentinel-2 product for processing.
 
     Args:
