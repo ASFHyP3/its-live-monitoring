@@ -6,13 +6,12 @@ import logging
 import os
 import sys
 from datetime import timedelta
-from typing import Optional
 
 import geopandas as gpd
 import hyp3_sdk as sdk
 import pandas as pd
 
-from constants import MAX_CLOUD_COVER_PERCENT, MIN_DATA_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
+from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS, MIN_DATA_COVER_PERCENT
 from landsat import (
     get_landsat_pairs_for_reference_scene,
     get_landsat_stac_item,

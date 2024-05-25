@@ -13,7 +13,7 @@ import pystac_client
 import requests
 from shapely.geometry import shape
 
-from constants import MAX_CLOUD_COVER_PERCENT, MIN_DATA_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
+from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS, MIN_DATA_COVER_PERCENT
 
 
 SENTINEL2_CATALOG_API = 'https://catalogue.dataspace.copernicus.eu/stac'
