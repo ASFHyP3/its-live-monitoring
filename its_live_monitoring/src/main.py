@@ -87,13 +87,13 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
 
 
 def process_scene(
-        scene: str,
-        max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION_IN_DAYS),
-        max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
-        min_data_cover: int = MIN_DATA_COVER_PERCENT,
-        s2_tile_path: str = None,
-        submit: bool = True,)\
-        -> sdk.Batch:
+    scene: str,
+    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION_IN_DAYS),
+    max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
+    min_data_cover: int = MIN_DATA_COVER_PERCENT,
+    s2_tile_path: str = None,
+    submit: bool = True,
+) -> sdk.Batch:
     """Trigger Landsat processing for a scene.
 
     Args:
