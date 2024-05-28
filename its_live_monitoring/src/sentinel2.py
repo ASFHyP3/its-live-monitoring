@@ -59,7 +59,6 @@ def get_sentinel2_stac_item(scene: str) -> pystac.Item:  # noqa: D103
         )
 
     item = items[0]
-    item = add_data_coverage_to_item(item)
 
     return item
 
@@ -79,11 +78,13 @@ def qualifies_for_sentinel2_processing(
     Returns:
         A bool that is True if the scene qualifies for Sentinel-2 processing, else False.
     """
+
     if item.collection_id != SENTINEL2_COLLECTION_NAME:
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
         return False
 
-    if item.properties['s2:product_uri'].split('_')[3] == 'N0500':
+    product_uri_split = item.properties['s2:product_uri'].split('_')
+    if product_uri_split[3] == 'N0500':
         # Reprocessing activity: https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-2-msi/copernicus-sentinel-2-collection-1-availability-status
         # Naming convention: https://sentinels.copernicus.eu/web/sentinel/user-guides/sentinel-2-msi/naming-convention
         # Processing baselines: https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-2-msi/processing-baseline
@@ -94,25 +95,31 @@ def qualifies_for_sentinel2_processing(
         )
         return False
 
-    product_type = item.properties['s2:product_uri'].split('_')[3]
+    product_type = product_uri_split[1]
     if not product_type.endswith('L1C'):
         log.log(log_level, f'{item.id} disqualifies for processing because it is the wrong product type.')
         return False
 
-    if not product_type.startswith('MSI'):
+    if 'msi' not in item.properties['instruments']:
         log.log(log_level, f'{item.id} disqualifies for processing because it was not imaged with the right instrument')
         return False
 
-    if item.properties['tileId'] not in SENTINEL2_TILES_TO_PROCESS:
+    grid_square = item.properties['grid:code'][5:]
+    if grid_square not in SENTINEL2_TILES_TO_PROCESS:
         log.log(log_level, f'{item.id} disqualifies for processing because it is not from a tile containing land-ice')
         return False
 
-    if item.properties.get('cloudCover', -1) < 0:
+    if item.properties.get('eo:cloud_cover', -1) < 0:
         log.log(log_level, f'{item.id} disqualifies for processing because cloud coverage is unknown')
         return False
 
-    if item.properties['cloudCover'] > max_cloud_cover:
+    if item.properties['eo:cloud_cover'] > max_cloud_cover:
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
+        return False
+
+    item = add_data_coverage_to_item(item)
+    if item.properties['s2:data_coverage'] <= SENTINEL2_MIN_DATA_COVERAGE:
+        log.log(log_level, f'{item.id} disqualifies for processing because it has too little data coverage.')
         return False
 
     log.log(log_level, f'{item.id} qualifies for processing')
