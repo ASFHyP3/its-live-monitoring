@@ -38,7 +38,7 @@ def raise_for_missing_in_google_cloud(scene_name: str) -> None:  # noqa: D103
 
 
 def add_data_coverage_to_item(item: pystac.Item) -> pystac.Item:  # noqa: D103
-    tile_info_path = item.assets['tileinfo_metadata'].href.rstrip('s3://')
+    tile_info_path = item.assets['tileinfo_metadata'].href[5:]
 
     response = requests.get(f'https://roda.sentinel-hub.com/{tile_info_path}')
     response.raise_for_status()
