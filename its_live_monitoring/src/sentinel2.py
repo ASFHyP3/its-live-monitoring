@@ -78,7 +78,6 @@ def qualifies_for_sentinel2_processing(
     Returns:
         A bool that is True if the scene qualifies for Sentinel-2 processing, else False.
     """
-
     if item.collection_id != SENTINEL2_COLLECTION_NAME:
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
         return False
