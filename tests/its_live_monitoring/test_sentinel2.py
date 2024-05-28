@@ -8,6 +8,7 @@ import responses
 
 import sentinel2
 
+
 @responses.activate
 def test_raise_for_missing_in_google_cloud():
     existing_scene = 'S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115'
