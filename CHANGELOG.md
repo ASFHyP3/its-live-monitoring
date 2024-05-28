@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.2]
 
 ### Added
-- data_coverage > Max_DATA_PERCENTAGE condition in the qualifies_for_sentinel2_processing function.
+- Sentinel-2 will now be disqualified from processing if they do not have enough data coverage.
 
 ## [0.5.1]
 
