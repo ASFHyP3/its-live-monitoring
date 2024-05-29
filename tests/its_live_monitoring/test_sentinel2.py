@@ -33,6 +33,7 @@ def test_get_sentinel2_stac_item(pystac_item_factory):
         'eo:cloud_cover': 28.188400000000005,
         's2:product_type': 'S2MSI1C',
         's2:data_coverage': 75,
+        's2:product_uri': 'S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115.SAFE',
         'instruments': ['msi'],
     }
     collection = 'sentinel-2-l1c'
@@ -63,7 +64,7 @@ def test_qualifies_for_processing(pystac_item_factory):
     properties = {
         'grid:code': 'MGRS-19DEE',
         'eo:cloud_cover': 30,
-        's2:product_uri': 'S2B_MSIL1C_20240528T000000_N0510_R110_T22TCR_20240528T000000',
+        's2:product_uri': 'S2B_MSIL1C_20240528T000000_N0510_R110_T22TCR_20240528T000000.SAFE',
         's2:product_type': 'S2MSI1C',
         's2:data_coverage': 75,
         'instruments': ['msi'],
