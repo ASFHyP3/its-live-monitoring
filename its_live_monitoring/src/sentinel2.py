@@ -29,6 +29,11 @@ log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
 
 def raise_for_missing_in_google_cloud(scene_name: str) -> None:  # noqa: D103
+    """Raises a 'requests.HTTPError' if the scene is not in Google Cloud yet.
+
+    Args:
+        scene_name: The scene to check for in Google Cloud.
+    """
     root_url = 'https://storage.googleapis.com/gcp-public-data-sentinel-2/tiles'
     tile = f'{scene_name[39:41]}/{scene_name[41:42]}/{scene_name[42:44]}'
 
@@ -38,6 +43,15 @@ def raise_for_missing_in_google_cloud(scene_name: str) -> None:  # noqa: D103
 
 
 def add_data_coverage_to_item(item: pystac.Item) -> pystac.Item:  # noqa: D103
+    """Adds the data coverage percentange (amount of the tile covered by valid data) to the item
+    as a property - 's2:data_coverage'. Raises 'requests.HTTPError' if the tile info metadata does not exist.
+
+    Args:
+        item: The desired stac item to add data coverage too.
+
+    Returns:
+        item: The stac item with data coverage added.
+    """
     tile_info_path = item.assets['tileinfo_metadata'].href[5:]
 
     response = requests.get(f'https://roda.sentinel-hub.com/{tile_info_path}')
@@ -48,18 +62,22 @@ def add_data_coverage_to_item(item: pystac.Item) -> pystac.Item:  # noqa: D103
 
 
 def get_sentinel2_stac_item(scene: str) -> pystac.Item:  # noqa: D103
+    """Retrieves a STAC item from the Sentinel-2 L1C Collection, throws ValueError if none found.
+
+    Args:
+        scene: The element84 scene name for the desired stac item.
+
+    Returns:
+        item: The desired stac item.
+    """
     results = SENTINEL2_CATALOG.search(collections=[SENTINEL2_COLLECTION_NAME], query=[f's2:product_uri={scene}.SAFE'])
-
     items = [item for page in results.pages() for item in page]
-
     if (n_items := len(items)) != 1:
         raise ValueError(
             f'{n_items} for {scene} found in Sentinel-2 STAC collection: '
             f'{SENTINEL2_CATALOG_API}/collections/{SENTINEL2_COLLECTION_NAME}'
         )
-
     item = items[0]
-
     return item
 
 
@@ -78,7 +96,6 @@ def qualifies_for_sentinel2_processing(
     Returns:
         A bool that is True if the scene qualifies for Sentinel-2 processing, else False.
     """
-
     if item.collection_id != SENTINEL2_COLLECTION_NAME:
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
         return False
@@ -95,8 +112,7 @@ def qualifies_for_sentinel2_processing(
         )
         return False
 
-    product_type = product_uri_split[1]
-    if not product_type.endswith('L1C'):
+    if not item.properties['s2:product_type'].endswith('1C'):
         log.log(log_level, f'{item.id} disqualifies for processing because it is the wrong product type.')
         return False
 
@@ -117,7 +133,8 @@ def qualifies_for_sentinel2_processing(
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
         return False
 
-    item = add_data_coverage_to_item(item)
+    if 's2:data_coverage' not in item.properties.keys():
+        item = add_data_coverage_to_item(item)
     if item.properties['s2:data_coverage'] <= SENTINEL2_MIN_DATA_COVERAGE:
         log.log(log_level, f'{item.id} disqualifies for processing because it has too little data coverage.')
         return False
