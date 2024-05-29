@@ -11,14 +11,15 @@ import pandas as pd
 import pystac
 import pystac_client
 
-from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
-
 
 LANDSAT_CATALOG_API = 'https://landsatlook.usgs.gov/stac-server'
 LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_CATALOG_API)
 LANDSAT_COLLECTION_NAME = 'landsat-c2l1'
 LANDSAT_COLLECTION = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION_NAME)
 LANDSAT_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'landsat_tiles_to_process.json').read_text())
+
+LANDSAT_MAX_PAIR_SEPARATION_IN_DAYS = 544
+LANDSAT_MAX_CLOUD_COVER_PERCENT = 60
 
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
@@ -35,7 +36,7 @@ def get_landsat_stac_item(scene: str) -> pystac.Item:  # noqa: D103
 
 
 def qualifies_for_landsat_processing(
-    item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT, log_level: int = logging.DEBUG
+    item: pystac.item.Item, max_cloud_cover: int = LANDSAT_MAX_CLOUD_COVER_PERCENT, log_level: int = logging.DEBUG
 ) -> bool:
     """Determines whether a scene is a valid Landsat product for processing.
 
@@ -77,8 +78,8 @@ def qualifies_for_landsat_processing(
 
 def get_landsat_pairs_for_reference_scene(
     reference: pystac.item.Item,
-    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION_IN_DAYS),
-    max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
+    max_pair_separation: timedelta = timedelta(days=LANDSAT_MAX_PAIR_SEPARATION_IN_DAYS),
+    max_cloud_cover: int = LANDSAT_MAX_CLOUD_COVER_PERCENT,
 ) -> gpd.GeoDataFrame:
     """Generate potential ITS_LIVE velocity pairs for a given Landsat scene.
 
