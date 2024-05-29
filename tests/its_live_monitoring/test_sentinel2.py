@@ -189,8 +189,6 @@ def test_get_sentinel2_pairs_for_reference_scene(pystac_item_factory):
         sentinel2.SENTINEL2_CATALOG.search().pages.return_value = (sec_items,)
         df = sentinel2.get_sentinel2_pairs_for_reference_scene(ref_item)
 
-    print(df.to_string())
-
     assert (df['grid:code'] == ref_item.properties['grid:code']).all()
     for instrument in df['instruments']:
         assert instrument == ref_item.properties['instruments']
