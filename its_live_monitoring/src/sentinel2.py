@@ -43,8 +43,9 @@ def raise_for_missing_in_google_cloud(scene_name: str) -> None:  # noqa: D103
 
 
 def add_data_coverage_to_item(item: pystac.Item) -> pystac.Item:  # noqa: D103
-    """Adds the data coverage percentange (amount of the tile covered by valid data) to the item
-    as a property - 's2:data_coverage'. Raises 'requests.HTTPError' if the tile info metadata does not exist.
+    """Adds the amount of the tile covered by valid data as the property 's2:data_coverage'.
+
+    Raises 'requests.HTTPError' if no tile info metadata can be found.
 
     Args:
         item: The desired stac item to add data coverage too.
