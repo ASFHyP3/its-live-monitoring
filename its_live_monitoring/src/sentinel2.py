@@ -11,22 +11,29 @@ import pandas as pd
 import pystac
 import pystac_client
 import requests
-from shapely.geometry import shape
-
-from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
 
 
-SENTINEL2_CATALOG_API = 'https://catalogue.dataspace.copernicus.eu/stac'
+SENTINEL2_CATALOG_API = 'https://earth-search.aws.element84.com/v1/'
 SENTINEL2_CATALOG = pystac_client.Client.open(SENTINEL2_CATALOG_API)
-SENTINEL2_COLLECTION_NAME = 'SENTINEL-2'
+SENTINEL2_COLLECTION_NAME = 'sentinel-2-l1c'
 SENTINEL2_COLLECTION = SENTINEL2_CATALOG.get_collection(SENTINEL2_COLLECTION_NAME)
 SENTINEL2_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel2_tiles_to_process.json').read_text())
+
+SENTINEL2_MAX_PAIR_SEPARATION_IN_DAYS = 544
+SENTINEL2_MIN_PAIR_SEPARATION_IN_DAYS = 5
+SENTINEL2_MAX_CLOUD_COVER_PERCENT = 70
+SENTINEL2_MIN_DATA_COVERAGE = 70
 
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
 
 def raise_for_missing_in_google_cloud(scene_name: str) -> None:  # noqa: D103
+    """Raises a 'requests.HTTPError' if the scene is not in Google Cloud yet.
+
+    Args:
+        scene_name: The scene to check for in Google Cloud.
+    """
     root_url = 'https://storage.googleapis.com/gcp-public-data-sentinel-2/tiles'
     tile = f'{scene_name[39:41]}/{scene_name[41:42]}/{scene_name[42:44]}'
 
@@ -35,23 +42,55 @@ def raise_for_missing_in_google_cloud(scene_name: str) -> None:  # noqa: D103
     response.raise_for_status()
 
 
+def add_data_coverage_to_item(item: pystac.Item) -> pystac.Item:  # noqa: D103
+    """Adds the amount of the tile covered by valid data as the property 's2:data_coverage'.
+
+    Raises 'requests.HTTPError' if no tile info metadata can be found.
+
+    Args:
+        item: The desired stac item to add data coverage too.
+
+    Returns:
+        item: The stac item with data coverage added.
+    """
+    tile_info_path = item.assets['tileinfo_metadata'].href[5:]
+
+    response = requests.get(f'https://roda.sentinel-hub.com/{tile_info_path}')
+    response.raise_for_status()
+
+    item.properties['s2:data_coverage'] = response.json()['dataCoveragePercentage']
+    return item
+
+
 def get_sentinel2_stac_item(scene: str) -> pystac.Item:  # noqa: D103
-    item = SENTINEL2_COLLECTION.get_item(scene)
-    if item is None:
+    """Retrieves a STAC item from the Sentinel-2 L1C Collection, throws ValueError if none found.
+
+    Args:
+        scene: The element84 scene name for the desired stac item.
+
+    Returns:
+        item: The desired stac item.
+    """
+    results = SENTINEL2_CATALOG.search(collections=[SENTINEL2_COLLECTION_NAME], query=[f's2:product_uri={scene}.SAFE'])
+    items = [item for page in results.pages() for item in page]
+    if (n_items := len(items)) != 1:
         raise ValueError(
-            f'Scene {scene} not found in Sentinel-2 STAC collection: '
+            f'{n_items} for {scene} found in Sentinel-2 STAC collection: '
             f'{SENTINEL2_CATALOG_API}/collections/{SENTINEL2_COLLECTION_NAME}'
         )
+    item = items[0]
     return item
 
 
 def qualifies_for_sentinel2_processing(
-    item: pystac.item.Item, max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT, log_level: int = logging.DEBUG
+    item: pystac.Item,
+    max_cloud_cover: int = SENTINEL2_MAX_CLOUD_COVER_PERCENT,
+    log_level: int = logging.DEBUG,
 ) -> bool:
     """Determines whether a scene is a valid Sentinel-2 product for processing.
 
     Args:
-        item: STAC item of the desired Sentinel-2 scene
+        item: STAC item of the desired Sentinel-2 scene.
         max_cloud_cover: The maximum allowable percentage of cloud cover.
         log_level: The logging level
 
@@ -62,7 +101,8 @@ def qualifies_for_sentinel2_processing(
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
         return False
 
-    if item.id.split('_')[3] == 'N0500':
+    product_uri_split = item.properties['s2:product_uri'].split('_')
+    if product_uri_split[3] == 'N0500':
         # Reprocessing activity: https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-2-msi/copernicus-sentinel-2-collection-1-availability-status
         # Naming convention: https://sentinels.copernicus.eu/web/sentinel/user-guides/sentinel-2-msi/naming-convention
         # Processing baselines: https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-2-msi/processing-baseline
@@ -73,24 +113,31 @@ def qualifies_for_sentinel2_processing(
         )
         return False
 
-    if not item.properties['productType'].endswith('1C'):
+    if not item.properties['s2:product_type'].endswith('1C'):
         log.log(log_level, f'{item.id} disqualifies for processing because it is the wrong product type.')
         return False
 
-    if item.properties['instrumentShortName'] != 'MSI':
+    if 'msi' not in item.properties['instruments']:
         log.log(log_level, f'{item.id} disqualifies for processing because it was not imaged with the right instrument')
         return False
 
-    if item.properties['tileId'] not in SENTINEL2_TILES_TO_PROCESS:
+    grid_square = item.properties['grid:code'][5:]
+    if grid_square not in SENTINEL2_TILES_TO_PROCESS:
         log.log(log_level, f'{item.id} disqualifies for processing because it is not from a tile containing land-ice')
         return False
 
-    if item.properties.get('cloudCover', -1) < 0:
+    if item.properties.get('eo:cloud_cover', -1) < 0:
         log.log(log_level, f'{item.id} disqualifies for processing because cloud coverage is unknown')
         return False
 
-    if item.properties['cloudCover'] > max_cloud_cover:
+    if item.properties['eo:cloud_cover'] > max_cloud_cover:
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
+        return False
+
+    if 's2:data_coverage' not in item.properties.keys():
+        item = add_data_coverage_to_item(item)
+    if item.properties['s2:data_coverage'] <= SENTINEL2_MIN_DATA_COVERAGE:
+        log.log(log_level, f'{item.id} disqualifies for processing because it has too little data coverage.')
         return False
 
     log.log(log_level, f'{item.id} qualifies for processing')
@@ -98,45 +145,37 @@ def qualifies_for_sentinel2_processing(
 
 
 def get_sentinel2_pairs_for_reference_scene(
-    reference: pystac.item.Item,
-    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION_IN_DAYS),
-    max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
+    reference: pystac.Item,
+    max_pair_separation: timedelta = timedelta(days=SENTINEL2_MAX_PAIR_SEPARATION_IN_DAYS),
+    min_pair_separation: timedelta = timedelta(days=SENTINEL2_MIN_PAIR_SEPARATION_IN_DAYS),
+    max_cloud_cover: int = SENTINEL2_MAX_CLOUD_COVER_PERCENT,
 ) -> gpd.GeoDataFrame:
     """Generate potential ITS_LIVE velocity pairs for a given Sentinel-2 scene.
 
     Args:
-        reference: STAC item of the Sentinel-2 reference scene to find pairs for
-        max_pair_separation: How many days back from a reference scene's acquisition date to search for secondary scenes
+        reference: STAC item of the Sentinel-2 reference scene to find secondary scenes for
+        max_pair_separation: How many days back from a reference scene's acquisition date to start searching for
+            secondary scenes
+        min_pair_separation: How many days back from a reference scene's acquisition date to stop searching for
+            secondary scenes
         max_cloud_cover: The maximum percent of the secondary scene that can be covered by clouds
 
     Returns:
         A DataFrame with all potential pairs for a sentinel-2 reference scene. Metadata in the columns will be for the
         *secondary* scene unless specified otherwise.
     """
-    # Sentinel-2 tiles overlap by 10 km, so searching by bbox or geometry, will pull in results from multiple tiles.
-    # Since tiles are all 110 km in their UTM zone, they will be at least 1 deg x 1 deg in lat lon.
-    # Thus, drawing a 0.25 degree square around a tile centroid should limit the search to a single tile.
-    search_bbox = shape(reference.geometry).centroid.buffer(0.25, cap_style='square').bounds
-
     results = SENTINEL2_CATALOG.search(
         collections=[reference.collection_id],
-        bbox=search_bbox,
-        datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
-        limit=1000,
-        method='GET',
+        query=[
+            f'grid:code={reference.properties["grid:code"]}',
+            f'eo:cloud_cover<={SENTINEL2_MAX_CLOUD_COVER_PERCENT}',
+        ],
+        datetime=[reference.datetime - max_pair_separation, reference.datetime - min_pair_separation],
     )
 
-    items = []
-    for page in results.pages():
-        for item in page:
-            if item.properties['tileId'] != reference.properties['tileId']:
-                log.debug(f'{item.id} disqualifies because it is from a different tile than the reference scene')
-                continue
-
-            if not qualifies_for_sentinel2_processing(item, max_cloud_cover):
-                continue
-
-            items.append(item)
+    items = [
+        item for page in results.pages() for item in page if qualifies_for_sentinel2_processing(item, max_cloud_cover)
+    ]
 
     log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
     if len(items) == 0:
@@ -145,9 +184,9 @@ def get_sentinel2_pairs_for_reference_scene(
     features = []
     for item in items:
         feature = item.to_dict()
-        feature['properties']['reference'] = reference.id.rstrip('.SAFE')
+        feature['properties']['reference'] = reference.properties['s2:product_uri'].rstrip('.SAFE')
         feature['properties']['reference_acquisition'] = reference.datetime
-        feature['properties']['secondary'] = item.id.rstrip('.SAFE')
+        feature['properties']['secondary'] = item.properties['s2:product_uri'].rstrip('.SAFE')
         features.append(feature)
 
     df = gpd.GeoDataFrame.from_features(features)

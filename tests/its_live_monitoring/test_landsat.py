@@ -83,15 +83,15 @@ def test_qualifies_for_processing(pystac_item_factory):
     assert landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['landsat:cloud_cover_land'] = landsat.MAX_CLOUD_COVER_PERCENT - 1
+    item.properties['landsat:cloud_cover_land'] = landsat.LANDSAT_MAX_CLOUD_COVER_PERCENT - 1
     assert landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['landsat:cloud_cover_land'] = landsat.MAX_CLOUD_COVER_PERCENT
+    item.properties['landsat:cloud_cover_land'] = landsat.LANDSAT_MAX_CLOUD_COVER_PERCENT
     assert landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
-    item.properties['landsat:cloud_cover_land'] = landsat.MAX_CLOUD_COVER_PERCENT + 1
+    item.properties['landsat:cloud_cover_land'] = landsat.LANDSAT_MAX_CLOUD_COVER_PERCENT + 1
     assert not landsat.qualifies_for_landsat_processing(item)
 
     item = deepcopy(good_item)
