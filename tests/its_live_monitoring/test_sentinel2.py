@@ -201,29 +201,14 @@ def test_get_sentinel2_pairs_for_reference_scene(pystac_item_factory):
 @responses.activate
 def test_get_data_coverage_for_item(pystac_item_factory):
     tile_path = 'sentinel-s2-l1c/tiles/13/C/ES/2024/5/28/0/tileInfo.json'
-    assets = {
-        'tileinfo_metadata': pystac.Asset(href=f's3://{tile_path}')
-    }
+    assets = {'tileinfo_metadata': pystac.Asset(href=f's3://{tile_path}')}
     item = pystac_item_factory(
-        id='scene_name',
-        datetime='2024-05-28T00:00:00.000Z',
-        properties={},
-        collection='collection',
-        assets=assets
+        id='scene_name', datetime='2024-05-28T00:00:00.000Z', properties={}, collection='collection', assets=assets
     )
     url = f'https://roda.sentinel-hub.com/{tile_path}'
     with responses.RequestsMock() as rsps:
-        rsps.add(
-            responses.GET,
-            url,
-            json={'dataCoveragePercentage': 99.0},
-            status=200
-        )
+        rsps.add(responses.GET, url, json={'dataCoveragePercentage': 99.0}, status=200)
         assert sentinel2.get_data_coverage_for_item(item) == 99.0
-        rsps.add(
-            responses.GET,
-            url,
-            status=404
-        )
+        rsps.add(responses.GET, url, status=404)
         with pytest.raises(requests.HTTPError):
             sentinel2.get_data_coverage_for_item(item)

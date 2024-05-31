@@ -16,7 +16,7 @@ def pystac_item_factory():
         collection: str,
         geometry: dict | None = None,
         bbox: list | None = None,
-        assets: dict = None
+        assets: dict = None,
     ) -> pystac.item.Item:
         if isinstance(datetime, str):
             datetime = date_parser(datetime)
@@ -28,7 +28,7 @@ def pystac_item_factory():
             datetime=datetime,
             properties=properties,
             collection=collection,
-            assets=assets
+            assets=assets,
         )
 
         return expected_item
