@@ -42,7 +42,7 @@ def raise_for_missing_in_google_cloud(scene_name: str) -> None:
     response.raise_for_status()
 
 
-def get_data_coverage_for_item(item: pystac.Item) -> pystac.Item:
+def get_data_coverage_for_item(item: pystac.Item) -> float:
     """Gets the percentage of the tile covered by valid data.
 
     Raises 'requests.HTTPError' if no tile info metadata can be found.
@@ -57,7 +57,7 @@ def get_data_coverage_for_item(item: pystac.Item) -> pystac.Item:
 
     response = requests.get(f'https://roda.sentinel-hub.com/{tile_info_path}')
     response.raise_for_status()
-    data_coverage = response.json()['dataCoveragePercentage']
+    data_coverage = float(response.json()['dataCoveragePercentage'])
 
     return data_coverage
 
