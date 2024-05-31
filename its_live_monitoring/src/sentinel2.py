@@ -57,7 +57,7 @@ def get_data_coverage_for_item(item: pystac.Item) -> float:
 
     response = requests.get(f'https://roda.sentinel-hub.com/{tile_info_path}')
     response.raise_for_status()
-    data_coverage = float(response.json()['dataCoveragePercentage'])
+    data_coverage = response.json()['dataCoveragePercentage']
 
     return data_coverage
 
