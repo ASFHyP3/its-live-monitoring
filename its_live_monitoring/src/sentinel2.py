@@ -28,7 +28,7 @@ log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
 
-def raise_for_missing_in_google_cloud(scene_name: str) -> None:  # noqa: D103
+def raise_for_missing_in_google_cloud(scene_name: str) -> None:
     """Raises a 'requests.HTTPError' if the scene is not in Google Cloud yet.
 
     Args:
@@ -42,8 +42,8 @@ def raise_for_missing_in_google_cloud(scene_name: str) -> None:  # noqa: D103
     response.raise_for_status()
 
 
-def add_data_coverage_to_item(item: pystac.Item) -> pystac.Item:  # noqa: D103
-    """Adds the amount of the tile covered by valid data as the property 's2:data_coverage'.
+def get_data_coverage_for_item(item: pystac.Item) -> float:
+    """Gets the percentage of the tile covered by valid data.
 
     Raises 'requests.HTTPError' if no tile info metadata can be found.
 
@@ -51,18 +51,18 @@ def add_data_coverage_to_item(item: pystac.Item) -> pystac.Item:  # noqa: D103
         item: The desired stac item to add data coverage too.
 
     Returns:
-        item: The stac item with data coverage added.
+        data_coverage: The data coverage percentage as a float.
     """
     tile_info_path = item.assets['tileinfo_metadata'].href[5:]
 
     response = requests.get(f'https://roda.sentinel-hub.com/{tile_info_path}')
     response.raise_for_status()
+    data_coverage = response.json()['dataCoveragePercentage']
 
-    item.properties['s2:data_coverage'] = response.json()['dataCoveragePercentage']
-    return item
+    return data_coverage
 
 
-def get_sentinel2_stac_item(scene: str) -> pystac.Item:  # noqa: D103
+def get_sentinel2_stac_item(scene: str) -> pystac.Item:
     """Retrieves a STAC item from the Sentinel-2 L1C Collection, throws ValueError if none found.
 
     Args:
@@ -134,9 +134,7 @@ def qualifies_for_sentinel2_processing(
         log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
         return False
 
-    if 's2:data_coverage' not in item.properties.keys():
-        item = add_data_coverage_to_item(item)
-    if item.properties['s2:data_coverage'] <= SENTINEL2_MIN_DATA_COVERAGE:
+    if get_data_coverage_for_item(item) <= SENTINEL2_MIN_DATA_COVERAGE:
         log.log(log_level, f'{item.id} disqualifies for processing because it has too little data coverage.')
         return False
 
