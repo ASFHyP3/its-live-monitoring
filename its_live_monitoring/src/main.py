@@ -99,7 +99,6 @@ def process_scene(
     """
     pairs = None
     if scene.startswith('S2'):
-        # Fixme: will throw if wrong collection!
         reference = get_sentinel2_stac_item(scene)
         if qualifies_for_sentinel2_processing(reference, logging.INFO):
             # hyp3-its-live will pull scenes from Google Cloud; ensure the new scene is there before processing
