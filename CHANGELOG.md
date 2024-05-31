@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.2]
 
 ### Added
-- Sentinel-2 will now be disqualified from processing if they do not have enough data coverage.
+- Sentinel-2 products will now be disqualified from processing if they do not have enough data coverage.
+### Changed
+- Switched from Dataspace's Sentinel-2 STAC API to Element84's
 
 ## [0.5.1]
 
