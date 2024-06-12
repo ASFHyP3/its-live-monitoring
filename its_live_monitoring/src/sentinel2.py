@@ -172,7 +172,8 @@ def get_sentinel2_pairs_for_reference_scene(
     )
 
     items = [
-        item for page in results.pages() for item in page if qualifies_for_sentinel2_processing(item, max_cloud_cover)
+        item for page in results.pages() for item in page
+        if qualifies_for_sentinel2_processing(item, max_cloud_cover=max_cloud_cover)
     ]
 
     log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
