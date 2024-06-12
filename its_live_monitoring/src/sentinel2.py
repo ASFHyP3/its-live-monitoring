@@ -114,6 +114,7 @@ def qualifies_for_sentinel2_processing(
                 f'{item.id} disqualifies for processing because its relative orbit ({item_relative_orbit}) '
                 f'does not match that of the reference scene ({reference_relative_orbit})'
             )
+            return False
 
     if item.collection_id != SENTINEL2_COLLECTION_NAME:
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
