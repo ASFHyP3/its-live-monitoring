@@ -56,7 +56,12 @@ def get_data_coverage_for_item(item: pystac.Item) -> float:
     tile_info_path = item.assets['tileinfo_metadata'].href[5:]
 
     response = requests.get(f'https://roda.sentinel-hub.com/{tile_info_path}')
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as e:
+        # TODO: what to do in this case?
+        print(e)
+        return 0
     data_coverage = response.json()['dataCoveragePercentage']
 
     return data_coverage
