@@ -89,6 +89,7 @@ def get_sentinel2_stac_item(scene: str) -> pystac.Item:
 
 def qualifies_for_sentinel2_processing(
     item: pystac.Item,
+    reference: pystac.Item = None,
     max_cloud_cover: int = SENTINEL2_MAX_CLOUD_COVER_PERCENT,
     log_level: int = logging.DEBUG,
 ) -> bool:
@@ -96,12 +97,24 @@ def qualifies_for_sentinel2_processing(
 
     Args:
         item: STAC item of the desired Sentinel-2 scene.
+        reference: STAC item of the Sentinel-2 reference scene.
         max_cloud_cover: The maximum allowable percentage of cloud cover.
         log_level: The logging level
 
     Returns:
         A bool that is True if the scene qualifies for Sentinel-2 processing, else False.
     """
+    if reference is not None:
+        # TODO: is relative orbit always at slice [33:37]?
+        reference_relative_orbit = reference.properties['s2:product_uri'][33:37]
+        item_relative_orbit = item.properties['s2:product_uri'][33:37]
+        if item_relative_orbit != reference_relative_orbit:
+            log.log(
+                log_level,
+                f'{item.id} disqualifies for processing because its relative orbit ({item_relative_orbit}) '
+                f'does not match that of the reference scene ({reference_relative_orbit})'
+            )
+
     if item.collection_id != SENTINEL2_COLLECTION_NAME:
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
         return False
@@ -180,7 +193,7 @@ def get_sentinel2_pairs_for_reference_scene(
         item
         for page in results.pages()
         for item in page
-        if qualifies_for_sentinel2_processing(item, max_cloud_cover=max_cloud_cover)
+        if qualifies_for_sentinel2_processing(item, reference=reference, max_cloud_cover=max_cloud_cover)
     ]
 
     log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
