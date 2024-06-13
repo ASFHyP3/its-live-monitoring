@@ -49,6 +49,7 @@ def get_data_coverage_for_item(item: pystac.Item, log_level: int = logging.DEBUG
 
     Args:
         item: The desired stac item to add data coverage too.
+        log_level: The logging level.
 
     Returns:
         data_coverage: The data coverage percentage as a float.
