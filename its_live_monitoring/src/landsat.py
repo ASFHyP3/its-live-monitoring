@@ -36,7 +36,7 @@ def get_landsat_stac_item(scene: str) -> pystac.Item:  # noqa: D103
 
 
 def qualifies_for_landsat_processing(
-    item: pystac.item.Item, max_cloud_cover: int = LANDSAT_MAX_CLOUD_COVER_PERCENT, log_level: int = logging.DEBUG
+    item: pystac.item.Item, *, max_cloud_cover: int = LANDSAT_MAX_CLOUD_COVER_PERCENT, log_level: int = logging.DEBUG
 ) -> bool:
     """Determines whether a scene is a valid Landsat product for processing.
 
@@ -78,6 +78,7 @@ def qualifies_for_landsat_processing(
 
 def get_landsat_pairs_for_reference_scene(
     reference: pystac.item.Item,
+    *,
     max_pair_separation: timedelta = timedelta(days=LANDSAT_MAX_PAIR_SEPARATION_IN_DAYS),
     max_cloud_cover: int = LANDSAT_MAX_CLOUD_COVER_PERCENT,
 ) -> gpd.GeoDataFrame:
@@ -103,7 +104,10 @@ def get_landsat_pairs_for_reference_scene(
     )
 
     items = [
-        item for page in results.pages() for item in page if qualifies_for_landsat_processing(item, max_cloud_cover)
+        item
+        for page in results.pages()
+        for item in page
+        if qualifies_for_landsat_processing(item, max_cloud_cover=max_cloud_cover)
     ]
 
     log.debug(f'Found {len(items)} secondary scenes for {reference.id}')

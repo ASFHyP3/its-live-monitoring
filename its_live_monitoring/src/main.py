@@ -108,7 +108,7 @@ def process_scene(
 
     else:
         reference = get_landsat_stac_item(scene)
-        if qualifies_for_landsat_processing(reference, logging.INFO):
+        if qualifies_for_landsat_processing(reference, log_level=logging.INFO):
             pairs = get_landsat_pairs_for_reference_scene(reference)
 
     if pairs is None:
