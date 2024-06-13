@@ -24,6 +24,8 @@ SENTINEL2_MIN_PAIR_SEPARATION_IN_DAYS = 5
 SENTINEL2_MAX_CLOUD_COVER_PERCENT = 70
 SENTINEL2_MIN_DATA_COVERAGE = 70
 
+SESSION = requests.Session()
+
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
@@ -42,21 +44,25 @@ def raise_for_missing_in_google_cloud(scene_name: str) -> None:
     response.raise_for_status()
 
 
-def get_data_coverage_for_item(item: pystac.Item) -> float:
+def get_data_coverage_for_item(item: pystac.Item, log_level: int = logging.DEBUG) -> float:
     """Gets the percentage of the tile covered by valid data.
-
-    Raises 'requests.HTTPError' if no tile info metadata can be found.
 
     Args:
         item: The desired stac item to add data coverage too.
+        log_level: The logging level.
 
     Returns:
         data_coverage: The data coverage percentage as a float.
     """
     tile_info_path = item.assets['tileinfo_metadata'].href[5:]
 
-    response = requests.get(f'https://roda.sentinel-hub.com/{tile_info_path}')
-    response.raise_for_status()
+    response = SESSION.get(f'https://roda.sentinel-hub.com/{tile_info_path}')
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as e:
+        # Exiting when a secondary doesn't have tileinfo would be bad, so we return 0 to disqualify it.
+        log.log(log_level, f'Data coverage could not be found for {item.id} due to {e}')
+        return 0
     data_coverage = response.json()['dataCoveragePercentage']
 
     return data_coverage
@@ -85,6 +91,7 @@ def get_sentinel2_stac_item(scene: str) -> pystac.Item:
 def qualifies_for_sentinel2_processing(
     item: pystac.Item,
     *,
+    reference: pystac.Item = None,
     max_cloud_cover: int = SENTINEL2_MAX_CLOUD_COVER_PERCENT,
     log_level: int = logging.DEBUG,
 ) -> bool:
@@ -92,12 +99,24 @@ def qualifies_for_sentinel2_processing(
 
     Args:
         item: STAC item of the desired Sentinel-2 scene.
+        reference: STAC item of the Sentinel-2 reference scene for optional relative orbit comparison.
         max_cloud_cover: The maximum allowable percentage of cloud cover.
         log_level: The logging level
 
     Returns:
         A bool that is True if the scene qualifies for Sentinel-2 processing, else False.
     """
+    if reference is not None:
+        reference_relative_orbit = reference.properties['s2:product_uri'].split('_')[4]
+        item_relative_orbit = item.properties['s2:product_uri'].split('_')[4]
+        if item_relative_orbit != reference_relative_orbit:
+            log.log(
+                log_level,
+                f'{item.id} disqualifies for processing because its relative orbit ({item_relative_orbit}) '
+                f'does not match that of the reference scene ({reference_relative_orbit}).',
+            )
+            return False
+
     if item.collection_id != SENTINEL2_COLLECTION_NAME:
         log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
         return False
@@ -177,7 +196,7 @@ def get_sentinel2_pairs_for_reference_scene(
         item
         for page in results.pages()
         for item in page
-        if qualifies_for_sentinel2_processing(item, max_cloud_cover=max_cloud_cover)
+        if qualifies_for_sentinel2_processing(item, reference=reference, max_cloud_cover=max_cloud_cover)
     ]
 
     log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
@@ -187,9 +206,9 @@ def get_sentinel2_pairs_for_reference_scene(
     features = []
     for item in items:
         feature = item.to_dict()
-        feature['properties']['reference'] = reference.properties['s2:product_uri'].rstrip('.SAFE')
+        feature['properties']['reference'] = reference.properties['s2:product_uri'].removesuffix('.SAFE')
         feature['properties']['reference_acquisition'] = reference.datetime
-        feature['properties']['secondary'] = item.properties['s2:product_uri'].rstrip('.SAFE')
+        feature['properties']['secondary'] = item.properties['s2:product_uri'].removesuffix('.SAFE')
         features.append(feature)
 
     df = gpd.GeoDataFrame.from_features(features)
