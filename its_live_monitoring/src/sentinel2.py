@@ -59,6 +59,7 @@ def get_data_coverage_for_item(item: pystac.Item, log_level: int = logging.DEBUG
     try:
         response.raise_for_status()
     except requests.HTTPError as e:
+        # Exiting when a secondary doesn't have tileinfo would be bad, so we return 0 to disqualify it.
         log.log(log_level, f'Data coverage could not be found for {item.id} due to {e}')
         return 0
     data_coverage = response.json()['dataCoveragePercentage']
