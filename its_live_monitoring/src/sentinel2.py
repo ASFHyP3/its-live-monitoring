@@ -44,12 +44,11 @@ def raise_for_missing_in_google_cloud(scene_name: str) -> None:
     response.raise_for_status()
 
 
-def get_data_coverage_for_item(item: pystac.Item, log_level: int = logging.INFO) -> float:
+def get_data_coverage_for_item(item: pystac.Item) -> float:
     """Gets the percentage of the tile covered by valid data.
 
     Args:
         item: The desired stac item to add data coverage too.
-        log_level: The logging level.
 
     Returns:
         data_coverage: The data coverage percentage as a float.
