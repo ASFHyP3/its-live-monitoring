@@ -44,7 +44,7 @@ def raise_for_missing_in_google_cloud(scene_name: str) -> None:
     response.raise_for_status()
 
 
-def get_data_coverage_for_item(item: pystac.Item, log_level: int = logging.DEBUG) -> float:
+def get_data_coverage_for_item(item: pystac.Item, log_level: int = logging.INFO) -> float:
     """Gets the percentage of the tile covered by valid data.
 
     Args:
@@ -54,15 +54,10 @@ def get_data_coverage_for_item(item: pystac.Item, log_level: int = logging.DEBUG
     Returns:
         data_coverage: The data coverage percentage as a float.
     """
-    tile_info_path = item.assets['tileinfo_metadata'].href[5:]
+    tile_info_path = item.assets['tileinfo_metadata'].href.replace('s3://', 'https://roda.sentinel-hub.com/')
 
-    response = SESSION.get(f'https://roda.sentinel-hub.com/{tile_info_path}')
-    try:
-        response.raise_for_status()
-    except requests.HTTPError as e:
-        # Exiting when a secondary doesn't have tileinfo would be bad, so we return 0 to disqualify it.
-        log.log(log_level, f'Data coverage could not be found for {item.id} due to {e}')
-        return 0
+    response = SESSION.get(tile_info_path)
+    response.raise_for_status()
     data_coverage = response.json()['dataCoveragePercentage']
 
     return data_coverage
