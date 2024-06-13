@@ -84,6 +84,7 @@ def get_sentinel2_stac_item(scene: str) -> pystac.Item:
 
 def qualifies_for_sentinel2_processing(
     item: pystac.Item,
+    *,
     max_cloud_cover: int = SENTINEL2_MAX_CLOUD_COVER_PERCENT,
     log_level: int = logging.DEBUG,
 ) -> bool:
@@ -144,6 +145,7 @@ def qualifies_for_sentinel2_processing(
 
 def get_sentinel2_pairs_for_reference_scene(
     reference: pystac.Item,
+    *,
     max_pair_separation: timedelta = timedelta(days=SENTINEL2_MAX_PAIR_SEPARATION_IN_DAYS),
     min_pair_separation: timedelta = timedelta(days=SENTINEL2_MIN_PAIR_SEPARATION_IN_DAYS),
     max_cloud_cover: int = SENTINEL2_MAX_CLOUD_COVER_PERCENT,
@@ -166,7 +168,7 @@ def get_sentinel2_pairs_for_reference_scene(
         collections=[reference.collection_id],
         query=[
             f'grid:code={reference.properties["grid:code"]}',
-            f'eo:cloud_cover<={SENTINEL2_MAX_CLOUD_COVER_PERCENT}',
+            f'eo:cloud_cover<={max_cloud_cover}',
         ],
         datetime=[reference.datetime - max_pair_separation, reference.datetime - min_pair_separation],
     )
