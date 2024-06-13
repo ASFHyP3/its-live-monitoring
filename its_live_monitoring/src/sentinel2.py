@@ -24,6 +24,8 @@ SENTINEL2_MIN_PAIR_SEPARATION_IN_DAYS = 5
 SENTINEL2_MAX_CLOUD_COVER_PERCENT = 70
 SENTINEL2_MIN_DATA_COVERAGE = 70
 
+SESSION = requests.Session()
+
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
@@ -42,10 +44,8 @@ def raise_for_missing_in_google_cloud(scene_name: str) -> None:
     response.raise_for_status()
 
 
-def get_data_coverage_for_item(item: pystac.Item) -> float:
+def get_data_coverage_for_item(item: pystac.Item, log_level: int = logging.DEBUG) -> float:
     """Gets the percentage of the tile covered by valid data.
-
-    Raises 'requests.HTTPError' if no tile info metadata can be found.
 
     Args:
         item: The desired stac item to add data coverage too.
@@ -55,12 +55,11 @@ def get_data_coverage_for_item(item: pystac.Item) -> float:
     """
     tile_info_path = item.assets['tileinfo_metadata'].href[5:]
 
-    response = requests.get(f'https://roda.sentinel-hub.com/{tile_info_path}')
+    response = SESSION.get(f'https://roda.sentinel-hub.com/{tile_info_path}')
     try:
         response.raise_for_status()
     except requests.HTTPError as e:
-        # TODO: what to do in this case?
-        print(e)
+        log.log(log_level, f'Data coverage could not be found for {item.id} due to {e}')
         return 0
     data_coverage = response.json()['dataCoveragePercentage']
 
@@ -105,14 +104,13 @@ def qualifies_for_sentinel2_processing(
         A bool that is True if the scene qualifies for Sentinel-2 processing, else False.
     """
     if reference is not None:
-        # TODO: is relative orbit always at slice [33:37]?
-        reference_relative_orbit = reference.properties['s2:product_uri'][33:37]
-        item_relative_orbit = item.properties['s2:product_uri'][33:37]
+        reference_relative_orbit = reference.properties['s2:product_uri'].split('_')[4]
+        item_relative_orbit = item.properties['s2:product_uri'].split('_')[4]
         if item_relative_orbit != reference_relative_orbit:
             log.log(
                 log_level,
                 f'{item.id} disqualifies for processing because its relative orbit ({item_relative_orbit}) '
-                f'does not match that of the reference scene ({reference_relative_orbit})',
+                f'does not match that of the reference scene ({reference_relative_orbit}).',
             )
             return False
 
