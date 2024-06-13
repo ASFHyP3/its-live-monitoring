@@ -119,6 +119,13 @@ def test_qualifies_for_processing(pystac_item_factory):
         item.properties['eo:cloud_cover'] = sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT + 1
         assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
+        item = deepcopy(good_item)
+        reference = deepcopy(good_item)
+        assert sentinel2.qualifies_for_sentinel2_processing(item, reference=reference)
+
+        item.properties['s2:product_uri'] = 'S2B_MSIL1C_20240528T000000_N0510_R100_T22TCR_20240528T000000.SAFE'
+        assert not sentinel2.qualifies_for_sentinel2_processing(item, reference=reference)
+
     with patch('sentinel2.get_data_coverage_for_item', (lambda x: 50.0)):
         assert not sentinel2.qualifies_for_sentinel2_processing(good_item)
 
@@ -210,5 +217,4 @@ def test_get_data_coverage_for_item(pystac_item_factory):
         rsps.add(responses.GET, url, json={'dataCoveragePercentage': 99.0}, status=200)
         assert sentinel2.get_data_coverage_for_item(item) == 99.0
         rsps.add(responses.GET, url, status=404)
-        with pytest.raises(requests.HTTPError):
-            sentinel2.get_data_coverage_for_item(item)
+        assert sentinel2.get_data_coverage_for_item(item) == 0
