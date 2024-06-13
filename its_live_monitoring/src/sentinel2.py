@@ -202,9 +202,9 @@ def get_sentinel2_pairs_for_reference_scene(
     features = []
     for item in items:
         feature = item.to_dict()
-        feature['properties']['reference'] = reference.properties['s2:product_uri'].rstrip('.SAFE')
+        feature['properties']['reference'] = reference.properties['s2:product_uri'].removesuffix('.SAFE')
         feature['properties']['reference_acquisition'] = reference.datetime
-        feature['properties']['secondary'] = item.properties['s2:product_uri'].rstrip('.SAFE')
+        feature['properties']['secondary'] = item.properties['s2:product_uri'].removesuffix('.SAFE')
         features.append(feature)
 
     df = gpd.GeoDataFrame.from_features(features)
