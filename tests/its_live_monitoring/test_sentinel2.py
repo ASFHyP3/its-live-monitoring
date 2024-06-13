@@ -222,4 +222,5 @@ def test_get_data_coverage_for_item(pystac_item_factory):
         rsps.add(responses.GET, url, status=404)
         with pytest.raises(requests.HTTPError):
             sentinel2.get_data_coverage_for_item(item_s3)
+        with pytest.raises(requests.HTTPError):
             sentinel2.get_data_coverage_for_item(item_roda)
