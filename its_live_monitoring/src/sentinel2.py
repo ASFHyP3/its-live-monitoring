@@ -99,7 +99,7 @@ def qualifies_for_sentinel2_processing(
 
     Args:
         item: STAC item of the desired Sentinel-2 scene.
-        reference: STAC item of the Sentinel-2 reference scene.
+        reference: STAC item of the Sentinel-2 reference scene for optional relative orbit comparison.
         max_cloud_cover: The maximum allowable percentage of cloud cover.
         log_level: The logging level
 
