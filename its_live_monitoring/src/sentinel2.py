@@ -168,7 +168,7 @@ def get_sentinel2_pairs_for_reference_scene(
         collections=[reference.collection_id],
         query=[
             f'grid:code={reference.properties["grid:code"]}',
-            f'eo:cloud_cover<={SENTINEL2_MAX_CLOUD_COVER_PERCENT}',
+            f'eo:cloud_cover<={max_cloud_cover}',
         ],
         datetime=[reference.datetime - max_pair_separation, reference.datetime - min_pair_separation],
     )
