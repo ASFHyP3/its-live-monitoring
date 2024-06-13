@@ -217,4 +217,5 @@ def test_get_data_coverage_for_item(pystac_item_factory):
         rsps.add(responses.GET, url, json={'dataCoveragePercentage': 99.0}, status=200)
         assert sentinel2.get_data_coverage_for_item(item) == 99.0
         rsps.add(responses.GET, url, status=404)
-        assert sentinel2.get_data_coverage_for_item(item) == 0
+        with pytest.raises(requests.HTTPError):
+            sentinel2.get_data_coverage_for_item(item)
