@@ -100,7 +100,7 @@ def process_scene(
     pairs = None
     if scene.startswith('S2'):
         reference = get_sentinel2_stac_item(scene)
-        if qualifies_for_sentinel2_processing(reference, logging.INFO):
+        if qualifies_for_sentinel2_processing(reference, log_level=logging.INFO):
             # hyp3-its-live will pull scenes from Google Cloud; ensure the new scene is there before processing
             # Note: Time between attempts is controlled by they SQS VisibilityTimout
             _ = raise_for_missing_in_google_cloud(scene)
@@ -108,7 +108,7 @@ def process_scene(
 
     else:
         reference = get_landsat_stac_item(scene)
-        if qualifies_for_landsat_processing(reference, logging.INFO):
+        if qualifies_for_landsat_processing(reference, log_level=logging.INFO):
             pairs = get_landsat_pairs_for_reference_scene(reference)
 
     if pairs is None:
