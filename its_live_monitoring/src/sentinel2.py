@@ -85,7 +85,7 @@ def get_sentinel2_stac_item(scene: str) -> pystac.Item:
 def qualifies_for_sentinel2_processing(
     item: pystac.Item,
     *,
-    reference: pystac.Item = None,
+    relative_orbit: str = None,
     max_cloud_cover: int = SENTINEL2_MAX_CLOUD_COVER_PERCENT,
     log_level: int = logging.DEBUG,
 ) -> bool:
@@ -93,30 +93,31 @@ def qualifies_for_sentinel2_processing(
 
     Args:
         item: STAC item of the desired Sentinel-2 scene.
-        reference: STAC item of the Sentinel-2 reference scene for optional relative orbit comparison.
+        relative_orbit: scene must be from this relative orbit if provided.
         max_cloud_cover: The maximum allowable percentage of cloud cover.
         log_level: The logging level
 
     Returns:
         A bool that is True if the scene qualifies for Sentinel-2 processing, else False.
     """
-    if reference is not None:
-        reference_relative_orbit = reference.properties['s2:product_uri'].split('_')[4]
-        item_relative_orbit = item.properties['s2:product_uri'].split('_')[4]
-        if item_relative_orbit != reference_relative_orbit:
+    item_scene_id = item.properties['s2:product_uri'].removesuffix('.SAFE')
+
+    if relative_orbit is not None:
+        item_relative_orbit = item_scene_id.split('_')[4]
+        if item_relative_orbit != relative_orbit:
             log.log(
                 log_level,
-                f'{item.id} disqualifies for processing because its relative orbit ({item_relative_orbit}) '
-                f'does not match that of the reference scene ({reference_relative_orbit}).',
+                f'{item_scene_id} disqualifies for processing because its relative orbit ({item_relative_orbit}) '
+                f'does not match the required relative orbit ({relative_orbit}).',
             )
             return False
 
     if item.collection_id != SENTINEL2_COLLECTION_NAME:
-        log.log(log_level, f'{item.id} disqualifies for processing because it is from the wrong collection')
+        log.log(log_level, f'{item_scene_id} disqualifies for processing because it is from the wrong collection')
         return False
 
-    product_uri_split = item.properties['s2:product_uri'].split('_')
-    if product_uri_split[3] == 'N0500':
+    processing_baseline = item_scene_id.split('_')[3]
+    if processing_baseline == 'N0500':
         # Reprocessing activity: https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-2-msi/copernicus-sentinel-2-collection-1-availability-status
         # Naming convention: https://sentinels.copernicus.eu/web/sentinel/user-guides/sentinel-2-msi/naming-convention
         # Processing baselines: https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-2-msi/processing-baseline
@@ -128,31 +129,37 @@ def qualifies_for_sentinel2_processing(
         return False
 
     if not item.properties['s2:product_type'].endswith('1C'):
-        log.log(log_level, f'{item.id} disqualifies for processing because it is the wrong product type.')
+        log.log(log_level, f'{item_scene_id} disqualifies for processing because it is the wrong product type.')
         return False
 
     if 'msi' not in item.properties['instruments']:
-        log.log(log_level, f'{item.id} disqualifies for processing because it was not imaged with the right instrument')
+        log.log(
+            log_level,
+            f'{item_scene_id} disqualifies for processing because it was not imaged with the right instrument',
+        )
         return False
 
     grid_square = item.properties['grid:code'][5:]
     if grid_square not in SENTINEL2_TILES_TO_PROCESS:
-        log.log(log_level, f'{item.id} disqualifies for processing because it is not from a tile containing land-ice')
+        log.log(
+            log_level,
+            f'{item_scene_id} disqualifies for processing because it is not from a tile containing land-ice',
+        )
         return False
 
     if item.properties.get('eo:cloud_cover', -1) < 0:
-        log.log(log_level, f'{item.id} disqualifies for processing because cloud coverage is unknown')
+        log.log(log_level, f'{item_scene_id} disqualifies for processing because cloud coverage is unknown')
         return False
 
     if item.properties['eo:cloud_cover'] > max_cloud_cover:
-        log.log(log_level, f'{item.id} disqualifies for processing because it has too much cloud cover')
+        log.log(log_level, f'{item_scene_id} disqualifies for processing because it has too much cloud cover')
         return False
 
     if get_data_coverage_for_item(item) <= SENTINEL2_MIN_DATA_COVERAGE:
-        log.log(log_level, f'{item.id} disqualifies for processing because it has too little data coverage.')
+        log.log(log_level, f'{item_scene_id} disqualifies for processing because it has too little data coverage.')
         return False
 
-    log.log(log_level, f'{item.id} qualifies for processing')
+    log.log(log_level, f'{item_scene_id} qualifies for processing')
     return True
 
 
@@ -186,21 +193,23 @@ def get_sentinel2_pairs_for_reference_scene(
         datetime=[reference.datetime - max_pair_separation, reference.datetime - min_pair_separation],
     )
 
+    reference_scene_id = reference.properties['s2:product_uri'].removesuffix('.SAFE')
+    reference_orbit = reference_scene_id.split('_')[4]
     items = [
         item
         for page in results.pages()
         for item in page
-        if qualifies_for_sentinel2_processing(item, reference=reference, max_cloud_cover=max_cloud_cover)
+        if qualifies_for_sentinel2_processing(item, relative_orbit=reference_orbit, max_cloud_cover=max_cloud_cover)
     ]
 
-    log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
+    log.debug(f'Found {len(items)} secondary scenes for {reference_scene_id}')
     if len(items) == 0:
         return gpd.GeoDataFrame({'reference': [], 'secondary': []})
 
     features = []
     for item in items:
         feature = item.to_dict()
-        feature['properties']['reference'] = reference.properties['s2:product_uri'].removesuffix('.SAFE')
+        feature['properties']['reference'] = reference_scene_id
         feature['properties']['reference_acquisition'] = reference.datetime
         feature['properties']['secondary'] = item.properties['s2:product_uri'].removesuffix('.SAFE')
         features.append(feature)
