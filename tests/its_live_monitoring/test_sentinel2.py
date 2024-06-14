@@ -120,11 +120,9 @@ def test_qualifies_for_processing(pystac_item_factory):
         assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
         item = deepcopy(good_item)
-        reference = deepcopy(good_item)
-        assert sentinel2.qualifies_for_sentinel2_processing(item, reference=reference)
+        assert sentinel2.qualifies_for_sentinel2_processing(item, relative_orbit='R110')
 
-        item.properties['s2:product_uri'] = 'S2B_MSIL1C_20240528T000000_N0510_R100_T22TCR_20240528T000000.SAFE'
-        assert not sentinel2.qualifies_for_sentinel2_processing(item, reference=reference)
+        assert not sentinel2.qualifies_for_sentinel2_processing(item, relative_orbit='R100')
 
     with patch('sentinel2.get_data_coverage_for_item', (lambda x: 50.0)):
         assert not sentinel2.qualifies_for_sentinel2_processing(good_item)
