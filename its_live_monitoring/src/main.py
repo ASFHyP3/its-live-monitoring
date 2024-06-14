@@ -5,13 +5,11 @@ import json
 import logging
 import os
 import sys
-from datetime import timedelta
 
 import geopandas as gpd
 import hyp3_sdk as sdk
 import pandas as pd
 
-from constants import MAX_CLOUD_COVER_PERCENT, MAX_PAIR_SEPARATION_IN_DAYS
 from landsat import (
     get_landsat_pairs_for_reference_scene,
     get_landsat_stac_item,
@@ -88,17 +86,12 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
 
 def process_scene(
     scene: str,
-    max_pair_separation: timedelta = timedelta(days=MAX_PAIR_SEPARATION_IN_DAYS),
-    max_cloud_cover: int = MAX_CLOUD_COVER_PERCENT,
     submit: bool = True,
 ) -> sdk.Batch:
     """Trigger Landsat processing for a scene.
 
     Args:
         scene: Reference Landsat scene name to build pairs for.
-        max_pair_separation: How many days back from a reference scene's acquisition date to search for secondary
-         scenes.
-        max_cloud_cover: The maximum percent a Landsat scene can be covered by clouds.
         submit: Submit pairs to HyP3 for processing.
 
     Returns:
@@ -106,17 +99,17 @@ def process_scene(
     """
     pairs = None
     if scene.startswith('S2'):
-        reference = get_sentinel2_stac_item(f'{scene}.SAFE')
-        if qualifies_for_sentinel2_processing(reference, max_cloud_cover, logging.INFO):
+        reference = get_sentinel2_stac_item(scene)
+        if qualifies_for_sentinel2_processing(reference, log_level=logging.INFO):
             # hyp3-its-live will pull scenes from Google Cloud; ensure the new scene is there before processing
             # Note: Time between attempts is controlled by they SQS VisibilityTimout
             _ = raise_for_missing_in_google_cloud(scene)
-            pairs = get_sentinel2_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
+            pairs = get_sentinel2_pairs_for_reference_scene(reference)
 
     else:
         reference = get_landsat_stac_item(scene)
-        if qualifies_for_landsat_processing(reference, max_cloud_cover, logging.INFO):
-            pairs = get_landsat_pairs_for_reference_scene(reference, max_pair_separation, max_cloud_cover)
+        if qualifies_for_landsat_processing(reference, log_level=logging.INFO):
+            pairs = get_landsat_pairs_for_reference_scene(reference)
 
     if pairs is None:
         return sdk.Batch()
@@ -169,18 +162,6 @@ def main() -> None:
     """Command Line wrapper around `process_scene`."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('reference', help='Reference Landsat scene name to build pairs for')
-    parser.add_argument(
-        '--max-pair-separation',
-        type=int,
-        default=MAX_PAIR_SEPARATION_IN_DAYS,
-        help="How many days back from a reference scene's acquisition date to search for secondary scenes",
-    )
-    parser.add_argument(
-        '--max-cloud-cover',
-        type=int,
-        default=MAX_CLOUD_COVER_PERCENT,
-        help='The maximum percent a Landsat scene can be covered by clouds',
-    )
     parser.add_argument('--submit', action='store_true', help='Submit pairs to HyP3 for processing')
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
@@ -190,7 +171,7 @@ def main() -> None:
         log.setLevel(logging.DEBUG)
 
     log.debug(' '.join(sys.argv))
-    _ = process_scene(args.reference, timedelta(days=args.max_pair_separation), args.max_cloud_cover, args.submit)
+    _ = process_scene(args.reference, submit=args.submit)
 
 
 if __name__ == '__main__':

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2]
+
+### Changed
+- Sentinel-2 products are now disqualified from processing if they do not have enough data coverage.
+- Sentinel-2 products are now disqualified from processing if the secondary scene's relative orbit does not match that of the reference scene.
+- Switched from Dataspace's Sentinel-2 STAC API to Element84's.
+
 ## [0.5.1]
 
 ### Fixed

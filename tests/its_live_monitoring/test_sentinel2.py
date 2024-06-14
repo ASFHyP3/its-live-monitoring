@@ -2,6 +2,7 @@ from copy import deepcopy
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
+import pystac
 import pytest
 import requests
 import responses
@@ -26,95 +27,118 @@ def test_raise_for_missing_in_google_cloud():
 
 
 def test_get_sentinel2_stac_item(pystac_item_factory):
-    scene = 'S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115.SAFE'
+    scene = 'S2B_13CES_20200315_0_L1C'
     properties = {
-        'tileId': '13CES',
-        'cloudCover': 28.188400000000005,
-        'productType': 'S2MSI1C',
-        'instrumentShortName': 'MSI',
+        'grid:code': 'MGRS-13CES',
+        'eo:cloud_cover': 28.188400000000005,
+        's2:product_type': 'S2MSI1C',
+        's2:product_uri': 'S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115.SAFE',
+        'instruments': ['msi'],
     }
-    collection = 'SENTINEL-2'
+    collection = 'sentinel-2-l1c'
     date_time = '2020-03-15T15:22:59.024Z'
     expected_item = pystac_item_factory(id=scene, datetime=date_time, properties=properties, collection=collection)
 
-    with patch('sentinel2.SENTINEL2_COLLECTION', MagicMock()):
-        sentinel2.SENTINEL2_COLLECTION.get_item.return_value = expected_item
+    class MockItemSearch:
+        def __init__(self, item: pystac.item.Item):
+            self.items = [item] if item else []
+
+        def pages(self):
+            return [self.items]
+
+    with patch('sentinel2.SENTINEL2_CATALOG', MagicMock()):
+        sentinel2.SENTINEL2_CATALOG.search.return_value = MockItemSearch(expected_item)
         item = sentinel2.get_sentinel2_stac_item(scene)
 
     assert item.collection_id == collection
     assert item.properties == properties
 
+    with patch('sentinel2.SENTINEL2_CATALOG', MagicMock()):
+        sentinel2.SENTINEL2_CATALOG.search.return_value = MockItemSearch(None)
+        with pytest.raises(ValueError):
+            item = sentinel2.get_sentinel2_stac_item(scene)
+
 
 def test_qualifies_for_processing(pystac_item_factory):
     properties = {
-        'tileId': '19DEE',
-        'cloudCover': 30,
-        'productType': 'S2MSI1C',
-        'instrumentShortName': 'MSI',
+        'grid:code': 'MGRS-19DEE',
+        'eo:cloud_cover': 30,
+        's2:product_uri': 'S2B_MSIL1C_20240528T000000_N0510_R110_T22TCR_20240528T000000.SAFE',
+        's2:product_type': 'S2MSI1C',
+        'instruments': ['msi'],
     }
-    collection = 'SENTINEL-2'
-
+    collection = 'sentinel-2-l1c'
     good_item = pystac_item_factory(
         id='XXX_XXXL1C_XXXX_XXXX_XXXX', datetime=datetime.now(), properties=properties, collection=collection
     )
 
-    assert sentinel2.qualifies_for_sentinel2_processing(good_item)
+    with patch('sentinel2.get_data_coverage_for_item', (lambda x: 75.0)):
+        assert sentinel2.qualifies_for_sentinel2_processing(good_item)
 
-    item = deepcopy(good_item)
-    item.collection_id = 'foo'
-    assert not sentinel2.qualifies_for_sentinel2_processing(item)
+        item = deepcopy(good_item)
+        item.collection_id = 'foo'
+        assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
-    item = deepcopy(good_item)
-    item.properties['productType'] = 'S2MSI2A'
-    assert not sentinel2.qualifies_for_sentinel2_processing(item)
+        item = deepcopy(good_item)
+        item.properties['s2:product_type'] = 'S2MSI2A'
+        assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
-    item = deepcopy(good_item)
-    item.properties['instrumentShortName'] = 'MIS'
-    assert not sentinel2.qualifies_for_sentinel2_processing(item)
+        item = deepcopy(good_item)
+        item.properties['instruments'] = ['mis']
+        assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
-    item = deepcopy(good_item)
-    item.properties['tileId'] = '30BZZ'
-    assert not sentinel2.qualifies_for_sentinel2_processing(item)
+        item = deepcopy(good_item)
+        item.properties['grid:code'] = 'MGRS-30BZZ'
+        assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
-    item = deepcopy(good_item)
-    del item.properties['cloudCover']
-    assert not sentinel2.qualifies_for_sentinel2_processing(item)
+        item = deepcopy(good_item)
+        del item.properties['eo:cloud_cover']
+        assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
-    item = deepcopy(good_item)
-    item.properties['cloudCover'] = -1
-    assert not sentinel2.qualifies_for_sentinel2_processing(item)
+        item = deepcopy(good_item)
+        item.properties['eo:cloud_cover'] = -1
+        assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
-    item = deepcopy(good_item)
-    item.properties['cloudCover'] = 0
-    assert sentinel2.qualifies_for_sentinel2_processing(item)
+        item = deepcopy(good_item)
+        item.properties['eo:cloud_cover'] = 0
+        assert sentinel2.qualifies_for_sentinel2_processing(item)
 
-    item = deepcopy(good_item)
-    item.properties['cloudCover'] = 1
-    assert sentinel2.qualifies_for_sentinel2_processing(item)
+        item = deepcopy(good_item)
+        item.properties['eo:cloud_cover'] = 1
+        assert sentinel2.qualifies_for_sentinel2_processing(item)
 
-    item = deepcopy(good_item)
-    item.properties['cloudCover'] = sentinel2.MAX_CLOUD_COVER_PERCENT - 1
-    assert sentinel2.qualifies_for_sentinel2_processing(item)
+        item = deepcopy(good_item)
+        item.properties['eo:cloud_cover'] = sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT - 1
+        assert sentinel2.qualifies_for_sentinel2_processing(item)
 
-    item = deepcopy(good_item)
-    item.properties['cloudCover'] = sentinel2.MAX_CLOUD_COVER_PERCENT
-    assert sentinel2.qualifies_for_sentinel2_processing(item)
+        item = deepcopy(good_item)
+        item.properties['eo:cloud_cover'] = sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT
+        assert sentinel2.qualifies_for_sentinel2_processing(item)
 
-    item = deepcopy(good_item)
-    item.properties['cloudCover'] = sentinel2.MAX_CLOUD_COVER_PERCENT + 1
-    assert not sentinel2.qualifies_for_sentinel2_processing(item)
+        item = deepcopy(good_item)
+        item.properties['eo:cloud_cover'] = sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT + 1
+        assert not sentinel2.qualifies_for_sentinel2_processing(item)
+
+        item = deepcopy(good_item)
+        assert sentinel2.qualifies_for_sentinel2_processing(item, relative_orbit='R110')
+
+        assert not sentinel2.qualifies_for_sentinel2_processing(item, relative_orbit='R100')
+
+    with patch('sentinel2.get_data_coverage_for_item', (lambda x: 50.0)):
+        assert not sentinel2.qualifies_for_sentinel2_processing(good_item)
 
 
 def test_get_sentinel2_pairs_for_reference_scene(pystac_item_factory):
-    scene = 'S2B_MSIL1C_20240430T143829_N0510_R139_T22TCR_20240430T162923.SAFE'
+    scene = 'S2B_22TCR_20240528_0_L1C'
     properties = {
-        'cloudCover': 28.1884,
-        'tileId': '13CES',
-        'productType': 'S2MSI1C',
-        'instrumentShortName': 'MSI',
+        'eo:cloud_cover': 28.1884,
+        'grid:code': 'MGRS-13CES',
+        's2:product_uri': 'S2B_MSIL1C_20240528T000000_N0510_R110_T22TCR_20240528T000000.SAFE',
+        's2:product_type': 'S2MSI1C',
+        'instruments': ['msi'],
     }
-    collection = 'SENTINEL-2'
-    date_time = '2024-04-30T14:38:29.024Z'
+    collection = 'sentinel-2-l1c'
+    date_time = '2024-05-28T00:00:00.000Z'
     geometry = {
         'type': 'Polygon',
         'coordinates': [
@@ -153,16 +177,15 @@ def test_get_sentinel2_pairs_for_reference_scene(pystac_item_factory):
     ref_item = pystac_item_factory(
         id=scene, datetime=date_time, properties=properties, collection=collection, geometry=geometry
     )
-
     sec_scenes = [
-        'S2B_MSIL1C_20240130T000000_N0510_R139_T22TCR_20240430T000000',
-        'S2A_MSIL1C_20230824T000000_N0510_R139_T22TCR_20230824T000000',
-        'S2B_MSIL1C_20220101T000000_N0510_R139_T22TCR_20220101T000000',
+        'S2B_22TCR_20240528_0_L1C',
+        'S2B_22TCR_20230528_0_L1C',
+        'S2B_22TCR_20210528_0_L1C',
     ]
     sec_date_times = [
-        '2024-01-30T00:00:00.000Z',
-        '2023-08-24T00:00:00.000Z',
-        '2022-01-01T00:00:00.000Z',
+        '2024-05-28T00:00:00.000Z',
+        '2023-05-28T00:00:00.000Z',
+        '2021-05-28T00:00:00.000Z',
     ]
     sec_items = []
     for scene, date_time in zip(sec_scenes, sec_date_times):
@@ -171,8 +194,31 @@ def test_get_sentinel2_pairs_for_reference_scene(pystac_item_factory):
 
     with patch('sentinel2.SENTINEL2_CATALOG', MagicMock()):
         sentinel2.SENTINEL2_CATALOG.search().pages.return_value = (sec_items,)
-        df = sentinel2.get_sentinel2_pairs_for_reference_scene(ref_item)
+        with patch('sentinel2.get_data_coverage_for_item', (lambda x: 75.0)):
+            df = sentinel2.get_sentinel2_pairs_for_reference_scene(ref_item)
 
-    assert (df['tileId'] == ref_item.properties['tileId']).all()
-    assert (df['instrumentShortName'] == ref_item.properties['instrumentShortName']).all()
+    assert (df['grid:code'] == ref_item.properties['grid:code']).all()
+    for instrument in df['instruments']:
+        assert instrument == ref_item.properties['instruments']
     assert (df['reference_acquisition'] == ref_item.datetime).all()
+
+
+@responses.activate
+def test_get_data_coverage_for_item(pystac_item_factory):
+    tile_path = 'sentinel-s2-l1c/tiles/13/C/ES/2024/5/28/0/tileInfo.json'
+    assets = {'tileinfo_metadata': pystac.Asset(href=f's3://{tile_path}')}
+    item_s3 = pystac_item_factory(
+        id='scene_name', datetime='2024-05-28T00:00:00.000Z', properties={}, collection='collection', assets=assets
+    )
+    item_roda = deepcopy(item_s3)
+    item_roda.assets = {'tileinfo_metadata': pystac.Asset(href=f'https://roda.sentinel-hub.com/{tile_path}')}
+    url = f'https://roda.sentinel-hub.com/{tile_path}'
+    with responses.RequestsMock() as rsps:
+        rsps.add(responses.GET, url, json={'dataCoveragePercentage': 99.0}, status=200)
+        assert sentinel2.get_data_coverage_for_item(item_s3) == 99.0
+        assert sentinel2.get_data_coverage_for_item(item_roda) == 99.0
+        rsps.add(responses.GET, url, status=404)
+        with pytest.raises(requests.HTTPError):
+            sentinel2.get_data_coverage_for_item(item_s3)
+        with pytest.raises(requests.HTTPError):
+            sentinel2.get_data_coverage_for_item(item_roda)
