@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.5.3]
+### Fixed
+- Downgraded the HyP3 SDK to v6.1.0 from v6.2.0 due to timeouts related to checking user's application status, see [ASFHyP3/hyp3-sdk#280](https://github.com/ASFHyP3/hyp3-sdk/issues/280). 
+
 ## [0.5.2]
 
 ### Changed
