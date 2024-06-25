@@ -100,7 +100,7 @@ def process_scene(
     """
     pairs = None
     if scene.startswith('S2'):
-        if is_new_scene(scene):
+        if is_new_scene(scene, log_level=logging.INFO):
             reference = get_sentinel2_stac_item(scene)
             if qualifies_for_sentinel2_processing(reference, log_level=logging.INFO):
                 # hyp3-its-live will pull scenes from Google Cloud; ensure the new scene is there before processing
