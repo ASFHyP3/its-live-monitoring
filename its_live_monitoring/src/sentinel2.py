@@ -144,7 +144,7 @@ def qualifies_for_sentinel2_processing(
         log.log(log_level, f'{item_scene_id} disqualifies for processing because it is from the wrong collection')
         return False
 
-    if not is_new_scene(item_scene_id):
+    if not is_new_scene(item_scene_id, log_level):
         return False
 
     if not item.properties['s2:product_type'].endswith('1C'):
