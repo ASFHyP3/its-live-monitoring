@@ -222,3 +222,10 @@ def test_get_data_coverage_for_item(pystac_item_factory):
             sentinel2.get_data_coverage_for_item(item_s3)
         with pytest.raises(requests.HTTPError):
             sentinel2.get_data_coverage_for_item(item_roda)
+
+
+def test_is_new_scene():
+    assert sentinel2.is_new_scene('S2B_MSIL1C_20240528T000000_N0510_R110_T22TCR_20240528T000000')
+    assert sentinel2.is_new_scene('S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115')
+    assert not sentinel2.is_new_scene('S2A_MSIL1C_20201005T020451_N0500_R017_T51MVP_20230307T222553')
+    assert not sentinel2.is_new_scene('S2B_MSIL1C_20201017T164309_N0500_R126_T15SYD_20230310T055907')
