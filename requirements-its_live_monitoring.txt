@@ -1,4 +1,4 @@
-geopandas==0.14.4
+geopandas==1.0.0
 hyp3-sdk==6.1.0
 pandas==2.2.2
 pystac-client==0.8.2
