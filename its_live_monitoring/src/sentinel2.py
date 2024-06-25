@@ -86,7 +86,7 @@ def is_new_scene(
     scene_name: str,
     log_level: int = logging.DEBUG,
 ) -> bool:
-    """
+    """Determines whether a Sentinel-2 scene is new or part of a reprocessing campaign
 
     Args:
         scene_name: Name of the Sentinel-2 scene
