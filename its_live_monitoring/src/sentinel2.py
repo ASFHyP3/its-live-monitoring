@@ -104,7 +104,7 @@ def is_new_scene(
         log.log(
             log_level,
             f'{scene_name} disqualifies for processing because the processing baseline identifier '
-            f'indicates it is a product from a reprocessing activity',
+            'indicates it is a product from a reprocessing activity',
         )
         return False
     return True
