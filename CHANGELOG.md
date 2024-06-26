@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.4]
 ### Fixed
 - Convert the `FilterPolicy` property of the `LandsatSubscription` CloudFormation resource from JSON to YAML, to allow upgrading to `cfn-lint` v1.3.4 (see <https://github.com/aws-cloudformation/cfn-lint/issues/3403>).
+- Disqualify Sentinel-2 scenes from reprocessing campaigns before querying the STAC catalog.
 
 ## [0.5.3]
 ### Fixed

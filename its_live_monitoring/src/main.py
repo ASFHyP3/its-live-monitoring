@@ -18,6 +18,7 @@ from landsat import (
 from sentinel2 import (
     get_sentinel2_pairs_for_reference_scene,
     get_sentinel2_stac_item,
+    is_new_scene,
     qualifies_for_sentinel2_processing,
     raise_for_missing_in_google_cloud,
 )
@@ -99,12 +100,13 @@ def process_scene(
     """
     pairs = None
     if scene.startswith('S2'):
-        reference = get_sentinel2_stac_item(scene)
-        if qualifies_for_sentinel2_processing(reference, log_level=logging.INFO):
-            # hyp3-its-live will pull scenes from Google Cloud; ensure the new scene is there before processing
-            # Note: Time between attempts is controlled by they SQS VisibilityTimout
-            _ = raise_for_missing_in_google_cloud(scene)
-            pairs = get_sentinel2_pairs_for_reference_scene(reference)
+        if is_new_scene(scene, log_level=logging.INFO):
+            reference = get_sentinel2_stac_item(scene)
+            if qualifies_for_sentinel2_processing(reference, log_level=logging.INFO):
+                # hyp3-its-live will pull scenes from Google Cloud; ensure the new scene is there before processing
+                # Note: Time between attempts is controlled by they SQS VisibilityTimeout
+                raise_for_missing_in_google_cloud(scene)
+                pairs = get_sentinel2_pairs_for_reference_scene(reference)
 
     else:
         reference = get_landsat_stac_item(scene)

@@ -1,0 +1,28 @@
+{
+  "name": "S2B_MSIL1C_20200727T073619_N0500_R092_T39UYS_20230429T213626",
+  "id": "cb992908-55bf-4a3a-97a9-49b38c92f261",
+  "path": "products/2020/7/27/S2B_MSIL1C_20200727T073619_N0500_R092_T39UYS_20230429T213626",
+  "timestamp": "2020-07-27T07:36:19.024Z",
+  "datatakeIdentifier": "GS2B_20200727T073619_017707_N05.00",
+  "sciHubIngestion": "2023-09-08T09:13:34.464Z",
+  "s3Ingestion": "2024-06-12T17:49:04.944Z",
+  "tiles": [
+    {
+      "path": "tiles/39/U/YS/2020/7/27/1",
+      "timestamp": "2020-07-27T07:45:26.552Z",
+      "utmZone": 39,
+      "latitudeBand": "U",
+      "gridSquare": "YS",
+      "datastrip": {
+        "id": "S2B_OPER_MSI_L1C_DS_S2RP_20230429T213626_S20200727T073628_N05.00",
+        "path": "products/2020/7/27/S2B_MSIL1C_20200727T073619_N0500_R092_T39UYS_20230429T213626/datastrip/0"
+      }
+    }
+  ],
+  "datastrips": [
+    {
+      "id": "S2B_OPER_MSI_L1C_DS_S2RP_20230429T213626_S20200727T073628_N05.00",
+      "path": "products/2020/7/27/S2B_MSIL1C_20200727T073619_N0500_R092_T39UYS_20230429T213626/datastrip/0"
+    }
+  ]
+}
