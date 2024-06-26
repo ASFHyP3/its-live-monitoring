@@ -8,8 +8,8 @@ install:
 
 install-lambda-deps:
 	python -m pip install --upgrade pip && \
-	python -m pip install -r requirements-its_live_monitoring.txt -t its_live_monitoring/src/ && \
-	python -m pip install -r requirements-status-messages.txt -t status-messages/src/
+	python -m pip install --no-compile -r requirements-its_live_monitoring.txt -t its_live_monitoring/src/ && \
+	python -m pip install --no-compile -r requirements-status-messages.txt -t status-messages/src/
 
 test_file ?= 'tests/'
 test:
