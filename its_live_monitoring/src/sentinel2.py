@@ -82,6 +82,34 @@ def get_sentinel2_stac_item(scene: str) -> pystac.Item:
     return item
 
 
+def is_new_scene(
+    scene_name: str,
+    log_level: int = logging.DEBUG,
+) -> bool:
+    """Determines whether a Sentinel-2 scene is new or part of a reprocessing campaign.
+
+    Args:
+        scene_name: Name of the Sentinel-2 scene
+        log_level: The logging level
+
+    Returns:
+        A bool that is False if the scene is part of a reprocessing campaign and True otherwise
+
+    """
+    processing_baseline = scene_name.split('_')[3]
+    if processing_baseline == 'N0500':
+        # Reprocessing activity: https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-2-msi/copernicus-sentinel-2-collection-1-availability-status
+        # Naming convention: https://sentinels.copernicus.eu/web/sentinel/user-guides/sentinel-2-msi/naming-convention
+        # Processing baselines: https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-2-msi/processing-baseline
+        log.log(
+            log_level,
+            f'{scene_name} disqualifies for processing because the processing baseline identifier '
+            'indicates it is a product from a reprocessing activity',
+        )
+        return False
+    return True
+
+
 def qualifies_for_sentinel2_processing(
     item: pystac.Item,
     *,
@@ -116,16 +144,7 @@ def qualifies_for_sentinel2_processing(
         log.log(log_level, f'{item_scene_id} disqualifies for processing because it is from the wrong collection')
         return False
 
-    processing_baseline = item_scene_id.split('_')[3]
-    if processing_baseline == 'N0500':
-        # Reprocessing activity: https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-2-msi/copernicus-sentinel-2-collection-1-availability-status
-        # Naming convention: https://sentinels.copernicus.eu/web/sentinel/user-guides/sentinel-2-msi/naming-convention
-        # Processing baselines: https://sentinels.copernicus.eu/web/sentinel/technical-guides/sentinel-2-msi/processing-baseline
-        log.log(
-            log_level,
-            f'{item.id} disqualifies for processing because the processing baseline identifier '
-            f'indicates it is a product from a reprocessing activity',
-        )
+    if not is_new_scene(item_scene_id, log_level):
         return False
 
     if not item.properties['s2:product_type'].endswith('1C'):
