@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.5]
+### Fixed
+- Reduced maximum concurrent executions of the `its_live_monitoring` lambda from 1,000 to 100 to reduce the frequency of
+  `hyp3_sdk.exceptions.ServerError` exceptions when de-duplicating new jobs. See [#119](https://github.com/ASFHyP3/its-live-monitoring/issues/119).
+
 ## [0.5.4]
 ### Fixed
 - Convert the `FilterPolicy` property of the `LandsatSubscription` CloudFormation resource from JSON to YAML, to allow upgrading to `cfn-lint` v1.3.4 (see <https://github.com/aws-cloudformation/cfn-lint/issues/3403>).
