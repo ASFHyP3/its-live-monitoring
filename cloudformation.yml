@@ -103,6 +103,8 @@ Resources:
       EventSourceArn: !GetAtt Queue.Arn
       FunctionResponseTypes:
         - ReportBatchItemFailures
+      ScalingConfig:
+        MaximumConcurrency: 100
 
   LambdaLogGroup:
     Type: AWS::Logs::LogGroup
