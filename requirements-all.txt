@@ -1,6 +1,6 @@
 -r requirements-its_live_monitoring.txt
 -r requirements-status-messages.txt
-cfn-lint==1.5.1
+cfn-lint==1.6.1
 ruff==0.5.1
 pytest==8.2.2
 responses==0.25.3
