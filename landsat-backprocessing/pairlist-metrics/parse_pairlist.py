@@ -29,8 +29,7 @@ def write_tile_counts(rows: list[tuple]) -> None:
 
 
 def write_month_counts(rows: list[tuple]) -> None:
-    # TODO: is it the first date in the reference scene name?
-    reference_acquisition_month_counts = Counter(row[1].split('_')[3][4:6] for row in rows)
+    reference_acquisition_month_counts = Counter(row[1].split('_')[3][0:6] for row in rows)
     output_rows = sorted(reference_acquisition_month_counts.items())
     write_csv(
         ('reference_acquisition_month', 'count'),
