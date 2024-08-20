@@ -13,9 +13,9 @@ import pystac_client
 
 
 LANDSAT_CATALOG_API = 'https://landsatlook.usgs.gov/stac-server'
-LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_CATALOG_API)
+# LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_CATALOG_API)
 LANDSAT_COLLECTION_NAME = 'landsat-c2l1'
-LANDSAT_COLLECTION = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION_NAME)
+# LANDSAT_COLLECTION = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION_NAME)
 LANDSAT_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'landsat_tiles_to_process.json').read_text())
 
 LANDSAT_MAX_PAIR_SEPARATION_IN_DAYS = 544
@@ -26,6 +26,8 @@ log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
 
 def get_landsat_stac_item(scene: str) -> pystac.Item:  # noqa: D103
+    LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_CATALOG_API)
+    LANDSAT_COLLECTION = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION_NAME)
     item = LANDSAT_COLLECTION.get_item(scene)
     if item is None:
         raise ValueError(
@@ -93,6 +95,7 @@ def get_landsat_pairs_for_reference_scene(
         A DataFrame with all potential pairs for a Landsat reference scene. Metadata in the columns will be for the
         *secondary* scene unless specified otherwise.
     """
+    LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_CATALOG_API)
     results = LANDSAT_CATALOG.search(
         collections=[reference.collection_id],
         query=[
@@ -103,26 +106,26 @@ def get_landsat_pairs_for_reference_scene(
         datetime=[reference.datetime - max_pair_separation, reference.datetime - timedelta(seconds=1)],
     )
 
-    items = [
-        item
+    return [
+        item.id
         for page in results.pages()
         for item in page
         if qualifies_for_landsat_processing(item, max_cloud_cover=max_cloud_cover)
     ]
 
-    log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
-    if len(items) == 0:
-        return gpd.GeoDataFrame({'reference': [], 'secondary': []})
-
-    features = []
-    for item in items:
-        feature = item.to_dict()
-        feature['properties']['reference'] = reference.id
-        feature['properties']['reference_acquisition'] = reference.datetime
-        feature['properties']['secondary'] = item.id
-        features.append(feature)
-
-    df = gpd.GeoDataFrame.from_features(features)
-    df['datetime'] = pd.to_datetime(df.datetime)
-
-    return df
+    # log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
+    # if len(items) == 0:
+    #     return gpd.GeoDataFrame({'reference': [], 'secondary': []})
+    #
+    # features = []
+    # for item in items:
+    #     feature = item.to_dict()
+    #     feature['properties']['reference'] = reference.id
+    #     feature['properties']['reference_acquisition'] = reference.datetime
+    #     feature['properties']['secondary'] = item.id
+    #     features.append(feature)
+    #
+    # df = gpd.GeoDataFrame.from_features(features)
+    # df['datetime'] = pd.to_datetime(df.datetime)
+    #
+    # return df
