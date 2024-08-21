@@ -67,7 +67,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    dirname = str(os.path.basename(args.pairs_csv).removesuffix('.csv'))
+    dirname = str(os.path.basename(args.pairs_csv).removesuffix('.csv')) + '_histograms'
     os.mkdir(dirname)
 
     with open(args.pairs_csv) as f:
