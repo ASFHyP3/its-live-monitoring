@@ -3,8 +3,7 @@ from hyp3_sdk.util import chunk
 
 PUBLISH_BUCKET = 'its-live-data'
 
-# TODO: login as the its-live user
-hyp3 = HyP3(api_url='https://hyp3-its-live.asf.alaska.edu')
+hyp3 = HyP3(api_url='https://hyp3-its-live.asf.alaska.edu', username='hyp3.its_live')
 
 with open('deduplicated_pairs.csv') as f:
     lines = f.read().strip('\n').split('\n')
