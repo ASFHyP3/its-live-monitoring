@@ -9,7 +9,7 @@ hyp3 = HyP3(api_url='https://hyp3-its-live.asf.alaska.edu')
 with open('deduplicated_pairs.csv') as f:
     lines = f.read().strip('\n').split('\n')
 
-pairs = [','.split(line) for line in lines]
+pairs = [line.split(',') for line in lines]
 
 prepared_jobs = [
     {
