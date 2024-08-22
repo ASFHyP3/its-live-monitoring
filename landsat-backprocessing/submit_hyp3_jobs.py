@@ -1,6 +1,8 @@
 from hyp3_sdk import HyP3
 from hyp3_sdk.util import chunk
 
+PUBLISH_BUCKET = 'its-live-data'
+
 # TODO: login as the its-live user
 hyp3 = HyP3(api_url='https://hyp3-its-live.asf.alaska.edu')
 
@@ -13,7 +15,7 @@ prepared_jobs = [
     {
         'job_parameters': {
             'granules': [reference, secondary],
-            'publish_bucket': 'its-live-data'
+            'publish_bucket': PUBLISH_BUCKET,
         },
         'job_type': 'AUTORIFT',
         'name': reference,
