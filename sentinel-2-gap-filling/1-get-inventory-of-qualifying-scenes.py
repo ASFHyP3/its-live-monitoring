@@ -16,6 +16,8 @@ results = sentinel2.SENTINEL2_CATALOG.search(
     },
     datetime=[datetime(2024, 7, 31, hour=23), datetime(2024, 8, 1)],
 )
+
+# TODO parallelize via concurrent.futures.ProcessPoolExecutor
 items = []
 for ii, page in enumerate(results.pages()):
     print(ii)
