@@ -1,0 +1,3 @@
+This folder contains one time scripts to inventory historical ITS_LIVE Sentinel-2 processing, identify unprocessed scenes/pairs, and submit those pairs to HyP3 for processing.
+
+- 1-get-inventory-of-qualifying-scenes.py : queries the Sentinel-2 STAC catalog to build a list Sentinel-2 L1C scenes from 2022-01-01 to present that qualify for processing.
