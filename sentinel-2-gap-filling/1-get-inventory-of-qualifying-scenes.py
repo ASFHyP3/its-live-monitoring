@@ -4,9 +4,6 @@ import concurrent.futures
 from datetime import datetime
 import json
 
-import sys
-sys.path.append("/Users/jrsmale/GitHub/its-live-monitoring/its_live_monitoring/src")
-
 import sentinel2
 
 
@@ -33,7 +30,7 @@ def main():
     )
 
     items = []
-    for page in results.pages:
+    for page in results.pages():
         for result in page:
             items.append(result.to_dict())
 
