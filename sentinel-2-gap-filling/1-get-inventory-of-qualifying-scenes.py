@@ -40,7 +40,7 @@ def main():
             if check_s2_pair_qualifies_for_processing(row, grid_tiles, search_date_window):
                 scenes.append(row['GRANULE_ID'])
 
-    with open('all_qualifying_s2_scenes.csv', 'w') as f:
+    with open('all_qualifying_s2_scenes.txt', 'w') as f:
         for scene in scenes:
             f.write(scene + '\n')
 
