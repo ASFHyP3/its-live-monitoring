@@ -4,6 +4,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 import sentinel2
 
+# example scene name: S2A_MSIL1C_20200225T063841_N0209_R120_T44XNG_20200225T075814
 
 INPUT_FILE = 'all_qualifying_scenes.txt'
 OUTPUT_FILE = 'all_qualifying_pairs.csv'
@@ -30,9 +31,26 @@ def get_acquisition_date(scene: str) -> datetime:
     return datetime.strptime(scene.split('_')[2], '%Y%m%dT%H%M%S')
 
 
+def get_hash(scene: str) -> str:
+    platform, product, acquisition_date, datatake, orbit, tile, processing_date = scene.split('_')
+    return '_'.join([platform, product, acquisition_date, orbit, tile])
+
+
+def remove_reprocessed_scenes(stack: list[str]) -> list[str]:
+    previous_hash = ''
+    new_stack = []
+    for scene in stack:
+        this_hash = get_hash(scene)
+        if this_hash != previous_hash:
+            new_stack.append(scene)
+        previous_hash = this_hash
+    return new_stack
+
+
 def get_pairs_for_stack(stack: list[str]) -> str:
     pairs = ''
     stack.sort(reverse=True, key=get_acquisition_date)
+    stack = remove_reprocessed_scenes(stack)
     for ii, reference in enumerate(stack):
         reference_date = get_acquisition_date(reference)
         if reference_date > MAX_REFERENCE_DATE:
@@ -52,7 +70,6 @@ def get_pairs_for_stack(stack: list[str]) -> str:
 
 def main():
     scenes = load_qualifying_scenes()
-    # TODO remove duplicate scenes that differ only by processing datetime
     stacks = group_scenes_by_orbit_and_tile(scenes)
     with open(OUTPUT_FILE, 'w') as f:
         with ProcessPoolExecutor() as executor:
