@@ -1,6 +1,7 @@
 This folder contains one time scripts to inventory historical ITS_LIVE Sentinel-2 processing, identify unprocessed scenes/pairs, and submit those pairs to HyP3 for processing.
 
 - 1-get-inventory-of-qualifying-scenes.py : queries a local copy of the Google Cloud  to build a list Sentinel-2 L1C scenes from 2022-01-01 to present that qualify for processing.
+  - Download the Google Cloud file with: `wget https://storage.googleapis.com/gcp-public-data-sentinel-2/index.csv.gz`
 
 - 2-build-pair-list-from-qualifying-scenes.py: builds a csv of `secondary_scene,reference_scene` pairs from a list of qualifying scenes
 
