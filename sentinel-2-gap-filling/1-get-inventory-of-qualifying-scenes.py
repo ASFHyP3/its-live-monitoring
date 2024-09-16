@@ -14,6 +14,8 @@ def check_s2_pair_qualifies_for_processing(row, grid_tiles, search_date_window, 
             print(row['GRANULE_ID'])
         if row['MGRS_TILE'] not in grid_tiles:
             return False
+        if row['GEOMETRIC_QUALITY_FLAG'] is None:
+            return False
         if float(row['CLOUD_COVER']) < sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT or \
                 float(row['CLOUD_COVER']) is None:
             return False
