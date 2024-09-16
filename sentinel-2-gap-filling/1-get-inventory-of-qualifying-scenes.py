@@ -1,50 +1,49 @@
 """Functions to support Sentinel-2 processing."""
-
-import concurrent.futures
+from concurrent.futures import ProcessPoolExecutor
+import csv
 from datetime import datetime
-import json
 
 import sentinel2
+from pathlib import Path
 
 
-def check_s2_pair_qualifies_for_processing(item):
+def check_s2_pair_qualifies_for_processing(row, grid_tiles, search_date_window, date_format='%Y-%m-%dT%H:%M:%S.%fZ'):
     try:
-        if sentinel2.qualifies_for_sentinel2_processing(item):
-            return(item.id)
+        dtype = row['BASE_URL'].removesuffix('SAFE').split('_')[1]
+        if dtype != 'MSIL1C':
+            print(row['GRANULE_ID'])
+        if row['MGRS_TILE'] not in grid_tiles:
+            return False
+        if float(row['CLOUD_COVER']) < sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT or \
+                float(row['CLOUD_COVER']) is None:
+            return False
+        if datetime.strptime(row['SENSING_TIME'], date_format) < search_date_window[0] or \
+                datetime.strptime(row['SENSING_TIME'], date_format) > search_date_window[1]:
+            return False
+        else:
+            return row["GRANULE_ID"]
     except:
-        print(f'Unable to check {item.id}')
+        print(f'Error processing: {row["GRANULE_ID"]}')
+        return False
 
 
 def main():
-    results = sentinel2.SENTINEL2_CATALOG.search(
-        collections=[sentinel2.SENTINEL2_COLLECTION_NAME],
-        query={
-            'eo:cloud_cover': {
-                'lte': sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT,
-            },
-            'grid:code': {
-                'in': [f'MGRS-{tile}' for tile in sentinel2.SENTINEL2_TILES_TO_PROCESS],
-            },
-        },
-        datetime=[datetime(2022, 2, 1), datetime(2023, 1, 1)],
-    )
+    s2_archive_file = Path('index.csv')
 
-    items = []
-    for page in results.pages():
-        for result in page:
-            items.append(result.to_dict())
-
-    with open('all__s2_scenes.json', 'w') as f:
-        json.dump(items, f)
+    search_date_window = [datetime(2020, 7, 1), datetime(2022, 1, 1)]
+    grid_tiles = [tile for tile in sentinel2.SENTINEL2_TILES_TO_PROCESS]
 
     scenes = []
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        for result in executor.map(check_s2_pair_qualifies_for_processing, items):
-            if result:
-                scenes.extend(result)
+    with open(s2_archive_file, 'r') as f:
+        reader = csv.DictReader(f)
+        with ProcessPoolExecutor() as executor:
+            for scene in executor.map(check_s2_pair_qualifies_for_processing, reader):
+                if scene:
+                    scenes.append(scene)
 
-    with open('all_qualifying_s2_scenes.json', 'w') as f:
-        json.dump(scenes, f)
+    with open('all_qualifying_s2_scenes.txt', 'w') as f:
+        for scene in scenes:
+            f.write(scene + '\n')
 
 
 if __name__ == "__main__":
