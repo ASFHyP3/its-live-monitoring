@@ -2,6 +2,7 @@ This folder contains one time scripts to inventory historical ITS_LIVE Sentinel-
 
 - 1-get-inventory-of-qualifying-scenes.py : queries the Sentinel-2 STAC catalog to build a list Sentinel-2 L1C scenes from 2022-01-01 to present that qualify for processing.
   - A test sample set of these data are here: s3://jrs-dev/itslive/qualifying_s2_scenes.json
+- 2-build-pair-list-from-qualifying-scenes.py: builds a csv of `secondary_scene,reference_scene` pairs from a list of qualifying scenes
 
 - run `aws --no-sign-request s3 ls s3://its-live-data/velocity_image_pair/sentinel2/v02/ --recursive | grep '.nc$' > sentinel2_s3_inventory.txt` to generate a list of already-processed data files.
   - output is at `s3://asj-dev/its-live/sentinel-2/sentinel2_s3_inventory.txt.zip` (299 MB)
