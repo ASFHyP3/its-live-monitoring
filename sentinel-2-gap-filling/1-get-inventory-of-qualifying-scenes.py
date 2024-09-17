@@ -7,7 +7,7 @@ import json
 import sentinel2
 from sentinel2 import SENTINEL2_TILES_TO_PROCESS as TILES
 
-NUM_WORKERS = 8
+NUM_WORKERS = 32
 
 
 def check_s2_pair_qualifies_for_processing(item) -> bool:
