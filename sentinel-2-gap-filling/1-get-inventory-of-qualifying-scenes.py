@@ -46,6 +46,7 @@ def main():
     with concurrent.futures.ProcessPoolExecutor() as executor:
         scenes = [
             scene
+            # TODO: chunksize doesn't work like I thought
             for batch_of_scenes in executor.map(get_scene_names, TILES, chunksize=chunksize)
             for scene in batch_of_scenes
         ]
