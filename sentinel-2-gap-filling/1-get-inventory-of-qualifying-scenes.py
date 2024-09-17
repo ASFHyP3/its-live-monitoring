@@ -26,7 +26,7 @@ def main():
                 'in': [f'MGRS-{tile}' for tile in sentinel2.SENTINEL2_TILES_TO_PROCESS],
             },
         },
-        datetime=[datetime(2022, 2, 1), datetime(2023, 1, 1)],
+        datetime=[datetime(2020, 7, 1), datetime(2024, 9, 1)],
     )
 
     items = []
