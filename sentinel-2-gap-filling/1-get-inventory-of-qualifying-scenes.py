@@ -12,7 +12,6 @@ NUM_WORKERS = 8
 
 def check_s2_pair_qualifies_for_processing(item) -> bool:
     try:
-        # TODO: double-check if need to use other kwargs (relative_orbit, etc.)
         return sentinel2.qualifies_for_sentinel2_processing(item)
     except Exception as e:
         print(f'Unable to check {item.id} due to {e}')
