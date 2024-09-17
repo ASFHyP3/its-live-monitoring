@@ -4,10 +4,20 @@ import concurrent.futures
 from datetime import datetime
 import json
 
+import requests
+
 import sentinel2
 from sentinel2 import SENTINEL2_TILES_TO_PROCESS as TILES
 
 NUM_WORKERS = 32
+
+def check_missing_in_google_cloud(scene_name: str) -> bool:
+    try:
+        sentinel2.raise_for_missing_in_google_cloud(scene_name)
+        return True
+    except requests.HTTPError as e:
+        print(f'Scene {scene_name} not found in Google Cloud due to {e}')
+        return False
 
 
 def check_s2_pair_qualifies_for_processing(item) -> bool:
@@ -36,7 +46,8 @@ def get_scene_names(tiles: list[str]) -> list[str]:
         item.id
         for page in results.pages()
         for item in page
-        if sentinel2.qualifies_for_sentinel2_processing(item)
+        if check_s2_pair_qualifies_for_processing(item)
+           and check_missing_in_google_cloud(item.properties['s2:product_uri'].removesuffix('.SAFE'))
     ]
 
 
