@@ -43,11 +43,13 @@ def get_scene_names(tiles: list[str]) -> list[str]:
 def main():
     chunksize = len(TILES) // NUM_WORKERS
     print(f'Chunk size: {chunksize}')
+
+    tile_chunks = [TILES[i:i + chunksize] for i in range(0, len(TILES), chunksize)]
+
     with concurrent.futures.ProcessPoolExecutor() as executor:
         scenes = [
             scene
-            # TODO: chunksize doesn't work like I thought
-            for batch_of_scenes in executor.map(get_scene_names, TILES, chunksize=chunksize)
+            for batch_of_scenes in executor.map(get_scene_names, tile_chunks)
             for scene in batch_of_scenes
         ]
     print(f'Got {len(scenes)} total scenes')
