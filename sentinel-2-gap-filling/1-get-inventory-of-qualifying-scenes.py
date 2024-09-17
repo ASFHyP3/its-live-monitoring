@@ -19,6 +19,7 @@ def check_s2_pair_qualifies_for_processing(item) -> bool:
 
 
 def get_scene_names(tiles: list[str]) -> list[str]:
+    print(f'Getting scene names for {len(tiles)} tiles')
     results = sentinel2.SENTINEL2_CATALOG.search(
         collections=[sentinel2.SENTINEL2_COLLECTION_NAME],
         query={
@@ -41,12 +42,14 @@ def get_scene_names(tiles: list[str]) -> list[str]:
 
 def main():
     chunksize = len(TILES) // NUM_WORKERS
+    print(f'Chunk size: {chunksize}')
     with concurrent.futures.ProcessPoolExecutor() as executor:
         scenes = [
             scene
             for batch_of_scenes in executor.map(get_scene_names, TILES, chunksize=chunksize)
             for scene in batch_of_scenes
         ]
+    print(f'Got {len(scenes)} total scenes')
 
     with open('all_qualifying_s2_scenes.json', 'w') as f:
         json.dump(scenes, f)
