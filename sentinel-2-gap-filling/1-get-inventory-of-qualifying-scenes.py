@@ -41,7 +41,7 @@ def main():
     with concurrent.futures.ProcessPoolExecutor() as executor:
         for result in executor.map(check_s2_pair_qualifies_for_processing, items):
             if result:
-                scenes.extend(result)
+                scenes.append(result)
 
     with open('all_qualifying_s2_scenes.json', 'w') as f:
         json.dump(scenes, f)
