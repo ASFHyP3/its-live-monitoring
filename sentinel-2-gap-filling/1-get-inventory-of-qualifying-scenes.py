@@ -42,10 +42,10 @@ def get_scene_names(tiles: list[str]) -> list[str]:
 
 def main():
     scenes = []
-    for tiles in (TILES[i:i+NUM_WORKERS] for i in range(0, len(TILES), NUM_WORKERS)):
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            for scene in executor.map(get_scene_names, tiles):
-                scenes.append(scene)
+    tile_chunks = [TILES[i:i+NUM_WORKERS] for i in range(0, len(TILES), NUM_WORKERS)]
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        for scene in executor.map(get_scene_names, tile_chunks):
+            scenes.append(scene)
 
     with open('all_qualifying_s2_scenes.json', 'w') as f:
         json.dump(scenes, f)
