@@ -45,8 +45,8 @@ def check_s2_pair_qualifies_for_processing(item) -> bool:
         return False
 
 
-def get_scene_names_for_timeframe(tiles: list[str], timeframe: list[datetime]) -> list[str]:
-    print(f'Getting scene names for {len(tiles)} tiles and timeframe {timeframe}')
+def get_scene_names_for_timeframe(worker_id: int, tiles: list[str], timeframe: list[datetime]) -> list[str]:
+    print(f'Worker {worker_id}: Getting scene names for {len(tiles)} tiles and timeframe {timeframe}')
     while True:
         try:
             results = sentinel2.SENTINEL2_CATALOG.search(
@@ -61,23 +61,26 @@ def get_scene_names_for_timeframe(tiles: list[str], timeframe: list[datetime]) -
                 },
                 datetime=timeframe,
             )
+            break
         except Exception as e:
-            print(f'STAC search failed due to {e}')
-            continue
-    return [
+            print(f'Worker {worker_id}: STAC search failed due to {e}')
+    scene_names = [
         item.id
         for page in results.pages()
         for item in page
         if check_s2_pair_qualifies_for_processing(item)
            and exists_in_google_cloud(item.properties['s2:product_uri'].removesuffix('.SAFE'))
     ]
+    print(f'Worker {worker_id}: Got {len(scene_names)} scene names')
+    return scene_names
 
 
-def get_scene_names(tiles: list[str]) -> list[str]:
+def get_scene_names(tile_chunk: tuple[int, list[str]]) -> list[str]:
+    worker_id, tiles = tile_chunk
     return [
         scene_name
         for timeframe in TIMEFRAMES
-        for scene_name in get_scene_names_for_timeframe(tiles, timeframe)
+        for scene_name in get_scene_names_for_timeframe(worker_id, tiles, timeframe)
     ]
 
 
@@ -89,7 +92,7 @@ def main():
     chunksize = len(TILES) // NUM_WORKERS
     print(f'\nChunk size: {chunksize}\n')
 
-    tile_chunks = [TILES[i:i + chunksize] for i in range(0, len(TILES), chunksize)]
+    tile_chunks = [(count, TILES[i:i + chunksize]) for count, i in enumerate(range(0, len(TILES), chunksize))]
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
         scenes = [
