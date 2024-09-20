@@ -65,8 +65,7 @@ def query_scene_names(worker_id: str, tiles: list[str], timeframe: list[datetime
                         'lte': sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT,
                     },
                     'grid:code': {
-                        # TODO revert the leading-0 fix after Joe's PR is merged?
-                        'in': [f'MGRS-{tile.removeprefix("0")}' for tile in tiles],
+                        'in': tiles
                     },
                 },
                 datetime=timeframe,
