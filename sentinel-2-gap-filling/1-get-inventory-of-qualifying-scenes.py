@@ -2,6 +2,7 @@
 
 import concurrent.futures
 import json
+import random
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -80,7 +81,7 @@ def query_scene_names(worker_id: str, tiles: list[str], timeframe: list[datetime
             return scene_names
         except Exception as e:
             print(f'Worker {worker_id}: STAC search failed due to {exception_to_str(e)}')
-            time.sleep(30)
+            time.sleep(random.randint(10, 50))
 
 
 def get_scene_names_for_timeframe(worker_id: str, tiles: list[str], timeframe: list[datetime]) -> list[str]:
@@ -111,7 +112,7 @@ def get_scene_names(tile_chunk: tuple[str, list[str]]) -> list[str]:
 
 
 def main() -> None:
-    OUTPUT_DIR.mkdir()
+    OUTPUT_DIR.mkdir(exist_ok=True)
 
     print('Timeframes:')
     for timeframe in TIMEFRAMES:
