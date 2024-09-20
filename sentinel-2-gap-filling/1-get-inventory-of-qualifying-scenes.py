@@ -4,22 +4,20 @@ import concurrent.futures
 from datetime import datetime, timedelta
 import json
 
-import requests
-
 import sentinel2
 from sentinel2 import SENTINEL2_TILES_TO_PROCESS as TILES
 
-NUM_WORKERS = 32
+NUM_CPU = 32
 
 START = datetime(2020, 7, 1)
 STOP = datetime(2024, 9, 1)
-INTERVAL = timedelta(days=180)
+INTERVAL = timedelta(days=30)
 
 def get_timeframes():
     start = START
     timeframes = []
     while start != STOP:
-        stop = min(start + INTERVAL - timedelta(seconds=1), STOP)
+        stop = min(start + INTERVAL, STOP)
         timeframes.append([start, stop])
         start = stop
     return timeframes
@@ -28,12 +26,16 @@ def get_timeframes():
 TIMEFRAMES = get_timeframes()
 
 
+def exception_to_str(e: Exception) -> str:
+    return f'{type(e).__name__}: {e}'
+
+
 def exists_in_google_cloud(scene_name: str) -> bool:
     try:
         sentinel2.raise_for_missing_in_google_cloud(scene_name)
         return True
-    except requests.HTTPError as e:
-        print(f'Scene {scene_name} not found in Google Cloud due to {e}')
+    except Exception as e:
+        print(f'Scene {scene_name} not found in Google Cloud due to {exception_to_str(e)}')
         return False
 
 
@@ -41,11 +43,11 @@ def check_s2_pair_qualifies_for_processing(item) -> bool:
     try:
         return sentinel2.qualifies_for_sentinel2_processing(item)
     except Exception as e:
-        print(f'Unable to check {item.id} due to {e}')
+        print(f'Unable to check {item.id} due to {exception_to_str(e)}')
         return False
 
 
-def get_scene_names_for_timeframe(worker_id: int, tiles: list[str], timeframe: list[datetime]) -> list[str]:
+def get_scene_names_for_timeframe(worker_id: str, tiles: list[str], timeframe: list[datetime]) -> list[str]:
     print(f'Worker {worker_id}: Getting scene names for {len(tiles)} tiles and timeframe {timeframe}')
     while True:
         try:
@@ -61,27 +63,30 @@ def get_scene_names_for_timeframe(worker_id: int, tiles: list[str], timeframe: l
                 },
                 datetime=timeframe,
             )
-            break
+            scene_names = [
+                item.id
+                for page in results.pages()
+                for item in page
+                if check_s2_pair_qualifies_for_processing(item)
+                   and exists_in_google_cloud(item.properties['s2:product_uri'].removesuffix('.SAFE'))
+            ]
+            print(f'Worker {worker_id}: Got {len(scene_names)} scene names for timeframe {timeframe}')
+            return scene_names
         except Exception as e:
-            print(f'Worker {worker_id}: STAC search failed due to {e}')
-    scene_names = [
-        item.id
-        for page in results.pages()
-        for item in page
-        if check_s2_pair_qualifies_for_processing(item)
-           and exists_in_google_cloud(item.properties['s2:product_uri'].removesuffix('.SAFE'))
-    ]
-    print(f'Worker {worker_id}: Got {len(scene_names)} scene names')
-    return scene_names
+            print(f'Worker {worker_id}: STAC search failed due to {exception_to_str(e)}')
 
 
-def get_scene_names(tile_chunk: tuple[int, list[str]]) -> list[str]:
+def get_scene_names(tile_chunk: tuple[str, list[str]]) -> list[str]:
     worker_id, tiles = tile_chunk
-    return [
+    scene_names = [
         scene_name
         for timeframe in TIMEFRAMES
         for scene_name in get_scene_names_for_timeframe(worker_id, tiles, timeframe)
     ]
+    print(f'Worker {worker_id}: Finished with {len(scene_names)} total scene names')
+    with open(f'qualifying-s2-scenes-{worker_id}.json', 'w') as f:
+        json.dump(scene_names, f)
+    return scene_names
 
 
 def main():
@@ -89,10 +94,13 @@ def main():
     for timeframe in TIMEFRAMES:
         print(timeframe[0].isoformat(), timeframe[1].isoformat())
 
-    chunksize = len(TILES) // NUM_WORKERS
+    chunksize = len(TILES) // NUM_CPU
     print(f'\nChunk size: {chunksize}\n')
 
-    tile_chunks = [(count, TILES[i:i + chunksize]) for count, i in enumerate(range(0, len(TILES), chunksize))]
+    tile_chunks = [
+        (str(count).zfill(2), TILES[i:i + chunksize])
+        for count, i in enumerate(range(0, len(TILES), chunksize), start=1)
+    ]
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
         scenes = [
