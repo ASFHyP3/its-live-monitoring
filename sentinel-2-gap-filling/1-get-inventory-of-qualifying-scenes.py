@@ -58,7 +58,7 @@ def get_scene_names_for_timeframe(worker_id: str, tiles: list[str], timeframe: l
                         'lte': sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT,
                     },
                     'grid:code': {
-                        'in': [f'MGRS-{tile}' for tile in tiles],
+                        'in': [f'MGRS-{tile.removeprefix("0")}' for tile in tiles],
                     },
                 },
                 datetime=timeframe,
