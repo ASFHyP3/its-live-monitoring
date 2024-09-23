@@ -1,6 +1,6 @@
 geopandas==1.0.1
 hyp3-sdk==7.0.1
-pandas==2.2.2
+pandas==2.2.3
 pystac-client==0.8.3
 requests==2.32.3
 shapely==2.0.6
