@@ -1,5 +1,5 @@
 def remove_processing_dates(pair: str) -> str:
-    return ','.join('_'.join(name.split('_')[:-1]) for name in pair.split(','))
+    return ','.join('_'.join(name.split('_')[:3] + name.split('_')[4:-1]) for name in pair.split(','))
 
 with open('all_qualifying_pairs.csv') as f:
     all_pairs = {line.strip() for line in f}
