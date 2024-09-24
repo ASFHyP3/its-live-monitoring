@@ -31,8 +31,14 @@ def get_acquisition_date(scene: str) -> datetime:
     return datetime.strptime(scene.split('_')[2], '%Y%m%dT%H%M%S')
 
 
+def get_sort_key(scene: str) -> str:
+    # acquisition date then processing baseline then processing date
+    _, _, acquisition_date, baseline, _, _, processing_date = scene.split('_')
+    return acquisition_date + baseline + processing_date
+
+
 def get_hash(scene: str) -> str:
-    platform, product, acquisition_date, datatake, orbit, tile, processing_date = scene.split('_')
+    platform, product, acquisition_date, baseline, orbit, tile, processing_date = scene.split('_')
     return '_'.join([platform, product, acquisition_date, orbit, tile])
 
 
@@ -49,7 +55,7 @@ def remove_reprocessed_scenes(stack: list[str]) -> list[str]:
 
 def get_pairs_for_stack(stack: list[str]) -> str:
     pairs = ''
-    stack.sort(reverse=True, key=get_acquisition_date)
+    stack.sort(reverse=True, key=get_sort_key)
     stack = remove_reprocessed_scenes(stack)
     for ii, reference in enumerate(stack):
         reference_date = get_acquisition_date(reference)
