@@ -72,7 +72,7 @@ def query_scene_names(worker_id: str, tiles: list[str], timeframe: list[datetime
                 datetime=timeframe,
             )
             scene_names = [
-                item.id
+                item.properties['s2:product_uri'].removesuffix('.SAFE')
                 for page in results.pages()
                 for item in page
                 if check_s2_pair_qualifies_for_processing(item)
