@@ -158,7 +158,7 @@ def qualifies_for_sentinel2_processing(
         )
         return False
 
-    grid_square = item.properties['grid:code'][5:]
+    grid_square = item.properties['grid:code']
     if grid_square not in SENTINEL2_TILES_TO_PROCESS:
         log.log(
             log_level,
