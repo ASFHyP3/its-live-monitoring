@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.5.7]
+### Fixed
+- Normalized the Sentinel-2 tile list to match the Element84 STAC representation, fixing tiles with a leading `0` being excluded from processing.
+
 ## [0.5.6]
 ### Changed
 - Reduced SQS batch size from 10 to 1 so that each de-duplication attempt has up to the full 15-minute Lambda timeout.
