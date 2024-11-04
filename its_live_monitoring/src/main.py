@@ -9,7 +9,10 @@ import sys
 import boto3
 import geopandas as gpd
 import hyp3_sdk as sdk
+import numpy as np
 import pandas as pd
+
+from shapely import Polygon
 
 from landsat import (
     get_landsat_pairs_for_reference_scene,
@@ -39,7 +42,26 @@ log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 s3 = boto3.client('s3')
 
 
-def get_key(tile_prefixes: list[str], pair: list[str]) -> str:
+def point_to_region(lat: float, lon: float) -> str:
+    """
+    Returns a string (for example, N78W124) of a region name based on
+    granule center point lat,lon
+    """
+    nw_hemisphere = 'N' if lat >= 0.0 else 'S'
+    ew_hemisphere = 'E' if lon >= 0.0 else 'W'
+
+    region_lat = int(10*np.trunc(np.abs(lat/10.0)))
+    if region_lat == 90:  # if you are exactly at a pole, put in lat = 80 bin
+        region_lat = 80
+
+    region_lon = int(10*np.trunc(np.abs(lon/10.0)))
+    if region_lon >= 180:  # if you are at the dateline, back off to the 170 bin
+        region_lon = 170
+
+    return f'{nw_hemisphere}{region_lat:02d}{ew_hemisphere}{region_lon:03d}'
+
+
+def get_key(tile_prefixes: set[str], pair: list[str]) -> str:
     """Search S3 for the key of a processed pair.
 
     Args:
@@ -71,22 +93,20 @@ def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
+    corners_of_pairs = [list(ref_geom.union(sec_geom).exterior.coords)[:-1] for ref_geom, sec_geom in zip(pairs['reference_geometry'], pairs['geometry'])]
+    regions_for_pairs = [{point_to_region(lat, lon) for lon, lat in corners} for corners in corners_of_pairs]
+
     s2_prefix = 'velocity_image_pair/sentinel2/v02/'
     landsat_prefix = 'velocity_image_pair/landsatOLI/v02/'
     prefix = s2_prefix if pairs['reference'][0].startswith('S2') else landsat_prefix
+    tile_prefixes = [{prefix + region for region in regions} for regions in regions_for_pairs]
+    pairs['tile_prefixes'] = tile_prefixes
 
-    response = s3.list_objects_v2(
-        Bucket='its-live-data',
-        Prefix=prefix,
-        Delimiter='/',
-    )
-    tile_prefixes = [prefix['Prefix'] for prefix in response['CommonPrefixes']]
-
-    pairs = pairs.set_index(['reference', 'secondary'])
-    for pair in pairs.index:
-        key = get_key(tile_prefixes, pair)
+    for i in range(len(pairs)):
+        pair = pairs.loc[i]
+        key = get_key(tile_prefixes=pair['tile_prefixes'], pair=[pair['reference'], pair['secondary']])
         if key:
-            pairs.drop(pair)
+            pairs.drop(i)
 
     return pairs.reset_index()
 
