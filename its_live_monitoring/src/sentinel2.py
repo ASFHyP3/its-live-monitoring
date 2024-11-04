@@ -12,6 +12,7 @@ import pystac
 import pystac_client
 import requests
 
+
 SENTINEL2_CATALOG_API = 'https://earth-search.aws.element84.com/v1/'
 SENTINEL2_CATALOG = pystac_client.Client.open(SENTINEL2_CATALOG_API)
 SENTINEL2_COLLECTION_NAME = 'sentinel-2-l1c'

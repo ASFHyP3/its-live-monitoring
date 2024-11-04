@@ -41,18 +41,15 @@ s3 = boto3.client('s3')
 
 
 def point_to_region(lat: float, lon: float) -> str:
-    """
-    Returns a string (for example, N78W124) of a region name based on
-    granule center point lat,lon
-    """
+    """Returns a string (for example, N78W124) of a region name based on granule center point lat,lon."""
     nw_hemisphere = 'N' if lat >= 0.0 else 'S'
     ew_hemisphere = 'E' if lon >= 0.0 else 'W'
 
-    region_lat = int(10*np.trunc(np.abs(lat/10.0)))
+    region_lat = int(10 * np.trunc(np.abs(lat / 10.0)))
     if region_lat == 90:  # if you are exactly at a pole, put in lat = 80 bin
         region_lat = 80
 
-    region_lon = int(10*np.trunc(np.abs(lon/10.0)))
+    region_lon = int(10 * np.trunc(np.abs(lon / 10.0)))
     if region_lon >= 180:  # if you are at the dateline, back off to the 170 bin
         region_lon = 170
 
