@@ -94,8 +94,7 @@ def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     s2_prefix = 'velocity_image_pair/sentinel2/v02/'
     landsat_prefix = 'velocity_image_pair/landsatOLI/v02/'
     prefix = s2_prefix if pairs['reference'][0].startswith('S2') else landsat_prefix
-    tile_prefixes = [{prefix + region for region in regions} for regions in regions_for_pairs]
-    pairs['tile_prefixes'] = tile_prefixes
+    pairs['tile_prefixes'] = [{prefix + region for region in regions} for regions in regions_for_pairs]
 
     for i in range(len(pairs)):
         pair = pairs.loc[i]
