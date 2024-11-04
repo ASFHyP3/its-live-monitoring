@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 
+import boto3
 import geopandas as gpd
 import hyp3_sdk as sdk
 import pandas as pd
@@ -35,11 +36,33 @@ HYP3 = sdk.HyP3(
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
+s3 = boto3.client('s3')
 
-def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """Ensure we don't submit duplicate jobs to HyP3.
 
-    Search HyP3 jobs since the reference scene's acquisition date and remove already processed pairs
+def get_key(tile_prefixes: list[str], pair: list[str]) -> str:
+    """ Search S3 for the key of a processed pair.
+
+    Args:
+        tile_prefixes: list of s3 tile path prefixes
+        pair: list containing the reference and secondary names, respectively
+
+    Returns:
+        The key or None if one wasn't found.
+    """
+    for tile_prefix in tile_prefixes:
+        prefix = f'{tile_prefix}{pair[0]}_X_{pair[1]}'
+        response = s3.list_objects_v2(
+            Bucket='its-live-data',
+            Prefix=prefix,
+        )
+        for item in response.get('Contents', []):
+            if item['Key'].endswith('.nc'):
+                return item['Key']
+    return None
+
+
+def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame):
+    """ Ensures that pairs aren't submitted if they already have a product in S3.
 
     Args:
          pairs: A GeoDataFrame containing *at least*  these columns: `reference`, `reference_acquisition`, and
@@ -48,12 +71,53 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
-    jobs = HYP3.find_jobs(
+    s2_prefix = f'velocity_image_pair/sentinel2/v02/'
+    landsat_prefix = f'velocity_image_pair/landsatOLI/v02/'
+    prefix = s2_prefix if pairs['reference'][0].startswith('S2') else landsat_prefix
+    
+    response = s3.list_objects_v2(
+        Bucket='its-live-data',
+        Prefix=prefix,
+        Delimiter='/',
+    )
+    tile_prefixes = [prefix['Prefix'] for prefix in response['CommonPrefixes']]
+
+    pairs = pairs.set_index(['reference', 'secondary'])
+    for pair in pairs.index:
+        key = get_key(tile_prefixes, pair)
+        if key:
+            pairs.drop(pair)
+
+    return pairs.reset_index()
+
+
+def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """ Search HyP3 jobs since the reference scene's acquisition date and remove already submitted (in PENDING or RUNNING state) pairs.
+
+    Args:
+         pairs: A GeoDataFrame containing *at least*  these columns: `reference`, `reference_acquisition`, and
+          `secondary`.
+
+    Returns:
+         The pairs GeoDataFrame with any already submitted pairs removed.
+    """
+    pending_jobs = HYP3.find_jobs(
         job_type='AUTORIFT',
         start=pairs.iloc[0].reference_acquisition,
         name=pairs.iloc[0].reference,
         user_id=EARTHDATA_USERNAME,
+        status_code='PENDING',
     )
+
+    running_jobs = HYP3.find_jobs(
+        job_type='AUTORIFT',
+        start=pairs.iloc[0].reference_acquisition,
+        name=pairs.iloc[0].reference,
+        user_id=EARTHDATA_USERNAME,
+        status_code='RUNNING',
+    )
+
+    jobs = pending_jobs.extend(running_jobs)
 
     df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
     df = df.set_index(['reference', 'secondary'])
@@ -121,7 +185,7 @@ def process_scene(
         log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
     if len(pairs) > 0:
-        pairs = deduplicate_hyp3_pairs(pairs)
+        pairs = deduplicate_s3_pairs(deduplicate_hyp3_pairs(pairs))
 
         log.info(f'Deduplicated pairs; {len(pairs)} remaining')
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
