@@ -12,8 +12,6 @@ import pystac
 import pystac_client
 import requests
 
-from shapely import Polygon
-
 SENTINEL2_CATALOG_API = 'https://earth-search.aws.element84.com/v1/'
 SENTINEL2_CATALOG = pystac_client.Client.open(SENTINEL2_CATALOG_API)
 SENTINEL2_COLLECTION_NAME = 'sentinel-2-l1c'
@@ -215,7 +213,6 @@ def get_sentinel2_pairs_for_reference_scene(
 
     reference_scene_id = reference.properties['s2:product_uri'].removesuffix('.SAFE')
     reference_orbit = reference_scene_id.split('_')[4]
-    reference_geometry = Polygon(reference.geometry['coordinates'][0])
     items = [
         item
         for page in results.pages()
@@ -232,7 +229,6 @@ def get_sentinel2_pairs_for_reference_scene(
         feature = item.to_dict()
         feature['properties']['reference'] = reference_scene_id
         feature['properties']['reference_acquisition'] = reference.datetime
-        feature['properties']['reference_geometry'] = reference_geometry
         feature['properties']['secondary'] = item.properties['s2:product_uri'].removesuffix('.SAFE')
         features.append(feature)
 

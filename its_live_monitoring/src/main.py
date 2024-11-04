@@ -93,7 +93,7 @@ def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
-    corners_of_pairs = [list(ref_geom.union(sec_geom).exterior.coords)[:-1] for ref_geom, sec_geom in zip(pairs['reference_geometry'], pairs['geometry'])]
+    corners_of_pairs = [list(geom.exterior.coords)[:-1] for geom in pairs['geometry']]
     regions_for_pairs = [{point_to_region(lat, lon) for lon, lat in corners} for corners in corners_of_pairs]
 
     s2_prefix = 'velocity_image_pair/sentinel2/v02/'

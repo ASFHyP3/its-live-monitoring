@@ -11,8 +11,6 @@ import pandas as pd
 import pystac
 import pystac_client
 
-from shapely import Polygon
-
 LANDSAT_CATALOG_API = 'https://landsatlook.usgs.gov/stac-server'
 LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_CATALOG_API)
 LANDSAT_COLLECTION_NAME = 'landsat-c2l1'
@@ -115,13 +113,11 @@ def get_landsat_pairs_for_reference_scene(
     if len(items) == 0:
         return gpd.GeoDataFrame({'reference': [], 'secondary': []})
 
-    reference_geometry = Polygon(reference.geometry['coordinates'][0])
     features = []
     for item in items:
         feature = item.to_dict()
         feature['properties']['reference'] = reference.id
         feature['properties']['reference_acquisition'] = reference.datetime
-        feature['properties']['reference_geometry'] = reference_geometry
         feature['properties']['secondary'] = item.id
         features.append(feature)
 
