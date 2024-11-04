@@ -4,3 +4,4 @@ pandas==2.2.3
 pystac-client==0.8.5
 requests==2.32.3
 shapely==2.0.6
+numpy==1.26.4
