@@ -12,8 +12,6 @@ import hyp3_sdk as sdk
 import numpy as np
 import pandas as pd
 
-from shapely import Polygon
-
 from landsat import (
     get_landsat_pairs_for_reference_scene,
     get_landsat_stac_item,
