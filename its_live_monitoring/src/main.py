@@ -40,7 +40,7 @@ s3 = boto3.client('s3')
 
 
 def get_key(tile_prefixes: list[str], pair: list[str]) -> str:
-    """ Search S3 for the key of a processed pair.
+    """Search S3 for the key of a processed pair.
 
     Args:
         tile_prefixes: list of s3 tile path prefixes
@@ -61,8 +61,8 @@ def get_key(tile_prefixes: list[str], pair: list[str]) -> str:
     return None
 
 
-def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame):
-    """ Ensures that pairs aren't submitted if they already have a product in S3.
+def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Ensures that pairs aren't submitted if they already have a product in S3.
 
     Args:
          pairs: A GeoDataFrame containing *at least*  these columns: `reference`, `reference_acquisition`, and
@@ -71,10 +71,10 @@ def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame):
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
-    s2_prefix = f'velocity_image_pair/sentinel2/v02/'
-    landsat_prefix = f'velocity_image_pair/landsatOLI/v02/'
+    s2_prefix = 'velocity_image_pair/sentinel2/v02/'
+    landsat_prefix = 'velocity_image_pair/landsatOLI/v02/'
     prefix = s2_prefix if pairs['reference'][0].startswith('S2') else landsat_prefix
-    
+
     response = s3.list_objects_v2(
         Bucket='its-live-data',
         Prefix=prefix,
@@ -92,7 +92,7 @@ def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame):
 
 
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """ Search HyP3 jobs since the reference scene's acquisition date and remove already submitted (in PENDING or RUNNING state) pairs.
+    """Search HyP3 jobs since the reference scene's acquisition date and remove already submitted (in PENDING or RUNNING state) pairs.
 
     Args:
          pairs: A GeoDataFrame containing *at least*  these columns: `reference`, `reference_acquisition`, and
