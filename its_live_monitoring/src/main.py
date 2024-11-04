@@ -135,7 +135,7 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         status_code='RUNNING',
     )
 
-    jobs = pending_jobs.extend(running_jobs)
+    jobs = pending_jobs + running_jobs
 
     df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
     df = df.set_index(['reference', 'secondary'])
