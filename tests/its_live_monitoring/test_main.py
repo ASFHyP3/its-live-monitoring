@@ -21,24 +21,44 @@ def test_point_to_region():
     assert main.point_to_region(-0.0, -0.0) == 'S00W000'
     assert main.point_to_region(0.0, -0.0) == 'N00W000'
 
+
 def test_regions_from_bounds():
-    assert main.regions_from_bounds(-128., -63., -109., -54.) == {'S60W120', 'S60W110', 'S60W100', 'S50W120', 'S50W110', 'S50W100'}
-    assert main.regions_from_bounds(-5., -5., 5., 5.) == {'S00W000', 'S00E000', 'N00W000', 'N00E000'}
-    assert main.regions_from_bounds(104., 53., 123., 61.) == {'N60E120', 'N60E110', 'N60E100', 'N50E120', 'N50E110', 'N50E100'}
-    assert main.regions_from_bounds(-128., -63., -128., -63.) == {'S60W120'}
+    assert main.regions_from_bounds(-128.0, -63.0, -109.0, -54.0) == {
+        'S60W120',
+        'S60W110',
+        'S60W100',
+        'S50W120',
+        'S50W110',
+        'S50W100',
+    }
+    assert main.regions_from_bounds(-5.0, -5.0, 5.0, 5.0) == {'S00W000', 'S00E000', 'N00W000', 'N00E000'}
+    assert main.regions_from_bounds(104.0, 53.0, 123.0, 61.0) == {
+        'N60E120',
+        'N60E110',
+        'N60E100',
+        'N50E120',
+        'N50E110',
+        'N50E100',
+    }
+    assert main.regions_from_bounds(-128.0, -63.0, -128.0, -63.0) == {'S60W120'}
+
 
 def test_get_key():
     s3_list_responses = [
         {'Contents': []},
-        {'Contents': [
-            {'Key': 'foo'},
-            {'Key': 'bar'},
-            {'Key': 'N00E010/earliest_X_latest_G0120V02_P000.nc'},
-            {'Key': 'fizz'},
-        ]},
+        {
+            'Contents': [
+                {'Key': 'foo'},
+                {'Key': 'bar'},
+                {'Key': 'N00E010/earliest_X_latest_G0120V02_P000.nc'},
+                {'Key': 'fizz'},
+            ]
+        },
     ]
     with patch('main.s3.list_objects_v2', side_effect=s3_list_responses):
-        assert main.get_key(['N00E000', 'N00E010'], 'latest', 'earliest') == 'N00E010/earliest_X_latest_G0120V02_P000.nc'
+        assert (
+            main.get_key(['N00E000', 'N00E010'], 'latest', 'earliest') == 'N00E010/earliest_X_latest_G0120V02_P000.nc'
+        )
 
 
 def test_deduplicate_hyp3_pairs(hyp3_batch_factory):

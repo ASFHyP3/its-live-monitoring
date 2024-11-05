@@ -59,7 +59,7 @@ def point_to_region(lat: float, lon: float) -> str:
 
 def regions_from_bounds(min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> set[str]:
     """Returns a set of all region names within a bounding box."""
-    lats, lons = np.mgrid[min_lat:max_lat+10:10, min_lon:max_lon+10:10]
+    lats, lons = np.mgrid[min_lat : max_lat + 10 : 10, min_lon : max_lon + 10 : 10]
     return {point_to_region(lat, lon) for lat, lon in zip(lats.ravel(), lons.ravel())}
 
 
