@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+from typing import Iterable
 
 import boto3
 import geopandas as gpd
@@ -42,32 +43,43 @@ s3 = boto3.client('s3')
 
 def point_to_region(lat: float, lon: float) -> str:
     """Returns a string (for example, N78W124) of a region name based on granule center point lat,lon."""
-    nw_hemisphere = 'N' if lat >= 0.0 else 'S'
-    ew_hemisphere = 'E' if lon >= 0.0 else 'W'
+    nw_hemisphere = 'S' if np.signbit(lat) else 'N'
+    ew_hemisphere = 'W' if np.signbit(lon) else 'E'
 
-    region_lat = int(10 * np.trunc(np.abs(lat / 10.0)))
+    region_lat = int(np.abs(np.fix(lat / 10) * 10))
     if region_lat == 90:  # if you are exactly at a pole, put in lat = 80 bin
         region_lat = 80
 
-    region_lon = int(10 * np.trunc(np.abs(lon / 10.0)))
+    region_lon = int(np.abs(np.fix(lon / 10) * 10))
     if region_lon >= 180:  # if you are at the dateline, back off to the 170 bin
         region_lon = 170
 
     return f'{nw_hemisphere}{region_lat:02d}{ew_hemisphere}{region_lon:03d}'
 
 
-def get_key(tile_prefixes: set[str], pair: list[str]) -> str:
+def regions_from_bounds(min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> set[str]:
+    """Returns a set of all region names within a bounding box."""
+    lats, lons = np.mgrid[min_lat:max_lat+10:10, min_lon:max_lon+10:10]
+    return {point_to_region(lat, lon) for lat, lon in zip(lats.ravel(), lons.ravel())}
+
+
+def get_key(tile_prefixes: Iterable[str], reference: str, secondary: str) -> str | None:
     """Search S3 for the key of a processed pair.
 
     Args:
-        tile_prefixes: list of s3 tile path prefixes
-        pair: list containing the reference and secondary names, respectively
+        tile_prefixes: s3 tile path prefixes
+        reference: reference scene name
+        secondary: secondary scene name
 
     Returns:
         The key or None if one wasn't found.
     """
+    # NOTE: hyp3-autorift enforces earliest scene as the reference scene and will write files accordingly,
+    #       but its-live-monitoring uses the latest scene as the reference scene, so enforce autorift convention
+    reference, secondary = sorted([reference, secondary])
+
     for tile_prefix in tile_prefixes:
-        prefix = f'{tile_prefix}{pair[0]}_X_{pair[1]}'
+        prefix = f'{tile_prefix}/{reference}_X_{secondary}'
         response = s3.list_objects_v2(
             Bucket='its-live-data',
             Prefix=prefix,
@@ -88,21 +100,19 @@ def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
-    corners_of_pairs = [list(geom.exterior.coords)[:-1] for geom in pairs['geometry']]
-    regions_for_pairs = [{point_to_region(lat, lon) for lon, lat in corners} for corners in corners_of_pairs]
-
-    s2_prefix = 'velocity_image_pair/sentinel2/v02/'
-    landsat_prefix = 'velocity_image_pair/landsatOLI/v02/'
+    s2_prefix = 'velocity_image_pair/sentinel2/v02'
+    landsat_prefix = 'velocity_image_pair/landsatOLI/v02'
     prefix = s2_prefix if pairs['reference'][0].startswith('S2') else landsat_prefix
-    pairs['tile_prefixes'] = [{prefix + region for region in regions} for regions in regions_for_pairs]
 
-    for i in range(len(pairs)):
-        pair = pairs.loc[i]
-        key = get_key(tile_prefixes=pair['tile_prefixes'], pair=[pair['reference'], pair['secondary']])
-        if key:
-            pairs.drop(i)
+    regions = regions_from_bounds(*pairs['geometry'].total_bounds)
+    tile_prefixes = [f'{prefix}/{region}' for region in regions]
 
-    return pairs.reset_index()
+    drop_indexes = []
+    for idx, reference, secondary in pairs[['reference', 'secondary']].itertuples():
+        if get_key(tile_prefixes=tile_prefixes, reference=reference, secondary=secondary):
+            drop_indexes.append(idx)
+
+    return pairs.drop(index=drop_indexes).reset_index()
 
 
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
