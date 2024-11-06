@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import geopandas as gpd
 import hyp3_sdk as sdk
+from shapely import Polygon
 
 import main
 
@@ -90,6 +91,34 @@ def test_deduplicate_hyp3_pairs(hyp3_batch_factory):
         pairs = main.deduplicate_hyp3_pairs(landsat_pairs)
 
     assert len(pairs) == 1
+
+
+@patch('main.get_key')
+def test_deduplicate_s3_pairs(mock_get_key):
+    sec_scenes = [
+        'LC09_L1TP_138041_20240120_20240120_02_T1',
+        'LC08_L1TP_138041_20240112_20240123_02_T1',
+        'LC09_L1TP_138041_20240104_20240104_02_T1',
+    ]
+    ref_scenes = ['LC08_L1TP_138041_20240128_20240207_02_T1'] * 3
+    ref_acquisitions = ['2024-01-28T04:29:49.361022Z'] * 3
+    geometries = [Polygon.from_bounds(0, 0, 1, 1)] * 3
+
+    landsat_pairs = gpd.GeoDataFrame(
+        {'reference': ref_scenes, 'secondary': sec_scenes, 'reference_acquisition': ref_acquisitions, 'geometry': geometries}
+    )
+
+    mock_get_key.side_effect = [None, None, None]
+    pairs = main.deduplicate_s3_pairs(landsat_pairs)
+    assert pairs.equals(landsat_pairs)
+
+    mock_get_key.side_effect = [None, 'foo', None]
+    pairs = main.deduplicate_s3_pairs(landsat_pairs)
+    assert pairs.equals(landsat_pairs.drop(1))
+
+    mock_get_key.side_effect = ['foo', 'bar', 'bazz']
+    pairs = main.deduplicate_s3_pairs(landsat_pairs)
+    assert pairs.equals(landsat_pairs.drop(0).drop(1).drop(2))
 
 
 def test_submit_pairs_for_processing(hyp3_batch_factory):
