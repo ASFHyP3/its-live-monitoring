@@ -112,7 +112,7 @@ def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         if get_key(tile_prefixes=tile_prefixes, reference=reference, secondary=secondary):
             drop_indexes.append(idx)
 
-    return pairs.drop(index=drop_indexes).reset_index()
+    return pairs.drop(index=drop_indexes)
 
 
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
