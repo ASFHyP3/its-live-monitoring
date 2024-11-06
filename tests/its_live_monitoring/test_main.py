@@ -105,7 +105,12 @@ def test_deduplicate_s3_pairs(mock_get_key):
     geometries = [Polygon.from_bounds(0, 0, 1, 1)] * 3
 
     landsat_pairs = gpd.GeoDataFrame(
-        {'reference': ref_scenes, 'secondary': sec_scenes, 'reference_acquisition': ref_acquisitions, 'geometry': geometries}
+        {
+            'reference': ref_scenes,
+            'secondary': sec_scenes,
+            'reference_acquisition': ref_acquisitions,
+            'geometry': geometries,
+        }
     )
 
     mock_get_key.side_effect = [None, None, None]
