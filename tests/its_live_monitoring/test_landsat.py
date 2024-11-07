@@ -1,11 +1,12 @@
 from copy import deepcopy
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import landsat
 
 
-def test_get_landsat_stac_item(pystac_item_factory):
+@patch('landsat.LANDSAT_COLLECTION.get_item')
+def test_get_landsat_stac_item(mock_landsat_get_item, pystac_item_factory):
     scene = 'LC08_L1TP_138041_20240128_20240207_02_T1'
     properties = {
         'instruments': ['OLI'],
@@ -18,10 +19,8 @@ def test_get_landsat_stac_item(pystac_item_factory):
     collection = 'landsat-c2l1'
     expected_item = pystac_item_factory(id=scene, datetime=datetime.now(), properties=properties, collection=collection)
 
-    with patch('landsat.LANDSAT_COLLECTION', MagicMock()):
-        landsat.LANDSAT_COLLECTION.get_item.return_value = expected_item
-        item = landsat.get_landsat_stac_item(scene)
-
+    mock_landsat_get_item.side_effect = [expected_item]
+    item = landsat.get_landsat_stac_item(scene)
     assert item.collection_id == collection
     assert item.properties == properties
 
@@ -99,7 +98,8 @@ def test_qualifies_for_processing(pystac_item_factory):
     assert landsat.qualifies_for_landsat_processing(item)
 
 
-def test_get_landsat_pairs_for_reference_scene(pystac_item_factory):
+@patch('landsat.LANDSAT_CATALOG.search')
+def test_get_landsat_pairs_for_reference_scene(mock_landsat_get_item, pystac_item_factory, stac_search_factory):
     properties = {
         'instruments': ['OLI'],
         'landsat:collection_category': 'T1',
@@ -129,9 +129,8 @@ def test_get_landsat_pairs_for_reference_scene(pystac_item_factory):
             pystac_item_factory(id=scene, datetime=date_time, properties=properties, collection=collection)
         )
 
-    with patch('landsat.LANDSAT_CATALOG', MagicMock()):
-        landsat.LANDSAT_CATALOG.search().pages.return_value = (sec_items,)
-        df = landsat.get_landsat_pairs_for_reference_scene(ref_item)
+    mock_landsat_get_item.side_effect = [stac_search_factory(sec_items)]
+    df = landsat.get_landsat_pairs_for_reference_scene(ref_item)
 
     assert (df['landsat:wrs_path'] == ref_item.properties['landsat:wrs_path']).all()
     assert (df['landsat:wrs_row'] == ref_item.properties['landsat:wrs_row']).all()
@@ -140,7 +139,10 @@ def test_get_landsat_pairs_for_reference_scene(pystac_item_factory):
     assert (df['reference'] == ref_item.id).all()
 
 
-def test_get_landsat_pairs_for_off_nadir_reference_scene(pystac_item_factory):
+@patch('landsat.LANDSAT_CATALOG.search')
+def test_get_landsat_pairs_for_off_nadir_reference_scene(
+    mock_landsat_get_item, pystac_item_factory, stac_search_factory
+):
     properties = {
         'instruments': ['OLI'],
         'landsat:collection_category': 'T1',
@@ -171,9 +173,8 @@ def test_get_landsat_pairs_for_off_nadir_reference_scene(pystac_item_factory):
         props['view:off_nadir'] = off_nadir
         sec_items.append(pystac_item_factory(id=scene, datetime=date_time, properties=props, collection=collection))
 
-    with patch('landsat.LANDSAT_CATALOG', MagicMock()):
-        landsat.LANDSAT_CATALOG.search().pages.return_value = (sec_items,)
-        df = landsat.get_landsat_pairs_for_reference_scene(ref_item)
+    mock_landsat_get_item.side_effect = [stac_search_factory(sec_items)]
+    df = landsat.get_landsat_pairs_for_reference_scene(ref_item)
 
     assert (df['view:off_nadir'] > 0).all()
 
