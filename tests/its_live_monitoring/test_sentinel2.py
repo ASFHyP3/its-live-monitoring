@@ -1,6 +1,6 @@
 from copy import deepcopy
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pystac
 import pytest
@@ -26,7 +26,8 @@ def test_raise_for_missing_in_google_cloud():
         sentinel2.raise_for_missing_in_google_cloud(missing_scene)
 
 
-def test_get_sentinel2_stac_item(pystac_item_factory):
+@patch('sentinel2.SENTINEL2_CATALOG.search')
+def test_get_sentinel2_stac_item(mock_sentinel2_search, pystac_item_factory, stac_search_factory):
     scene = 'S2B_13CES_20200315_0_L1C'
     properties = {
         'grid:code': 'MGRS-13CES',
@@ -39,27 +40,18 @@ def test_get_sentinel2_stac_item(pystac_item_factory):
     date_time = '2020-03-15T15:22:59.024Z'
     expected_item = pystac_item_factory(id=scene, datetime=date_time, properties=properties, collection=collection)
 
-    class MockItemSearch:
-        def __init__(self, item: pystac.item.Item):
-            self.items = [item] if item else []
-
-        def pages(self):
-            return [self.items]
-
-    with patch('sentinel2.SENTINEL2_CATALOG', MagicMock()):
-        sentinel2.SENTINEL2_CATALOG.search.return_value = MockItemSearch(expected_item)
-        item = sentinel2.get_sentinel2_stac_item(scene)
-
+    mock_sentinel2_search.side_effect = [stac_search_factory([expected_item])]
+    item = sentinel2.get_sentinel2_stac_item(scene)
     assert item.collection_id == collection
     assert item.properties == properties
 
-    with patch('sentinel2.SENTINEL2_CATALOG', MagicMock()):
-        sentinel2.SENTINEL2_CATALOG.search.return_value = MockItemSearch(None)
-        with pytest.raises(ValueError):
-            item = sentinel2.get_sentinel2_stac_item(scene)
+    mock_sentinel2_search.side_effect = [stac_search_factory([])]
+    with pytest.raises(ValueError):
+        _ = sentinel2.get_sentinel2_stac_item(scene)
 
 
-def test_qualifies_for_processing(pystac_item_factory):
+@patch('sentinel2.get_data_coverage_for_item')
+def test_qualifies_for_processing(mock_data_coverage_for_item, pystac_item_factory):
     properties = {
         'grid:code': 'MGRS-19DEE',
         'eo:cloud_cover': 30,
@@ -72,63 +64,80 @@ def test_qualifies_for_processing(pystac_item_factory):
         id='XXX_XXXL1C_XXXX_XXXX_XXXX', datetime=datetime.now(), properties=properties, collection=collection
     )
 
-    with patch('sentinel2.get_data_coverage_for_item', (lambda x: 75.0)):
-        assert sentinel2.qualifies_for_sentinel2_processing(good_item)
+    mock_data_coverage_for_item.side_effect = [75.0]
+    assert sentinel2.qualifies_for_sentinel2_processing(good_item)
 
-        item = deepcopy(good_item)
-        item.collection_id = 'foo'
-        assert not sentinel2.qualifies_for_sentinel2_processing(item)
+    mock_data_coverage_for_item.side_effect = [75.0]
+    item = deepcopy(good_item)
+    item.collection_id = 'foo'
+    assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
-        item = deepcopy(good_item)
-        item.properties['s2:product_type'] = 'S2MSI2A'
-        assert not sentinel2.qualifies_for_sentinel2_processing(item)
+    mock_data_coverage_for_item.side_effect = [75.0]
+    item = deepcopy(good_item)
+    item.properties['s2:product_type'] = 'S2MSI2A'
+    assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
-        item = deepcopy(good_item)
-        item.properties['instruments'] = ['mis']
-        assert not sentinel2.qualifies_for_sentinel2_processing(item)
+    mock_data_coverage_for_item.side_effect = [75.0]
+    item = deepcopy(good_item)
+    item.properties['instruments'] = ['mis']
+    assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
-        item = deepcopy(good_item)
-        item.properties['grid:code'] = 'MGRS-30BZZ'
-        assert not sentinel2.qualifies_for_sentinel2_processing(item)
+    mock_data_coverage_for_item.side_effect = [75.0]
+    item = deepcopy(good_item)
+    item.properties['grid:code'] = 'MGRS-30BZZ'
+    assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
-        item = deepcopy(good_item)
-        del item.properties['eo:cloud_cover']
-        assert not sentinel2.qualifies_for_sentinel2_processing(item)
+    mock_data_coverage_for_item.side_effect = [75.0]
+    item = deepcopy(good_item)
+    del item.properties['eo:cloud_cover']
+    assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
-        item = deepcopy(good_item)
-        item.properties['eo:cloud_cover'] = -1
-        assert not sentinel2.qualifies_for_sentinel2_processing(item)
+    mock_data_coverage_for_item.side_effect = [75.0]
+    item = deepcopy(good_item)
+    item.properties['eo:cloud_cover'] = -1
+    assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
-        item = deepcopy(good_item)
-        item.properties['eo:cloud_cover'] = 0
-        assert sentinel2.qualifies_for_sentinel2_processing(item)
+    mock_data_coverage_for_item.side_effect = [75.0]
+    item = deepcopy(good_item)
+    item.properties['eo:cloud_cover'] = 0
+    assert sentinel2.qualifies_for_sentinel2_processing(item)
 
-        item = deepcopy(good_item)
-        item.properties['eo:cloud_cover'] = 1
-        assert sentinel2.qualifies_for_sentinel2_processing(item)
+    mock_data_coverage_for_item.side_effect = [75.0]
+    item = deepcopy(good_item)
+    item.properties['eo:cloud_cover'] = 1
+    assert sentinel2.qualifies_for_sentinel2_processing(item)
 
-        item = deepcopy(good_item)
-        item.properties['eo:cloud_cover'] = sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT - 1
-        assert sentinel2.qualifies_for_sentinel2_processing(item)
+    mock_data_coverage_for_item.side_effect = [75.0]
+    item = deepcopy(good_item)
+    item.properties['eo:cloud_cover'] = sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT - 1
+    assert sentinel2.qualifies_for_sentinel2_processing(item)
 
-        item = deepcopy(good_item)
-        item.properties['eo:cloud_cover'] = sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT
-        assert sentinel2.qualifies_for_sentinel2_processing(item)
+    mock_data_coverage_for_item.side_effect = [75.0]
+    item = deepcopy(good_item)
+    item.properties['eo:cloud_cover'] = sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT
+    assert sentinel2.qualifies_for_sentinel2_processing(item)
 
-        item = deepcopy(good_item)
-        item.properties['eo:cloud_cover'] = sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT + 1
-        assert not sentinel2.qualifies_for_sentinel2_processing(item)
+    mock_data_coverage_for_item.side_effect = [75.0]
+    item = deepcopy(good_item)
+    item.properties['eo:cloud_cover'] = sentinel2.SENTINEL2_MAX_CLOUD_COVER_PERCENT + 1
+    assert not sentinel2.qualifies_for_sentinel2_processing(item)
 
-        item = deepcopy(good_item)
-        assert sentinel2.qualifies_for_sentinel2_processing(item, relative_orbit='R110')
+    mock_data_coverage_for_item.side_effect = [75.0]
+    item = deepcopy(good_item)
+    assert sentinel2.qualifies_for_sentinel2_processing(item, relative_orbit='R110')
 
-        assert not sentinel2.qualifies_for_sentinel2_processing(item, relative_orbit='R100')
+    mock_data_coverage_for_item.side_effect = [75.0]
+    assert not sentinel2.qualifies_for_sentinel2_processing(item, relative_orbit='R100')
 
-    with patch('sentinel2.get_data_coverage_for_item', (lambda x: 50.0)):
-        assert not sentinel2.qualifies_for_sentinel2_processing(good_item)
+    mock_data_coverage_for_item.side_effect = [50.0]
+    assert not sentinel2.qualifies_for_sentinel2_processing(good_item)
 
 
-def test_get_sentinel2_pairs_for_reference_scene(pystac_item_factory):
+@patch('sentinel2.SENTINEL2_CATALOG.search')
+@patch('sentinel2.get_data_coverage_for_item')
+def test_get_sentinel2_pairs_for_reference_scene(
+    mock_data_coverage_for_item, mock_sentinel2_search, pystac_item_factory, stac_search_factory
+):
     scene = 'S2B_22TCR_20240528_0_L1C'
     properties = {
         'eo:cloud_cover': 28.1884,
@@ -192,10 +201,9 @@ def test_get_sentinel2_pairs_for_reference_scene(pystac_item_factory):
         props = deepcopy(properties)
         sec_items.append(pystac_item_factory(id=scene, datetime=date_time, properties=props, collection=collection))
 
-    with patch('sentinel2.SENTINEL2_CATALOG', MagicMock()):
-        sentinel2.SENTINEL2_CATALOG.search().pages.return_value = (sec_items,)
-        with patch('sentinel2.get_data_coverage_for_item', (lambda x: 75.0)):
-            df = sentinel2.get_sentinel2_pairs_for_reference_scene(ref_item)
+    mock_sentinel2_search.side_effect = [stac_search_factory(sec_items)]
+    mock_data_coverage_for_item.side_effect = [75.0, 75.0, 75.0]
+    df = sentinel2.get_sentinel2_pairs_for_reference_scene(ref_item)
 
     assert (df['grid:code'] == ref_item.properties['grid:code']).all()
     for instrument in df['instruments']:

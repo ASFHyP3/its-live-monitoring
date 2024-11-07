@@ -5,9 +5,12 @@ import json
 import logging
 import os
 import sys
+from typing import Iterable
 
+import boto3
 import geopandas as gpd
 import hyp3_sdk as sdk
+import numpy as np
 import pandas as pd
 
 from landsat import (
@@ -35,11 +38,60 @@ HYP3 = sdk.HyP3(
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
+s3 = boto3.client('s3')
 
-def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """Ensure we don't submit duplicate jobs to HyP3.
 
-    Search HyP3 jobs since the reference scene's acquisition date and remove already processed pairs
+def point_to_region(lat: float, lon: float) -> str:
+    """Returns a string (for example, N78W124) of a region name based on granule center point lat,lon."""
+    nw_hemisphere = 'S' if np.signbit(lat) else 'N'
+    ew_hemisphere = 'W' if np.signbit(lon) else 'E'
+
+    region_lat = int(np.abs(np.fix(lat / 10) * 10))
+    if region_lat == 90:  # if you are exactly at a pole, put in lat = 80 bin
+        region_lat = 80
+
+    region_lon = int(np.abs(np.fix(lon / 10) * 10))
+    if region_lon >= 180:  # if you are at the dateline, back off to the 170 bin
+        region_lon = 170
+
+    return f'{nw_hemisphere}{region_lat:02d}{ew_hemisphere}{region_lon:03d}'
+
+
+def regions_from_bounds(min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> set[str]:
+    """Returns a set of all region names within a bounding box."""
+    lats, lons = np.mgrid[min_lat : max_lat + 10 : 10, min_lon : max_lon + 10 : 10]
+    return {point_to_region(lat, lon) for lat, lon in zip(lats.ravel(), lons.ravel())}
+
+
+def get_key(tile_prefixes: Iterable[str], reference: str, secondary: str) -> str | None:
+    """Search S3 for the key of a processed pair.
+
+    Args:
+        tile_prefixes: s3 tile path prefixes
+        reference: reference scene name
+        secondary: secondary scene name
+
+    Returns:
+        The key or None if one wasn't found.
+    """
+    # NOTE: hyp3-autorift enforces earliest scene as the reference scene and will write files accordingly,
+    #       but its-live-monitoring uses the latest scene as the reference scene, so enforce autorift convention
+    reference, secondary = sorted([reference, secondary])
+
+    for tile_prefix in tile_prefixes:
+        prefix = f'{tile_prefix}/{reference}_X_{secondary}'
+        response = s3.list_objects_v2(
+            Bucket='its-live-data',
+            Prefix=prefix,
+        )
+        for item in response.get('Contents', []):
+            if item['Key'].endswith('.nc'):
+                return item['Key']
+    return None
+
+
+def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Ensures that pairs aren't submitted if they already have a product in S3.
 
     Args:
          pairs: A GeoDataFrame containing *at least*  these columns: `reference`, `reference_acquisition`, and
@@ -48,12 +100,48 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
-    jobs = HYP3.find_jobs(
+    s2_prefix = 'velocity_image_pair/sentinel2/v02'
+    landsat_prefix = 'velocity_image_pair/landsatOLI/v02'
+    prefix = s2_prefix if pairs['reference'][0].startswith('S2') else landsat_prefix
+
+    regions = regions_from_bounds(*pairs['geometry'].total_bounds)
+    tile_prefixes = [f'{prefix}/{region}' for region in regions]
+
+    drop_indexes = []
+    for idx, reference, secondary in pairs[['reference', 'secondary']].itertuples():
+        if get_key(tile_prefixes=tile_prefixes, reference=reference, secondary=secondary):
+            drop_indexes.append(idx)
+
+    return pairs.drop(index=drop_indexes)
+
+
+def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Search HyP3 jobs since the reference scene's acquisition date and remove already submitted (in PENDING or RUNNING state) pairs.
+
+    Args:
+         pairs: A GeoDataFrame containing *at least*  these columns: `reference`, `reference_acquisition`, and
+          `secondary`.
+
+    Returns:
+         The pairs GeoDataFrame with any already submitted pairs removed.
+    """
+    pending_jobs = HYP3.find_jobs(
         job_type='AUTORIFT',
         start=pairs.iloc[0].reference_acquisition,
         name=pairs.iloc[0].reference,
         user_id=EARTHDATA_USERNAME,
+        status_code='PENDING',
     )
+
+    running_jobs = HYP3.find_jobs(
+        job_type='AUTORIFT',
+        start=pairs.iloc[0].reference_acquisition,
+        name=pairs.iloc[0].reference,
+        user_id=EARTHDATA_USERNAME,
+        status_code='RUNNING',
+    )
+
+    jobs = pending_jobs + running_jobs
 
     df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
     df = df.set_index(['reference', 'secondary'])
@@ -123,7 +211,13 @@ def process_scene(
     if len(pairs) > 0:
         pairs = deduplicate_hyp3_pairs(pairs)
 
-        log.info(f'Deduplicated pairs; {len(pairs)} remaining')
+        log.info(f'Deduplicated HyP3 running/pending pairs; {len(pairs)} remaining')
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
+            log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
+
+        pairs = deduplicate_s3_pairs(pairs)
+
+        log.info(f'Deduplicated already published pairs; {len(pairs)} remaining')
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
             log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 

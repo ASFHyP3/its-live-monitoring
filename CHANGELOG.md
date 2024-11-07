@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.5.8]
+### Changed
+- Deduplication of already processed pairs is now done by `deduplicate_s3_pairs`, which searches S3 for the processed product.
+- `deduplicate_hyp3_pairs` now only checks HYP3 for scenes that are in the 'PENDING' or 'RUNNING' states.
+
 ## [0.5.7]
 ### Fixed
 - Normalized the Sentinel-2 tile list to match the Element84 STAC representation, fixing tiles with a leading `0` being excluded from processing.
