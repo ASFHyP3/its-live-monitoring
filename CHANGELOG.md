@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.8]
 ### Changed
-- `deduplicate_hyp3_pairs` now only checks HYP3 for scenes that are in the 'PENDING' or 'RUNNING' states.
 - Deduplication of already processed pairs is now done by `deduplicate_s3_pairs`, which searches S3 for the processed product.
+- `deduplicate_hyp3_pairs` now only checks HYP3 for scenes that are in the 'PENDING' or 'RUNNING' states.
 
 ## [0.5.7]
 ### Fixed
