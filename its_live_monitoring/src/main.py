@@ -209,9 +209,15 @@ def process_scene(
         log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
     if len(pairs) > 0:
-        pairs = deduplicate_s3_pairs(deduplicate_hyp3_pairs(pairs))
+        pairs = deduplicate_hyp3_pairs(pairs)
 
-        log.info(f'Deduplicated pairs; {len(pairs)} remaining')
+        log.info(f'Deduplicated HyP3 running/pending pairs; {len(pairs)} remaining')
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
+            log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
+
+        pairs = deduplicate_s3_pairs(pairs)
+
+        log.info(f'Deduplicated already published pairs; {len(pairs)} remaining')
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
             log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
