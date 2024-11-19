@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.8]
 ### Changed
 - As an incremental improvement to deduplication performance, its-live-monitoring now:
-  - searches the `s3://its-live-data` bucket directly for already published (succeeded) pairs
+  - searches the `s3://its-live-data` bucket directly for already published (succeeded) pairs.
   - searches HyP3 ITS_LIVE via the API for pairs still pending or running, instead of searching for all previously submitted pairs.
 - Upgrade numpy from 1.26.4 to 2.1.3
 
