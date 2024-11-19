@@ -37,6 +37,18 @@ def pystac_item_factory():
 
 
 @pytest.fixture
+def stac_search_factory():
+    class MockItemSearch:
+        def __init__(self, items: list[pystac.item.Item]):
+            self.items = items
+
+        def pages(self):
+            return [self.items]
+
+    return MockItemSearch
+
+
+@pytest.fixture
 def hyp3_job_factory():
     def create_hyp3_job(granules: list) -> sdk.Job:
         return NonCallableMock(job_parameters={'granules': granules})
