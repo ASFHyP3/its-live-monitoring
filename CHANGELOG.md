@@ -6,8 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.8]
 ### Changed
-- Deduplication of already processed pairs is now done by `deduplicate_s3_pairs`, which searches S3 for the processed product.
-- `deduplicate_hyp3_pairs` now only checks HYP3 for scenes that are in the 'PENDING' or 'RUNNING' states.
+- As an incremental improvement to deduplication performance, its-live-monitoring now:
+  - searches the `s3://its-live-data` bucket directly for already published (succeeded) pairs.
+  - searches HyP3 ITS_LIVE via the API for pairs still pending or running, instead of searching for all previously submitted pairs.
 - Upgrade numpy from 1.26.4 to 2.1.3
 
 ## [0.5.7]
