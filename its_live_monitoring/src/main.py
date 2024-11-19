@@ -8,6 +8,7 @@ import sys
 from typing import Iterable
 
 import boto3
+import botocore.config
 import geopandas as gpd
 import hyp3_sdk as sdk
 import numpy as np
@@ -38,7 +39,10 @@ HYP3 = sdk.HyP3(
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
-s3 = boto3.client('s3')
+s3 = boto3.client(
+    's3',
+    config=botocore.config.Config(signature_version=botocore.UNSIGNED),
+)
 
 
 def point_to_region(lat: float, lon: float) -> str:
