@@ -1,10 +1,13 @@
 """Lambda function to trigger low-latency Landsat and Sentinel-2 processing from newly acquired scenes."""
 
 import argparse
+import datetime
 import json
 import logging
 import os
 import sys
+from datetime import timezone
+from dateutil.parser import parse
 from typing import Iterable
 
 import boto3
@@ -13,6 +16,8 @@ import geopandas as gpd
 import hyp3_sdk as sdk
 import numpy as np
 import pandas as pd
+from boto3.dynamodb.conditions import Attr, Key
+# from hyp3_sdk.jobs import Job, Batch
 
 from landsat import (
     get_landsat_pairs_for_reference_scene,
@@ -43,6 +48,7 @@ s3 = boto3.client(
     's3',
     config=botocore.config.Config(signature_version=botocore.UNSIGNED),
 )
+dynamo = boto3.resource('dynamodb')
 
 
 def point_to_region(lat: float, lon: float) -> str:
@@ -119,6 +125,37 @@ def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return pairs.drop(index=drop_indexes)
 
 
+def format_time(time: datetime) -> str:
+    if time.tzinfo is None:
+        raise ValueError(f'missing tzinfo for datetime {time}')
+    utc_time = time.astimezone(timezone.utc)
+    return utc_time.isoformat(timespec='seconds')
+
+
+def query_jobs_by_status_code(status_code, user, name, start):
+    table = dynamo.Table(os.environ['JOBS_TABLE_NAME'])
+
+    formatted_start = format_time(parse(start))
+
+    key_expression = Key('status_code').eq(status_code)
+    key_expression &= Key('user_id').eq(user)
+    key_expression &= Key('request_time').geq(formatted_start)
+
+    filter_expression = Attr('job_id').exists()
+    filter_expression &= Attr('name').eq(name)
+
+    params = {
+        'IndexName': 'status_code',
+        'KeyConditionExpression': key_expression,
+        'FilterExpression': filter_expression,
+        'ScanIndexForward': False,
+    }
+
+    response = table.query(**params)
+    jobs = response['Items']
+    return  sdk.Batch([sdk.Job.from_dict(job) for job in jobs])
+
+
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """Search HyP3 jobs since the reference scene's acquisition date and remove already submitted (in PENDING or RUNNING state) pairs.
 
@@ -129,25 +166,24 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
-    pending_jobs = HYP3.find_jobs(
-        job_type='AUTORIFT',
-        start=pairs.iloc[0].reference_acquisition,
-        name=pairs.iloc[0].reference,
-        user_id=EARTHDATA_USERNAME,
-        status_code='PENDING',
-    )
 
-    running_jobs = HYP3.find_jobs(
-        job_type='AUTORIFT',
-        start=pairs.iloc[0].reference_acquisition,
-        name=pairs.iloc[0].reference,
-        user_id=EARTHDATA_USERNAME,
-        status_code='RUNNING',
-    )
+    its_live_user = 'hyp3.its_live'
 
+    pending_jobs = query_jobs_by_status_code(
+        'PENDING',
+        its_live_user,
+        pairs.iloc[0].reference,
+        pairs.iloc[0].reference_acquisition
+    )
+    running_jobs = query_jobs_by_status_code(
+        'RUNNING',
+        its_live_user,
+        pairs.iloc[0].reference,
+        pairs.iloc[0].reference_acquisition
+    )
     jobs = pending_jobs + running_jobs
 
-    df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
+    df = pd.DataFrame([job['job_parameters']['granules'] for job in jobs], columns=['reference', 'secondary'])
     df = df.set_index(['reference', 'secondary'])
     pairs = pairs.set_index(['reference', 'secondary'])
 
