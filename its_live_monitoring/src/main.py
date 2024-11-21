@@ -7,7 +7,6 @@ import logging
 import os
 import sys
 from datetime import timezone
-from dateutil.parser import parse
 from typing import Iterable
 
 import boto3
@@ -17,8 +16,9 @@ import hyp3_sdk as sdk
 import numpy as np
 import pandas as pd
 from boto3.dynamodb.conditions import Attr, Key
-# from hyp3_sdk.jobs import Job, Batch
+from dateutil.parser import parse
 
+# from hyp3_sdk.jobs import Job, Batch
 from landsat import (
     get_landsat_pairs_for_reference_scene,
     get_landsat_stac_item,
@@ -126,13 +126,32 @@ def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
 
 def format_time(time: datetime) -> str:
+    """Format time to ISO with UTC timezone.
+
+    Args:
+        time: a datetime object to format
+
+    Returns:
+        datetime: the UTC time in ISO format
+    """
     if time.tzinfo is None:
         raise ValueError(f'missing tzinfo for datetime {time}')
     utc_time = time.astimezone(timezone.utc)
     return utc_time.isoformat(timespec='seconds')
 
 
-def query_jobs_by_status_code(status_code, user, name, start):
+def query_jobs_by_status_code(status_code: str, user: str, name: str, start: datetime.datetime) -> sdk.Batch:
+    """Query dynamodb for jobs by status_code, then filter by user, name, and date.
+
+    Args:
+        status_code: `status_code` of the desired jobs
+        user: the `user_id` that submitted the jobs
+        name: the name of the jobs
+        start: the earliest submission date of the jobs
+
+    Returns:
+        sdk.Batch: batch of jobs matching the filters
+    """
     table = dynamo.Table(os.environ['JOBS_TABLE_NAME'])
 
     formatted_start = format_time(parse(start))
@@ -153,7 +172,7 @@ def query_jobs_by_status_code(status_code, user, name, start):
 
     response = table.query(**params)
     jobs = response['Items']
-    return  sdk.Batch([sdk.Job.from_dict(job) for job in jobs])
+    return sdk.Batch([sdk.Job.from_dict(job) for job in jobs])
 
 
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
@@ -166,24 +185,17 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
-
     its_live_user = 'hyp3.its_live'
 
     pending_jobs = query_jobs_by_status_code(
-        'PENDING',
-        its_live_user,
-        pairs.iloc[0].reference,
-        pairs.iloc[0].reference_acquisition
+        'PENDING', its_live_user, pairs.iloc[0].reference, pairs.iloc[0].reference_acquisition
     )
     running_jobs = query_jobs_by_status_code(
-        'RUNNING',
-        its_live_user,
-        pairs.iloc[0].reference,
-        pairs.iloc[0].reference_acquisition
+        'RUNNING', its_live_user, pairs.iloc[0].reference, pairs.iloc[0].reference_acquisition
     )
     jobs = pending_jobs + running_jobs
 
-    df = pd.DataFrame([job['job_parameters']['granules'] for job in jobs], columns=['reference', 'secondary'])
+    df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
     df = df.set_index(['reference', 'secondary'])
     pairs = pairs.set_index(['reference', 'secondary'])
 
