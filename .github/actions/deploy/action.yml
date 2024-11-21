@@ -16,6 +16,8 @@ inputs:
     required: true
   HYP3_API:
     required: true
+  HYP3_JOBS_TABLE:
+    required: true
   LAMBDA_LOGGING_LEVEL:
     required: true
   EARTHDATA_USERNAME:
@@ -60,6 +62,7 @@ runs:
             LandsatTopicArn=${{ inputs.LANDSAT_TOPIC_ARN }} \
             Sentinel2TopicArn=${{ inputs.SENTINEL2_TOPIC_ARN }} \
             Hyp3Api=${{ inputs.HYP3_API }} \
+            Hyp3JobsTable=${{ inputs.HYP3_JOBS_TABLE }} \
             LambdaLoggingLevel=${{ inputs.LAMBDA_LOGGING_LEVEL }} \
             EarthdataUsername=${{ inputs.EARTHDATA_USERNAME }} \
             EarthdataPassword=${{ inputs.EARTHDATA_PASSWORD }} \
