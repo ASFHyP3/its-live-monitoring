@@ -18,7 +18,6 @@ import pandas as pd
 from boto3.dynamodb.conditions import Attr, Key
 from dateutil.parser import parse
 
-# from hyp3_sdk.jobs import Job, Batch
 from landsat import (
     get_landsat_pairs_for_reference_scene,
     get_landsat_stac_item,
