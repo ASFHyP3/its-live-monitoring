@@ -25,6 +25,7 @@ jobs:
           LANDSAT_TOPIC_ARN: arn:aws:sns:us-west-2:673253540267:public-c2-notify-v2
           SENTINEL2_TOPIC_ARN: arn:aws:sns:eu-west-1:214830741341:NewSentinel2Product
           HYP3_API: https://hyp3-its-live.asf.alaska.edu
+          HYP3_JOBS_TABLE: hyp3-its-live-JobsTable-178MIZ4ZXKL69
           LAMBDA_LOGGING_LEVEL: INFO
           PUBLISH_BUCKET: its-live-data
           MATTERMOST_PAT: ${{ secrets.MATTERMOST_PAT }}
