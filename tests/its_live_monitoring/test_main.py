@@ -153,6 +153,22 @@ def test_query_jobs_by_status_code(tables):
         },
         {
             'job_id': 'job2',
+            'user_id': its_live_user,
+            'status_code': 'PENDING',
+            'request_time': '2024-01-01T00:00:00.000000Z',
+            'job_type': 'AUTORIFT',
+            'name': 'LC09_L1TP_138041_20240120_20240120_02_T1',
+        },
+        {
+            'job_id': 'job3',
+            'user_id': 'other-user',
+            'status_code': 'PENDING',
+            'request_time': '2024-01-29T00:00:00.000000Z',
+            'job_type': 'AUTORIFT',
+            'name': 'LC09_L1TP_138041_20240120_20240120_02_T1',
+        },
+        {
+            'job_id': 'job4',
             'user_id': 'other-user',
             'status_code': 'RUNNING',
             'request_time': '2024-01-29T00:00:00+00:00',
@@ -178,7 +194,7 @@ def test_query_jobs_by_status_code(tables):
         'LC09_L1TP_138041_20240120_20240120_02_T1',
         datetime.datetime.fromisoformat('2024-01-01T00:00:00+00:00'),
     )
-    assert jobs == sdk.Batch([sdk.Job.from_dict(table_items[1])])
+    assert jobs == sdk.Batch([sdk.Job.from_dict(table_items[3])])
 
     jobs = main.query_jobs_by_status_code(
         'PENDING',
