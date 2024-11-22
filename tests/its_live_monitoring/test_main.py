@@ -152,6 +152,14 @@ def test_query_jobs_by_status_code(tables):
             'name': 'LC09_L1TP_138041_20240120_20240120_02_T1',
         },
         {
+            'job_id': 'job1',
+            'user_id': its_live_user,
+            'status_code': 'PENDING',
+            'request_time': '2024-01-29T00:00:00.000000Z',
+            'job_type': 'AUTORIFT',
+            'name': 'LC09_L1TP_138041_20240120_20240120_02_T2',
+        },
+        {
             'job_id': 'job2',
             'user_id': its_live_user,
             'status_code': 'PENDING',
@@ -184,7 +192,7 @@ def test_query_jobs_by_status_code(tables):
         'PENDING',
         its_live_user,
         'LC09_L1TP_138041_20240120_20240120_02_T1',
-        datetime.datetime.fromisoformat('2024-01-28T00:00:00.000000Z'),
+        datetime.datetime.fromisoformat('2024-01-28T00:00:00+00:00'),
     )
     assert jobs == sdk.Batch([sdk.Job.from_dict(table_items[0])])
 
@@ -200,7 +208,7 @@ def test_query_jobs_by_status_code(tables):
         'PENDING',
         its_live_user,
         'LC09_L1TP_138041_20240120_20240120_02_T1',
-        datetime.datetime.fromisoformat('2024-01-30T00:00:00.000000Z'),
+        datetime.datetime.fromisoformat('2024-01-30T00:00:00+00:00'),
     )
     assert jobs == sdk.Batch([])
 
@@ -208,7 +216,7 @@ def test_query_jobs_by_status_code(tables):
         'RUNNING',
         its_live_user,
         'LC09_L1TP_138041_20240120_20240120_02_T1',
-        datetime.datetime.fromisoformat('2024-01-28T00:00:00.000000Z'),
+        datetime.datetime.fromisoformat('2024-01-28T00:00:00+00:00'),
     )
     assert jobs == sdk.Batch([])
 
@@ -216,6 +224,6 @@ def test_query_jobs_by_status_code(tables):
         'SUCCEEDED',
         'non-existant-user',
         'non-existant-granule',
-        datetime.datetime.fromisoformat('2000-01-01T00:00:00.000000Z'),
+        datetime.datetime.fromisoformat('2000-01-01T00:00:00+00:00'),
     )
     assert jobs == sdk.Batch([])
