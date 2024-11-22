@@ -153,11 +153,7 @@ def query_jobs_by_status_code(status_code: str, user: str, name: str, start: dat
 
     key_expression = Key('status_code').eq(status_code)
 
-    filter_expression = (
-        Attr('user_id').eq(user)
-        & Attr('name').eq(name)
-        & Attr('request_time').gte(format_time(start))
-    )
+    filter_expression = Attr('user_id').eq(user) & Attr('name').eq(name) & Attr('request_time').gte(format_time(start))
 
     params = {
         'IndexName': 'status_code',
