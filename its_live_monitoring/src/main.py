@@ -16,7 +16,6 @@ import hyp3_sdk as sdk
 import numpy as np
 import pandas as pd
 from boto3.dynamodb.conditions import Attr, Key
-from dateutil.parser import parse
 
 from landsat import (
     get_landsat_pairs_for_reference_scene,
@@ -139,6 +138,8 @@ def format_time(time: datetime) -> str:
     return utc_time.isoformat(timespec='seconds')
 
 
+# TODO:
+#  - unit tests
 def query_jobs_by_status_code(status_code: str, user: str, name: str, start: datetime.datetime) -> sdk.Batch:
     """Query dynamodb for jobs by status_code, then filter by user, name, and date.
 
@@ -153,14 +154,13 @@ def query_jobs_by_status_code(status_code: str, user: str, name: str, start: dat
     """
     table = dynamo.Table(os.environ['JOBS_TABLE_NAME'])
 
-    formatted_start = format_time(parse(start))
-
     key_expression = Key('status_code').eq(status_code)
-    key_expression &= Key('user_id').eq(user)
-    key_expression &= Key('request_time').geq(formatted_start)
 
-    filter_expression = Attr('job_id').exists()
-    filter_expression &= Attr('name').eq(name)
+    filter_expression = (
+        Attr('user_id').eq(user)
+        & Attr('name').eq(name)
+        & Attr('request_time').gte(format_time(start))
+    )
 
     params = {
         'IndexName': 'status_code',
@@ -169,8 +169,14 @@ def query_jobs_by_status_code(status_code: str, user: str, name: str, start: dat
         'ScanIndexForward': False,
     }
 
-    response = table.query(**params)
-    jobs = response['Items']
+    jobs = []
+    while True:
+        response = table.query(**params)
+        jobs.extend(response['Items'])
+        if (next_key := response.get('LastEvaluatedKey')) is None:
+            break
+        params['ExclusiveStartKey'] = next_key
+
     return sdk.Batch([sdk.Job.from_dict(job) for job in jobs])
 
 
