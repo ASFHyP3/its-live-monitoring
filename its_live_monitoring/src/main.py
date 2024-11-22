@@ -7,7 +7,6 @@ import logging
 import os
 import sys
 from datetime import timezone
-from typing import Iterable
 
 import boto3
 import botocore.config
@@ -71,7 +70,7 @@ def regions_from_bounds(min_lon: float, min_lat: float, max_lon: float, max_lat:
     return {point_to_region(lat, lon) for lat, lon in zip(lats.ravel(), lons.ravel())}
 
 
-def get_key(tile_prefixes: Iterable[str], reference: str, secondary: str) -> str | None:
+def get_key(tile_prefixes: list[str], reference: str, secondary: str) -> str | None:
     """Search S3 for the key of a processed pair.
 
     Args:
