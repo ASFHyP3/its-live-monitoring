@@ -28,7 +28,7 @@ def pystac_item_factory():
             datetime=datetime,
             properties=properties.copy(),
             collection=collection,
-            assets= assets if assets is None else assets.copy()
+            assets=assets if assets is None else assets.copy(),
         )
 
         return expected_item
