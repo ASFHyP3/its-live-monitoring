@@ -139,7 +139,6 @@ def format_time(time: datetime) -> str:
 
 
 # TODO:
-#  - add an `end` parameter?
 #  - unit tests
 def query_jobs_by_status_code(status_code: str, user: str, name: str, start: datetime.datetime) -> sdk.Batch:
     """Query dynamodb for jobs by status_code, then filter by user, name, and date.
