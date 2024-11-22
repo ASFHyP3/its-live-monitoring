@@ -93,6 +93,7 @@ Resources:
       Environment:
         Variables:
           HYP3_API: !Ref Hyp3Api
+          JOBS_TABLE_NAME: !Ref Hyp3JobsTable
           LOGGING_LEVEL: !Ref LambdaLoggingLevel
           EARTHDATA_USERNAME: !Ref EarthdataUsername
           EARTHDATA_PASSWORD: !Ref EarthdataPassword
