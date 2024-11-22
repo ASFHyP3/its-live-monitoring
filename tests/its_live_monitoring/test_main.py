@@ -150,7 +150,7 @@ def test_query_jobs_by_status_code(tables):
             'job_id': 'job1',
             'user_id': its_live_user,
             'status_code': 'PENDING',
-            'request_time': '2024-01-29T00:00:00+00:00',
+            'request_time': '2024-01-28T00:00:00+00:00',
             'job_type': 'AUTORIFT',
             'name': 'LC09_L1TP_138041_20240120_20240120_02_T1',
         },
