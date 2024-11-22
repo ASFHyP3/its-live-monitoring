@@ -150,11 +150,6 @@ def test_query_jobs_by_status_code(tables):
             'request_time': '2024-01-29T00:00:00.000000Z',
             'job_type': 'AUTORIFT',
             'name': 'LC09_L1TP_138041_20240120_20240120_02_T1',
-            'job_parameters': {
-                'reference': 'LC09_L1TP_138041_20240120_20240120_02_T1',
-                'reference_acquisition': '2024-01-28T04:29:49.361022Z',
-                'secondary': 'LC08_L1TP_138041_20240112_20240123_02_T1',
-            },
         },
         {
             'job_id': 'job2',
@@ -163,11 +158,6 @@ def test_query_jobs_by_status_code(tables):
             'request_time': '2024-01-29T00:00:00+00:00',
             'job_type': 'AUTORIFT',
             'name': 'LC09_L1TP_138041_20240120_20240120_02_T1',
-            'job_parameters': {
-                'reference': 'LC09_L1TP_138041_20240120_20240120_02_T1',
-                'reference_acquisition': '2024-01-28T04:29:49.361022Z',
-                'secondary': 'LC08_L1TP_138041_20240112_20240123_02_T1',
-            },
         },
     ]
 
