@@ -62,8 +62,8 @@ def test_get_key(mock_list_objects_v2):
     assert main.get_key(['N00E000', 'N00E010'], 'latest', 'earliest') == 'N00E010/earliest_X_latest_G0120V02_P000.nc'
 
 
-@patch('main.HYP3.find_jobs')
-def test_deduplicate_hyp3_pairs(mock_find_jobs, hyp3_batch_factory):
+@patch('main.query_jobs_by_status_code')
+def test_deduplicate_hyp3_pairs(mock_query_jobs_by_status_code, hyp3_batch_factory):
     sec_scenes = [
         'LC09_L1TP_138041_20240120_20240120_02_T1',
         'LC08_L1TP_138041_20240112_20240123_02_T1',
@@ -76,15 +76,15 @@ def test_deduplicate_hyp3_pairs(mock_find_jobs, hyp3_batch_factory):
         {'reference': ref_scenes, 'secondary': sec_scenes, 'reference_acquisition': ref_acquisitions}
     )
 
-    mock_find_jobs.side_effect = [sdk.Batch(), sdk.Batch()]
+    mock_query_jobs_by_status_code.side_effect = [sdk.Batch(), sdk.Batch()]
     pairs = main.deduplicate_hyp3_pairs(landsat_pairs)
     assert pairs.equals(landsat_pairs)
 
-    mock_find_jobs.side_effect = [hyp3_batch_factory(zip(ref_scenes, sec_scenes)), sdk.Batch()]
+    mock_query_jobs_by_status_code.side_effect = [hyp3_batch_factory(zip(ref_scenes, sec_scenes)), sdk.Batch()]
     pairs = main.deduplicate_hyp3_pairs(landsat_pairs)
     assert len(pairs) == 0
 
-    mock_find_jobs.side_effect = [hyp3_batch_factory(zip(ref_scenes[:-1], sec_scenes[:-1])), sdk.Batch()]
+    mock_query_jobs_by_status_code.side_effect = [hyp3_batch_factory(zip(ref_scenes[:-1], sec_scenes[:-1])), sdk.Batch()]
     pairs = main.deduplicate_hyp3_pairs(landsat_pairs)
     assert len(pairs) == 1
 
