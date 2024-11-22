@@ -13,6 +13,7 @@ install-lambda-deps:
 
 test_file ?= 'tests/'
 test:
+	export $$(xargs < tests/cfg.env); \
 	pytest $(test_file)
 
 landsat-integration:
