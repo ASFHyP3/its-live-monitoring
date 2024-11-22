@@ -84,7 +84,10 @@ def test_deduplicate_hyp3_pairs(mock_query_jobs_by_status_code, hyp3_batch_facto
     pairs = main.deduplicate_hyp3_pairs(landsat_pairs)
     assert len(pairs) == 0
 
-    mock_query_jobs_by_status_code.side_effect = [hyp3_batch_factory(zip(ref_scenes[:-1], sec_scenes[:-1])), sdk.Batch()]
+    mock_query_jobs_by_status_code.side_effect = [
+        hyp3_batch_factory(zip(ref_scenes[:-1], sec_scenes[:-1])),
+        sdk.Batch(),
+    ]
     pairs = main.deduplicate_hyp3_pairs(landsat_pairs)
     assert len(pairs) == 1
 
