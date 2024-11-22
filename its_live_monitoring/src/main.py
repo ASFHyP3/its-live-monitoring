@@ -1,12 +1,11 @@
 """Lambda function to trigger low-latency Landsat and Sentinel-2 processing from newly acquired scenes."""
 
 import argparse
-import datetime
 import json
 import logging
 import os
 import sys
-from datetime import timezone
+from datetime import datetime, timezone
 
 import boto3
 import botocore.config
@@ -137,7 +136,7 @@ def format_time(time: datetime) -> str:
     return utc_time.isoformat(timespec='seconds')
 
 
-def query_jobs_by_status_code(status_code: str, user: str, name: str, start: datetime.datetime) -> sdk.Batch:
+def query_jobs_by_status_code(status_code: str, user: str, name: str, start: datetime) -> sdk.Batch:
     """Query dynamodb for jobs by status_code, then filter by user, name, and date.
 
     Args:
