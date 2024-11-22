@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.9]
+### Fixed
+- Mixed STAC Item datetime formats (e.g., occasionally not including microseconds) in the list of secondary scenes no longer causes a ValueError to be raised. 
+
 ## [0.5.8]
 ### Changed
 - As an incremental improvement to deduplication performance, its-live-monitoring now:

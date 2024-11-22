@@ -1,5 +1,5 @@
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pystac
@@ -192,9 +192,9 @@ def test_get_sentinel2_pairs_for_reference_scene(
         'S2B_22TCR_20210528_0_L1C',
     ]
     sec_date_times = [
-        '2024-05-28T00:00:00.000Z',
-        '2023-05-28T00:00:00.000Z',
-        '2021-05-28T00:00:00.000Z',
+        datetime(2024, 5, 28, 0, 0, 0, 0, tzinfo=timezone.utc),
+        datetime(2023, 5, 28, 0, 0, 0, tzinfo=timezone.utc),
+        datetime(2021, 5, 28, 0, 0, 0, 0, tzinfo=timezone.utc),
     ]
     sec_items = []
     for scene, date_time in zip(sec_scenes, sec_date_times):

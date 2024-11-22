@@ -16,19 +16,19 @@ def pystac_item_factory():
         collection: str,
         geometry: dict | None = None,
         bbox: list | None = None,
-        assets: dict = None,
+        assets: dict | None = None,
     ) -> pystac.item.Item:
         if isinstance(datetime, str):
             datetime = date_parser(datetime)
 
         expected_item = pystac.item.Item(
             id=id,
-            geometry=geometry,
+            geometry=geometry if geometry is None else geometry.copy(),
             bbox=bbox,
             datetime=datetime,
-            properties=properties,
+            properties=properties.copy(),
             collection=collection,
-            assets=assets,
+            assets= assets if assets is None else assets.copy()
         )
 
         return expected_item

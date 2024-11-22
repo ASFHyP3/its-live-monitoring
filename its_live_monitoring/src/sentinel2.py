@@ -234,6 +234,6 @@ def get_sentinel2_pairs_for_reference_scene(
         features.append(feature)
 
     df = gpd.GeoDataFrame.from_features(features)
-    df['datetime'] = pd.to_datetime(df.datetime)
+    df['datetime'] = pd.to_datetime(df.datetime, format='ISO8601')
 
     return df
