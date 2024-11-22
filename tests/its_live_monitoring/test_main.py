@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import patch
 
 import geopandas as gpd
@@ -136,3 +137,79 @@ def test_submit_pairs_for_processing(mock_submit_prepared_jobs, hyp3_batch_facto
     mock_submit_prepared_jobs.side_effect = [landsat_jobs]
     jobs = main.submit_pairs_for_processing(landsat_pairs)
     assert jobs == landsat_jobs
+
+
+def test_query_jobs_by_status_code(tables):
+    its_live_user = 'hyp3.its_live'
+
+    table_items = [
+        {
+            'job_id': 'job1',
+            'user_id': its_live_user,
+            'status_code': 'PENDING',
+            'request_time': '2024-01-29T00:00:00.000000Z',
+            'job_type': 'AUTORIFT',
+            'name': 'LC09_L1TP_138041_20240120_20240120_02_T1',
+            'job_parameters': {
+                'reference': 'LC09_L1TP_138041_20240120_20240120_02_T1',
+                'reference_acquisition': '2024-01-28T04:29:49.361022Z',
+                'secondary': 'LC08_L1TP_138041_20240112_20240123_02_T1',
+            },
+        },
+        {
+            'job_id': 'job2',
+            'user_id': 'other-user',
+            'status_code': 'RUNNING',
+            'request_time': '2024-01-29T00:00:00+00:00',
+            'job_type': 'AUTORIFT',
+            'name': 'LC09_L1TP_138041_20240120_20240120_02_T1',
+            'job_parameters': {
+                'reference': 'LC09_L1TP_138041_20240120_20240120_02_T1',
+                'reference_acquisition': '2024-01-28T04:29:49.361022Z',
+                'secondary': 'LC08_L1TP_138041_20240112_20240123_02_T1',
+            },
+        },
+    ]
+
+    for item in table_items:
+        tables.jobs_table.put_item(Item=item)
+
+    jobs = main.query_jobs_by_status_code(
+        'PENDING',
+        its_live_user,
+        'LC09_L1TP_138041_20240120_20240120_02_T1',
+        datetime.datetime.fromisoformat('2024-01-28T00:00:00.000000Z'),
+    )
+    assert jobs == sdk.Batch([sdk.Job.from_dict(table_items[0])])
+
+    jobs = main.query_jobs_by_status_code(
+        'RUNNING',
+        'other-user',
+        'LC09_L1TP_138041_20240120_20240120_02_T1',
+        datetime.datetime.fromisoformat('2024-01-01T00:00:00+00:00'),
+    )
+    assert jobs == sdk.Batch([sdk.Job.from_dict(table_items[1])])
+
+    jobs = main.query_jobs_by_status_code(
+        'PENDING',
+        its_live_user,
+        'LC09_L1TP_138041_20240120_20240120_02_T1',
+        datetime.datetime.fromisoformat('2024-01-30T00:00:00.000000Z'),
+    )
+    assert jobs == sdk.Batch([])
+
+    jobs = main.query_jobs_by_status_code(
+        'RUNNING',
+        its_live_user,
+        'LC09_L1TP_138041_20240120_20240120_02_T1',
+        datetime.datetime.fromisoformat('2024-01-28T00:00:00.000000Z'),
+    )
+    assert jobs == sdk.Batch([])
+
+    jobs = main.query_jobs_by_status_code(
+        'SUCCEEDED',
+        'non-existant-user',
+        'non-existant-granule',
+        datetime.datetime.fromisoformat('2000-01-01T00:00:00.000000Z'),
+    )
+    assert jobs == sdk.Batch([])
