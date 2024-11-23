@@ -150,6 +150,13 @@ Resources:
           - Effect: Allow
             Action: dynamodb:Query
             Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Hyp3JobsTable}*"
+          - Effect: Allow
+            Action:
+              - s3:List*
+              - s3:Get*
+            Resource:
+            - !Sub "arn:aws:s3:::${PublishBucket}/*"
+            - !Sub "arn:aws:s3:::${PublishBucket}"
 
   StatusMessages:
     Type: AWS::CloudFormation::Stack
