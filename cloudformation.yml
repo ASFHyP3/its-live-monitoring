@@ -149,7 +149,7 @@ Resources:
             Resource: !GetAtt Queue.Arn
           - Effect: Allow
             Action: dynamodb:Query
-            Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Hyp3JobsTable}"
+            Resource: !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Hyp3JobsTable}*"
 
   StatusMessages:
     Type: AWS::CloudFormation::Stack
