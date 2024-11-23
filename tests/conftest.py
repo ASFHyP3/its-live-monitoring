@@ -1,5 +1,6 @@
 import datetime as dt
 from copy import deepcopy
+from os import environ
 from unittest.mock import NonCallableMock
 
 import boto3
