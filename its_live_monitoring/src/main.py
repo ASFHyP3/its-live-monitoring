@@ -8,7 +8,6 @@ import sys
 from datetime import datetime, timezone
 
 import boto3
-import botocore.config
 import geopandas as gpd
 import hyp3_sdk as sdk
 import numpy as np
@@ -40,10 +39,7 @@ HYP3 = sdk.HyP3(
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
-s3 = boto3.client(
-    's3',
-    config=botocore.config.Config(signature_version=botocore.UNSIGNED),
-)
+s3 = boto3.client('s3')
 dynamo = boto3.resource('dynamodb')
 
 
@@ -87,7 +83,7 @@ def get_key(tile_prefixes: list[str], reference: str, secondary: str) -> str | N
     for tile_prefix in tile_prefixes:
         prefix = f'{tile_prefix}/{reference}_X_{secondary}'
         response = s3.list_objects_v2(
-            Bucket='its-live-data',
+            Bucket=os.environ.get('PUBLISH_BUCKET', 'its-live-data'),
             Prefix=prefix,
         )
         for item in response.get('Contents', []):

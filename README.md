@@ -66,23 +66,36 @@ aws sns publish \
     --message file://${MESSAGE_FILE}
 ```
 
-where `TOPIC_ARN` is the ARN of the test topic and `MESSAGE_FILE` is the path to a file containing the contents of the message you want published. Example message contents are provided in these files in the [`tests/integration`](tests/integration) directory:
+where `TOPIC_ARN` is the ARN of the test topic and `MESSAGE_FILE` is the path to a file containing the contents of the message you want published. Example message contents are provided in these files in the [`tests/integration`](tests/integration) directory, two of which are described here:
 * [`landsat-l8-valid.json`](tests/integration/landsat-l8-valid.json) - A message containing a Landsat 9 scene over ice that *should* be processed.
 * [`landsat-l9-wrong-tier.json`](tests/integration/landsat-l9-wrong-tier.json) - A message containing a Landsat 9 scene *not* over ice that should be *filtered out* and *not* processed.
 
-To submit the Landsat integration test payloads to the default Landsat test SNS topic, run:
+To submit **all** the integration test payloads to the default test SNS topics, run:
+```shell
+make integration
+```
+
+>[!IMPORTANT]
+> The integration tests will submit jobs to `hyp3-its-live-test`, which will publish products to `s3://its-live-data-test`. Notably `s3://its-live-data-test` has a lifecycle rule which will delete all products after 14 days. So to test deduplication of HyP3 and S3, you'll need to:
+> 1. disable `hyp3-its-live-test`'s compute environment or start execution worker
+> 2. submit the integration tests and see jobs submitted
+> 3. submit the integration tests again to see _all_ jobs deduplicate with the hung jobs from the previous step
+> 4. re-enable the compute environment or start execution worker and wait for all jobs to finish
+> 5. once all jobs are finished, submit the integration tests again to see jobs deduplicate against the products in `s3://its-live-data-test`
+>
+> That means, fully testing of its-live-monitoring requires _at least_ 3 rounds of integration testing!
+
+
+
+To submit _just_ the Landsat integration test payloads to the default Landsat test SNS topic, run:
 ```shell
 make landsat-integration
 ```
-Likewise, to submit the Sentinel-2 integration test payloads to the default Sentinel-2 test SNS topic, run:
+Likewise, to submit _just_ the Sentinel-2 integration test payloads to the default Sentinel-2 test SNS topic, run:
 ```shell
 make Sentinel2-integration
 ```
 
-To submit **all** the integration test payloads to the default test SNS topic, run:
-```shell
-make integration
-```
 or, you can submit to an alternative SNS topic like:
 ```shell
 LANDSAT_TOPIC_ARN=foobar make landsat-integration
