@@ -178,13 +178,11 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
-    its_live_user = 'hyp3.its_live'
-
     pending_jobs = query_jobs_by_status_code(
-        'PENDING', its_live_user, pairs.iloc[0].reference, pairs.iloc[0].reference_acquisition
+        'PENDING', EARTHDATA_USERNAME, pairs.iloc[0].reference, pairs.iloc[0].reference_acquisition
     )
     running_jobs = query_jobs_by_status_code(
-        'RUNNING', its_live_user, pairs.iloc[0].reference, pairs.iloc[0].reference_acquisition
+        'RUNNING', EARTHDATA_USERNAME, pairs.iloc[0].reference, pairs.iloc[0].reference_acquisition
     )
     jobs = pending_jobs + running_jobs
 
@@ -260,6 +258,7 @@ def process_scene(
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
             log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
+    if len(pairs) > 0:
         pairs = deduplicate_s3_pairs(pairs)
 
         log.info(f'Deduplicated already published pairs; {len(pairs)} remaining')
