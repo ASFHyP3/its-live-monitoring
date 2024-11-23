@@ -1,4 +1,5 @@
 import datetime as dt
+from copy import deepcopy
 from os import environ
 from unittest.mock import NonCallableMock
 
@@ -19,19 +20,19 @@ def pystac_item_factory():
         collection: str,
         geometry: dict | None = None,
         bbox: list | None = None,
-        assets: dict = None,
+        assets: dict | None = None,
     ) -> pystac.item.Item:
         if isinstance(datetime, str):
             datetime = date_parser(datetime)
 
         expected_item = pystac.item.Item(
             id=id,
-            geometry=geometry,
+            geometry=geometry if geometry is None else deepcopy(geometry),
             bbox=bbox,
             datetime=datetime,
-            properties=properties,
+            properties=deepcopy(properties),
             collection=collection,
-            assets=assets,
+            assets=assets if assets is None else deepcopy(assets),
         )
 
         return expected_item
