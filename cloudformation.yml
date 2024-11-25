@@ -155,8 +155,8 @@ Resources:
               - s3:List*
               - s3:Get*
             Resource:
-            - !Sub "arn:aws:s3:::${PublishBucket}/*"
-            - !Sub "arn:aws:s3:::${PublishBucket}"
+              - !Sub "arn:aws:s3:::${PublishBucket}/*"
+              - !Sub "arn:aws:s3:::${PublishBucket}"
 
   StatusMessages:
     Type: AWS::CloudFormation::Stack
