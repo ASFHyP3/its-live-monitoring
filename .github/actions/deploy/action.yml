@@ -4,10 +4,6 @@ description: Deploy the ITS_LIVE Monitoring system
 inputs:
   STACK_NAME:
     required: true
-  AWS_ACCESS_KEY_ID:
-    required: true
-  AWS_SECRET_ACCESS_KEY:
-    required: true
   CF_TEMPLATE_BUCKET:
     required: true
   LANDSAT_TOPIC_ARN:
@@ -15,6 +11,8 @@ inputs:
   SENTINEL2_TOPIC_ARN:
     required: true
   HYP3_API:
+    required: true
+  HYP3_JOBS_TABLE:
     required: true
   LAMBDA_LOGGING_LEVEL:
     required: true
@@ -30,16 +28,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ inputs.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ inputs.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-west-2
-
-    - uses: actions/setup-python@v3
-      with:
-        python-version: 3.12
-
     - name: Install
       shell: bash
       run: make install-lambda-deps
@@ -60,6 +48,7 @@ runs:
             LandsatTopicArn=${{ inputs.LANDSAT_TOPIC_ARN }} \
             Sentinel2TopicArn=${{ inputs.SENTINEL2_TOPIC_ARN }} \
             Hyp3Api=${{ inputs.HYP3_API }} \
+            Hyp3JobsTable=${{ inputs.HYP3_JOBS_TABLE }} \
             LambdaLoggingLevel=${{ inputs.LAMBDA_LOGGING_LEVEL }} \
             EarthdataUsername=${{ inputs.EARTHDATA_USERNAME }} \
             EarthdataPassword=${{ inputs.EARTHDATA_PASSWORD }} \

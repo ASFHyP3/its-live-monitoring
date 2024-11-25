@@ -1,5 +1,5 @@
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 import landsat
@@ -122,7 +122,11 @@ def test_get_landsat_pairs_for_reference_scene(mock_landsat_get_item, pystac_ite
         'LC08_L1TP_138041_20240112_20240123_02_T1',
         'LC09_L1TP_138041_20240104_20240104_02_T1',
     ]
-    sec_date_times = ['2024-01-20T04:30:03.658618Z', '2024-01-12T04:29:55.948514Z', '2024-01-04T04:30:03.184014Z']
+    sec_date_times = [
+        datetime(2024, 1, 20, 4, 30, 3, 658618, tzinfo=timezone.utc),
+        datetime(2024, 1, 12, 4, 29, 55, tzinfo=timezone.utc),
+        datetime(2024, 1, 4, 4, 30, 3, 184014, tzinfo=timezone.utc),
+    ]
     sec_items = []
     for scene, date_time in zip(sec_scenes, sec_date_times):
         sec_items.append(

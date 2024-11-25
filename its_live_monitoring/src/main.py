@@ -5,14 +5,14 @@ import json
 import logging
 import os
 import sys
-from typing import Iterable
+from datetime import datetime, timezone
 
 import boto3
-import botocore.config
 import geopandas as gpd
 import hyp3_sdk as sdk
 import numpy as np
 import pandas as pd
+from boto3.dynamodb.conditions import Attr, Key
 
 from landsat import (
     get_landsat_pairs_for_reference_scene,
@@ -39,10 +39,8 @@ HYP3 = sdk.HyP3(
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
-s3 = boto3.client(
-    's3',
-    config=botocore.config.Config(signature_version=botocore.UNSIGNED),
-)
+s3 = boto3.client('s3')
+dynamo = boto3.resource('dynamodb')
 
 
 def point_to_region(lat: float, lon: float) -> str:
@@ -67,7 +65,7 @@ def regions_from_bounds(min_lon: float, min_lat: float, max_lon: float, max_lat:
     return {point_to_region(lat, lon) for lat, lon in zip(lats.ravel(), lons.ravel())}
 
 
-def get_key(tile_prefixes: Iterable[str], reference: str, secondary: str) -> str | None:
+def get_key(tile_prefixes: list[str], reference: str, secondary: str) -> str | None:
     """Search S3 for the key of a processed pair.
 
     Args:
@@ -85,7 +83,7 @@ def get_key(tile_prefixes: Iterable[str], reference: str, secondary: str) -> str
     for tile_prefix in tile_prefixes:
         prefix = f'{tile_prefix}/{reference}_X_{secondary}'
         response = s3.list_objects_v2(
-            Bucket='its-live-data',
+            Bucket=os.environ.get('PUBLISH_BUCKET', 'its-live-data'),
             Prefix=prefix,
         )
         for item in response.get('Contents', []):
@@ -119,6 +117,57 @@ def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return pairs.drop(index=drop_indexes)
 
 
+def format_time(time: datetime) -> str:
+    """Format time to ISO with UTC timezone.
+
+    Args:
+        time: a datetime object to format
+
+    Returns:
+        datetime: the UTC time in ISO format
+    """
+    if time.tzinfo is None:
+        raise ValueError(f'missing tzinfo for datetime {time}')
+    utc_time = time.astimezone(timezone.utc)
+    return utc_time.isoformat(timespec='seconds')
+
+
+def query_jobs_by_status_code(status_code: str, user: str, name: str, start: datetime) -> sdk.Batch:
+    """Query dynamodb for jobs by status_code, then filter by user, name, and date.
+
+    Args:
+        status_code: `status_code` of the desired jobs
+        user: the `user_id` that submitted the jobs
+        name: the name of the jobs
+        start: the earliest submission date of the jobs
+
+    Returns:
+        sdk.Batch: batch of jobs matching the filters
+    """
+    table = dynamo.Table(os.environ['JOBS_TABLE_NAME'])
+
+    key_expression = Key('status_code').eq(status_code)
+
+    filter_expression = Attr('user_id').eq(user) & Attr('name').eq(name) & Attr('request_time').gte(format_time(start))
+
+    params = {
+        'IndexName': 'status_code',
+        'KeyConditionExpression': key_expression,
+        'FilterExpression': filter_expression,
+        'ScanIndexForward': False,
+    }
+
+    jobs = []
+    while True:
+        response = table.query(**params)
+        jobs.extend(response['Items'])
+        if (next_key := response.get('LastEvaluatedKey')) is None:
+            break
+        params['ExclusiveStartKey'] = next_key
+
+    return sdk.Batch([sdk.Job.from_dict(job) for job in jobs])
+
+
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """Search HyP3 jobs since the reference scene's acquisition date and remove already submitted (in PENDING or RUNNING state) pairs.
 
@@ -129,22 +178,12 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
-    pending_jobs = HYP3.find_jobs(
-        job_type='AUTORIFT',
-        start=pairs.iloc[0].reference_acquisition,
-        name=pairs.iloc[0].reference,
-        user_id=EARTHDATA_USERNAME,
-        status_code='PENDING',
+    pending_jobs = query_jobs_by_status_code(
+        'PENDING', EARTHDATA_USERNAME, pairs.iloc[0].reference, pairs.iloc[0].reference_acquisition
     )
-
-    running_jobs = HYP3.find_jobs(
-        job_type='AUTORIFT',
-        start=pairs.iloc[0].reference_acquisition,
-        name=pairs.iloc[0].reference,
-        user_id=EARTHDATA_USERNAME,
-        status_code='RUNNING',
+    running_jobs = query_jobs_by_status_code(
+        'RUNNING', EARTHDATA_USERNAME, pairs.iloc[0].reference, pairs.iloc[0].reference_acquisition
     )
-
     jobs = pending_jobs + running_jobs
 
     df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
@@ -219,6 +258,7 @@ def process_scene(
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
             log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
+    if len(pairs) > 0:
         pairs = deduplicate_s3_pairs(pairs)
 
         log.info(f'Deduplicated already published pairs; {len(pairs)} remaining')

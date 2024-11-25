@@ -75,7 +75,7 @@ def get_sentinel2_stac_item(scene: str) -> pystac.Item:
     items = [item for page in results.pages() for item in page]
     if (n_items := len(items)) != 1:
         raise ValueError(
-            f'{n_items} for {scene} found in Sentinel-2 STAC collection: '
+            f'{n_items} items for {scene} found in Sentinel-2 STAC collection: '
             f'{SENTINEL2_CATALOG_API}/collections/{SENTINEL2_COLLECTION_NAME}'
         )
     item = items[0]
@@ -234,6 +234,6 @@ def get_sentinel2_pairs_for_reference_scene(
         features.append(feature)
 
     df = gpd.GeoDataFrame.from_features(features)
-    df['datetime'] = pd.to_datetime(df.datetime)
+    df['datetime'] = pd.to_datetime(df.datetime, format='ISO8601')
 
     return df
