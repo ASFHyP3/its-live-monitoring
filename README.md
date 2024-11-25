@@ -77,10 +77,10 @@ make integration
 
 >[!IMPORTANT]
 > The integration tests will submit jobs to `hyp3-its-live-test`, which will publish products to `s3://its-live-data-test`. Notably `s3://its-live-data-test` has a lifecycle rule which will delete all products after 14 days. So to test deduplication of HyP3 and S3, you'll need to:
-> 1. disable `hyp3-its-live-test`'s compute environment or start execution worker
+> 1. disable `hyp3-its-live-test`'s compute environment or start execution manager
 > 2. submit the integration tests and see jobs submitted
 > 3. submit the integration tests again to see _all_ jobs deduplicate with the hung jobs from the previous step
-> 4. re-enable the compute environment or start execution worker and wait for all jobs to finish
+> 4. re-enable the compute environment or start execution manager and wait for all jobs to finish
 > 5. once all jobs are finished, submit the integration tests again to see jobs deduplicate against the products in `s3://its-live-data-test`
 >
 > That means, fully testing of its-live-monitoring requires _at least_ 3 rounds of integration testing!
