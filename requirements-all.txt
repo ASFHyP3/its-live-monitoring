@@ -2,6 +2,6 @@
 -r requirements-status-messages.txt
 cfn-lint==1.20.0
 ruff==0.8.0
-pytest==8.3.3
+pytest==8.3.4
 responses==0.25.3
 moto==5.0.21
