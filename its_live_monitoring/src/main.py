@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import boto3
 import geopandas as gpd
@@ -128,7 +128,7 @@ def format_time(time: datetime) -> str:
     """
     if time.tzinfo is None:
         raise ValueError(f'missing tzinfo for datetime {time}')
-    utc_time = time.astimezone(timezone.utc)
+    utc_time = time.astimezone(UTC)
     return utc_time.isoformat(timespec='seconds')
 
 
