@@ -4,7 +4,7 @@ import argparse
 import logging
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import boto3
@@ -59,7 +59,7 @@ def lambda_handler(event: dict, context: dict) -> None:
 
     mattermost_message = (
         f'{status_emoji} Dead Letter Queue Count for `{queue_name}` has '
-        f'{dead_letter_queue_count} entries on {datetime.now(tz=timezone.utc).isoformat()}'
+        f'{dead_letter_queue_count} entries on {datetime.now(tz=UTC).isoformat()}'
     )
 
     log.info(f'Posting: "{mattermost_message}" to {MATTERMOST_CHANNEL_ID}')

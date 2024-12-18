@@ -1,11 +1,17 @@
-line-length = 120
-src = ["its_live_monitoring/src", "status-messages/src", "tests"]
+[project]
+requires-python = "==3.12"
 
-[format]
+[tool.ruff]
+line-length = 120
+# The directories to consider when resolving first- vs. third-party imports.
+# See: https://docs.astral.sh/ruff/settings/#src
+src = ["**/src", "tests"]
+
+[tool.ruff.format]
 indent-style = "space"
 quote-style = "single"
 
-[lint]
+[tool.ruff.lint]
 extend-select = [
     "I",   # isort: https://docs.astral.sh/ruff/rules/#isort-i
     "UP",  # pyupgrade: https://docs.astral.sh/ruff/rules/#pyupgrade-up
@@ -14,12 +20,12 @@ extend-select = [
     "PTH", # use-pathlib-pth: https://docs.astral.sh/ruff/rules/#flake8-use-pathlib-pth
 ]
 
-[lint.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[lint.isort]
+[tool.ruff.lint.isort]
 case-sensitive = true
 lines-after-imports = 2
 
-[lint.extend-per-file-ignores]
+[tool.ruff.lint.extend-per-file-ignores]
 "tests/*" = ["D100", "D103", "ANN"]
