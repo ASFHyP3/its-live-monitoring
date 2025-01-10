@@ -113,7 +113,7 @@ def is_new_scene(
 def qualifies_for_sentinel2_processing(
     item: pystac.Item,
     *,
-    relative_orbit: str = None,
+    relative_orbit: str | None = None,
     max_cloud_cover: int = SENTINEL2_MAX_CLOUD_COVER_PERCENT,
     log_level: int = logging.DEBUG,
 ) -> bool:
@@ -203,6 +203,8 @@ def get_sentinel2_pairs_for_reference_scene(
         A DataFrame with all potential pairs for a sentinel-2 reference scene. Metadata in the columns will be for the
         *secondary* scene unless specified otherwise.
     """
+    assert reference.collection_id is not None
+    assert reference.datetime is not None
     results = SENTINEL2_CATALOG.search(
         collections=[reference.collection_id],
         query=[
