@@ -20,7 +20,7 @@ def test_raise_for_missing_in_google_cloud():
     responses.head(f'{root_url}/13/C/ES/{existing_scene}.SAFE/manifest.safe', status=200)
     responses.head(f'{root_url}/13/C/ES/{missing_scene}.SAFE/manifest.safe', status=404)
 
-    assert sentinel2.raise_for_missing_in_google_cloud(existing_scene) is None
+    sentinel2.raise_for_missing_in_google_cloud(existing_scene)
 
     with pytest.raises(requests.HTTPError):
         sentinel2.raise_for_missing_in_google_cloud(missing_scene)
@@ -147,7 +147,7 @@ def test_get_sentinel2_pairs_for_reference_scene(
         'instruments': ['msi'],
     }
     collection = 'sentinel-2-l1c'
-    date_time = '2024-05-28T00:00:00.000Z'
+    date_time_str = '2024-05-28T00:00:00.000Z'
     geometry = {
         'type': 'Polygon',
         'coordinates': [
@@ -184,7 +184,7 @@ def test_get_sentinel2_pairs_for_reference_scene(
         ],
     }
     ref_item = pystac_item_factory(
-        id=scene, datetime=date_time, properties=properties, collection=collection, geometry=geometry
+        id=scene, datetime=date_time_str, properties=properties, collection=collection, geometry=geometry
     )
     sec_scenes = [
         'S2B_22TCR_20240528_0_L1C',

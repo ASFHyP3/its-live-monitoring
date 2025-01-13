@@ -61,7 +61,8 @@ def point_to_region(lat: float, lon: float) -> str:
 
 def regions_from_bounds(min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> set[str]:
     """Returns a set of all region names within a bounding box."""
-    lats, lons = np.mgrid[min_lat : max_lat + 10 : 10, min_lon : max_lon + 10 : 10]
+    # mypy complains about using float as index, but numpy supports it
+    lats, lons = np.mgrid[min_lat : max_lat + 10 : 10, min_lon : max_lon + 10 : 10]  # type: ignore[misc]
     return {point_to_region(lat, lon) for lat, lon in zip(lats.ravel(), lons.ravel())}
 
 
@@ -178,6 +179,7 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
+    assert EARTHDATA_USERNAME is not None
     pending_jobs = query_jobs_by_status_code(
         'PENDING', EARTHDATA_USERNAME, pairs.iloc[0].reference, pairs.iloc[0].reference_acquisition
     )
