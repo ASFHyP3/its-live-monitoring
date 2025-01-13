@@ -93,6 +93,8 @@ def get_landsat_pairs_for_reference_scene(
         A DataFrame with all potential pairs for a Landsat reference scene. Metadata in the columns will be for the
         *secondary* scene unless specified otherwise.
     """
+    assert reference.collection_id is not None
+    assert reference.datetime is not None
     results = LANDSAT_CATALOG.search(
         collections=[reference.collection_id],
         query=[
