@@ -1,6 +1,6 @@
 -r requirements-its_live_monitoring.txt
 -r requirements-status-messages.txt
-cfn-lint==1.22.5
+cfn-lint==1.23.1
 ruff
 mypy
 pytest==8.3.4
