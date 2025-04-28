@@ -5,4 +5,4 @@ pystac-client==0.8.5
 requests==2.32.3
 shapely==2.0.6
 numpy==2.2.2
-boto3==1.35.81
+boto3==1.38.3
