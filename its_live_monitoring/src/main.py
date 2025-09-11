@@ -19,6 +19,10 @@ from landsat import (
     get_landsat_stac_item,
     qualifies_for_landsat_processing,
 )
+from sentinel1 import (
+    get_sentinel1_pairs_for_reference_scene,
+    qualifies_for_sentinel1_processing,
+)
 from sentinel2 import (
     get_sentinel2_pairs_for_reference_scene,
     get_sentinel2_stac_item,
@@ -169,6 +173,60 @@ def query_jobs_by_status_code(status_code: str, user: str, name: str, start: dat
     return sdk.Batch([sdk.Job.from_dict(job) for job in jobs])
 
 
+def is_currently_processing(job_name: list) -> bool:
+    """Search HyP3's `PENDING` and `RUNNING` jobs for the given Sentinel-1 job.
+
+    Args:
+         job_name: The name of the job to check for.
+
+    Returns:
+         True if the job is currently RUNNING or PENDING else False.
+    """
+    assert EARTHDATA_USERNAME is not None
+    pending_jobs = query_jobs_by_status_code('PENDING', EARTHDATA_USERNAME, job_name, job_name.split('_')[2])
+    running_jobs = query_jobs_by_status_code('RUNNING', EARTHDATA_USERNAME, job_name, job_name.split('_')[2])
+    jobs = pending_jobs + running_jobs
+
+    if len(jobs) > 0:
+        return True
+
+    return False
+
+
+def submit_sentinel1_pairs_for_processing(references: list, secondaries: list, job_names: list) -> sdk.Batch:  # noqa: D103
+    prepared_jobs = []
+    for ref_frame, sec_frames, names in zip(references, secondaries, job_names):
+        for sec_frame, name in zip(sec_frames, names):
+            if is_currently_processing(name):
+                continue
+
+            job_params = {
+                'job_type': 'AUTORIFT',
+                'name': name,
+                'job_parameters': {
+                    'reference': ref_frame,
+                    'secondary': list(sec_frame),
+                    'parameter_file': '/vsicurl/https://its-live-data.s3.amazonaws.com/autorift_parameters/v001/autorift_landice_0120m.shp',
+                    'publish_stac_prefix': 'test-space/stac/ndjson/ingest',
+                    'use_static_files': True,
+                },
+            }
+
+            if publish_bucket := os.environ.get('PUBLISH_BUCKET', ''):
+                job_params['job_parameters']['publish_bucket'] = publish_bucket
+
+            prepared_jobs.append(job_params)
+
+    log.debug(prepared_jobs)
+
+    jobs = sdk.Batch()
+    if len(prepared_jobs) > 0:
+        for batch in sdk.util.chunk(prepared_jobs):
+            jobs += HYP3.submit_prepared_jobs(batch)
+
+    return jobs
+
+
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """Search HyP3 jobs since the reference scene's acquisition date and remove already submitted (in PENDING or RUNNING state) pairs.
 
@@ -240,11 +298,20 @@ def process_scene(
                 # Note: Time between attempts is controlled by they SQS VisibilityTimeout
                 raise_for_missing_in_google_cloud(scene)
                 pairs = get_sentinel2_pairs_for_reference_scene(reference)
-
-    else:
+    elif scene.startswith('L'):
         reference = get_landsat_stac_item(scene)
         if qualifies_for_landsat_processing(reference, log_level=logging.INFO):
             pairs = get_landsat_pairs_for_reference_scene(reference)
+    elif scene.startswith('S1'):
+        if qualifies_for_sentinel1_processing(scene):
+            refs, secs, job_names = get_sentinel1_pairs_for_reference_scene(scene)
+
+            jobs = sdk.Batch()
+            if submit:
+                jobs += submit_sentinel1_pairs_for_processing(refs, secs, job_names)
+
+            log.info(jobs)
+            return jobs
 
     if pairs is None:
         return sdk.Batch()
