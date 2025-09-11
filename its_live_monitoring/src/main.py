@@ -183,8 +183,9 @@ def is_currently_processing(job_name: str) -> bool:
          True if the job is currently RUNNING or PENDING else False.
     """
     assert EARTHDATA_USERNAME is not None
-    pending_jobs = query_jobs_by_status_code('PENDING', EARTHDATA_USERNAME, job_name, job_name.split('_')[2])
-    running_jobs = query_jobs_by_status_code('RUNNING', EARTHDATA_USERNAME, job_name, job_name.split('_')[2])
+    date = datetime.strptime(job_name.split('_')[2], '%Y-%m-%d %H:%M:%S')
+    pending_jobs = query_jobs_by_status_code('PENDING', EARTHDATA_USERNAME, job_name, date)
+    running_jobs = query_jobs_by_status_code('RUNNING', EARTHDATA_USERNAME, job_name, date)
     jobs = pending_jobs + running_jobs
 
     if len(jobs) > 0:
