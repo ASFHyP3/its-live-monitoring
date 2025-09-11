@@ -105,7 +105,7 @@ def get_sentinel1_pairs_for_reference_scene(
     secondary_dates = []
     for burst_ids in burst_id_group:
         secondary_subset = []
-        secondary_frame_dates = []
+        secondary_frame_dates: list[datetime] = []
         for burst_id in burst_ids:
             results = asf_search.search(
                 platform='S1',
