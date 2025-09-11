@@ -173,7 +173,7 @@ def query_jobs_by_status_code(status_code: str, user: str, name: str, start: dat
     return sdk.Batch([sdk.Job.from_dict(job) for job in jobs])
 
 
-def is_currently_processing(job_name: list) -> bool:
+def is_currently_processing(job_name: str) -> bool:
     """Search HyP3's `PENDING` and `RUNNING` jobs for the given Sentinel-1 job.
 
     Args:
