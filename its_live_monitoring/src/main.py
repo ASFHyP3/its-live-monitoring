@@ -210,6 +210,7 @@ def submit_sentinel1_pairs_for_processing(references: list, secondaries: list, j
                     'parameter_file': '/vsicurl/https://its-live-data.s3.amazonaws.com/autorift_parameters/v001/autorift_landice_0120m.shp',
                     'publish_stac_prefix': 'test-space/stac/ndjson/ingest',
                     'use_static_files': True,
+                    'frame_id': name.split('_')[1],
                 },
             }
 
@@ -306,6 +307,8 @@ def process_scene(
     elif scene.startswith('S1'):
         if qualifies_for_sentinel1_processing(scene):
             refs, secs, job_names = get_sentinel1_pairs_for_reference_scene(scene)
+
+            log.info(f'Found {sum([len(sec) for sec in secs])} pairs for {scene} across {len(secs)} frame(s).')
 
             jobs = sdk.Batch()
             if submit:
