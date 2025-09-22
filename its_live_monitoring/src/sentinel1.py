@@ -45,11 +45,12 @@ def check_frame(granule: str) -> tuple[list, list, list, datetime]:
         list of the OPERA frame ids
         the reference aquisition date
     """
-    reference = asf_search.granule_search(granule)[0]
+    results = asf_search.granule_search(granule)
 
-    if not reference:
+    if len(results) == 0:
         raise ValueError(f'Reference Sentinel-1 granule {granule} could not be found')
 
+    reference = results[0]
     burst_id = reference.get_stack_opts().fullBurstID[0]
     ref_date = datetime.strptime(reference.properties['startTime'], '%Y-%m-%dT%H:%M:%SZ')
     start = ref_date - timedelta(minutes=3)
@@ -118,18 +119,19 @@ def get_sentinel1_pairs_for_reference_scene(
 
             if secondary_frame_dates == []:
                 secondary_frame_dates = [
-                    datetime.strptime(result.properties['startTime'], '%Y-%m-%dT%H:%M:%SZ') for result in results
+                    result.properties['startTime'].split('T')[0] for result in results
                 ]
 
             secondary_subset.append([result.properties['sceneName'] for result in results])
         secondary_dates.append(secondary_frame_dates)
         secondaries.append(list(zip(*secondary_subset)))
 
+    ref_date_str = datetime.strftime(ref_date, '%Y-%m-%d')
     frame_job_names = []
     for frame_id, sec_dates in zip(frame_ids, secondary_dates):
         job_names = []
         for sec_date in sec_dates:
-            job_names.append(f'OPERA_{frame_id}_{ref_date}_{sec_date}')
+            job_names.append(f'OPERA_{frame_id}_{ref_date_str}_{sec_date}')
         frame_job_names.append(job_names)
 
     return references, secondaries, frame_job_names
