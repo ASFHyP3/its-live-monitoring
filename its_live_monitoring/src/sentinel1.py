@@ -118,9 +118,7 @@ def get_sentinel1_pairs_for_reference_scene(
             assert len(results) >= 1
 
             if secondary_frame_dates == []:
-                secondary_frame_dates = [
-                    result.properties['startTime'].split('T')[0] for result in results
-                ]
+                secondary_frame_dates = [result.properties['startTime'].split('T')[0] for result in results]
 
             secondary_subset.append([result.properties['sceneName'] for result in results])
         secondary_dates.append(secondary_frame_dates)
