@@ -1,6 +1,8 @@
 import datetime as dt
+import json
 from copy import deepcopy
 from os import environ
+from pathlib import Path
 from unittest.mock import NonCallableMock
 
 import boto3
@@ -108,3 +110,18 @@ def tables():
 
         tables = Tables()
         yield tables
+
+@pytest.fixture(scope='session')
+def landsat_message():
+    example = Path(__file__).parent / 'integration' / 'landsat-l8-valid.json'
+    return json.loads(example.read_text())
+
+@pytest.fixture(scope='session')
+def sentinel1_burst_message():
+    example = Path(__file__).parent / 'integration' / 'sentinel1-burst-valid.json'
+    return json.loads(example.read_text())
+
+@pytest.fixture(scope='session')
+def sentinel2_message():
+    example = Path(__file__).parent / 'integration' / 'sentinel2-valid.json'
+    return json.loads(example.read_text())

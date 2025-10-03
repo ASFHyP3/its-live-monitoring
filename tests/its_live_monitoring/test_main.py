@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 import geopandas as gpd
 import hyp3_sdk as sdk
+import pytest
 from shapely import Polygon
 
 import main
@@ -230,3 +231,25 @@ def test_query_jobs_by_status_code(tables):
         datetime.datetime.fromisoformat('2000-01-01T00:00:00+00:00'),
     )
     assert jobs == sdk.Batch([])
+
+
+def test_product_id_from_message(landsat_message, sentinel2_message, sentinel1_burst_message):
+    assert 'LC08_L1TP_001005_20230704_20230717_02_T1' == main.product_id_from_message(landsat_message)
+    assert 'LOO' == main.product_id_from_message({'landsat_product_id': 'LOO'})
+    with pytest.raises(ValueError):
+        main.product_id_from_message({'landsat_product_id': 'FOO'})
+
+
+    assert 'S2B_MSIL1C_20240430T142739_N0510_R139_T24VUR_20240430T162937' == main.product_id_from_message(sentinel2_message)
+    assert 'S2X' == main.product_id_from_message({'name': 'S2X'})
+    with pytest.raises(ValueError):
+        main.product_id_from_message({'name': 'FOO'})
+    with pytest.raises(ValueError):
+        main.product_id_from_message({'name': 'S1X'})
+
+    assert 'S1_343508_IW3_20200405T171115_VV_4B5C-BURST' == main.product_id_from_message(sentinel1_burst_message)
+    assert 'S1X' == main.product_id_from_message({'granule-ur': 'S1X'})
+    with pytest.raises(ValueError):
+        main.product_id_from_message({'granule-ur': 'FOO'})
+    with pytest.raises(ValueError):
+        main.product_id_from_message({'granule-ur': 'S2X'})

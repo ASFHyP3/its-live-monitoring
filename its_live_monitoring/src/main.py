@@ -346,6 +346,27 @@ def process_scene(
     return jobs
 
 
+def product_id_from_message(message: dict) -> str:
+    """Return a scene product ID from an SQS message.
+
+    Args:
+        message: SQS message as received from supported satellite missions (Landsat, Sentinel-1, and Sentinel-2)
+
+    Returns:
+        product_id: the product ID of a scene
+    """
+    # See `tests/integration/*-valid.json` for example messages
+    match message:
+        case {'landsat_product_id': product_id} if product_id.startswith('L'):
+            return product_id
+        case {'name': product_id} if product_id.startswith('S2'):
+            return product_id
+        case {'granule-ur': product_id} if product_id.startswith('S1'):
+            return product_id
+        case _:
+            raise ValueError(f'Unable to determine product ID from message {message}')
+
+
 def lambda_handler(event: dict, context: object) -> dict:
     """Landsat processing lambda function.
 
@@ -363,8 +384,8 @@ def lambda_handler(event: dict, context: object) -> dict:
         try:
             body = json.loads(record['body'])
             message = json.loads(body['Message'])
-            product_id = 'landsat_product_id' if 'landsat_product_id' in message.keys() else 'name'
-            _ = process_scene(message[product_id])
+            product_id = product_id_from_message(message)
+            _ = process_scene(product_id)
         except Exception:
             log.exception(f'Could not process message {record["messageId"]}')
             batch_item_failures.append({'itemIdentifier': record['messageId']})
