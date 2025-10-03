@@ -395,7 +395,7 @@ def lambda_handler(event: dict, context: object) -> dict:
 def main() -> None:
     """Command Line wrapper around `process_scene`."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('reference', help='Reference Landsat scene name to build pairs for')
+    parser.add_argument('reference', help='Reference scene name to build pairs for')
     parser.add_argument('--submit', action='store_true', help='Submit pairs to HyP3 for processing')
     parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
     args = parser.parse_args()
