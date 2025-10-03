@@ -397,12 +397,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('reference', help='Reference scene name to build pairs for')
     parser.add_argument('--submit', action='store_true', help='Submit pairs to HyP3 for processing')
-    parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
+    parser.add_argument('-v', '--verbose', action='count', default=0, help='Increase the logging verbosity. Can be used multiple times.')
     args = parser.parse_args()
 
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
-    if args.verbose:
+    if args.verbose > 0:
         log.setLevel(logging.DEBUG)
+    if args.verbose < 2:
+        import asf_search
+        asf_logger = logging.getLogger(asf_search.__name__)
+        asf_logger.disabled = True
 
     log.debug(' '.join(sys.argv))
     _ = process_scene(args.reference, submit=args.submit)
