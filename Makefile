@@ -27,7 +27,7 @@ sentinel2-integration:
 
 integration: landsat-integration sentinel2-integration
 
-static: ruff-check cfn-lint
+static: ruff cfn-lint
 
 ruff-check:
 	ruff check

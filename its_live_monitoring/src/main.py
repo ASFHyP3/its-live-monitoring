@@ -235,10 +235,16 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
     assert EARTHDATA_USERNAME is not None
     pending_jobs = query_jobs_by_status_code(
-        status_code='PENDING', user=EARTHDATA_USERNAME, name=pairs.iloc[0].job_name, start=pairs.iloc[0].reference_acquisition
+        status_code='PENDING',
+        user=EARTHDATA_USERNAME,
+        name=pairs.iloc[0].job_name,
+        start=pairs.iloc[0].reference_acquisition,
     )
     running_jobs = query_jobs_by_status_code(
-        status_code='RUNNING', user=EARTHDATA_USERNAME, name=pairs.iloc[0].job_name, start=pairs.iloc[0].reference_acquisition
+        status_code='RUNNING',
+        user=EARTHDATA_USERNAME,
+        name=pairs.iloc[0].job_name,
+        start=pairs.iloc[0].reference_acquisition,
     )
     jobs = pending_jobs + running_jobs
 
