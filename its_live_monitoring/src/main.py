@@ -38,10 +38,11 @@ AUTORIFT_JOB_TEMPLATE = {
     'job_parameters': {
         # 'reference': [],
         # 'secondary': [],
-        # 'frame_id' = int,
         'parameter_file': '/vsicurl/https://its-live-data.s3.amazonaws.com/autorift_parameters/v001/autorift_landice_0120m.shp',
+        # 'publish_bucket': null,
         'publish_stac_prefix': 'stac-ingest',
         'use_static_files': True,
+        # 'frame_id' = int,
     },
     'job_type': 'AUTORIFT',
     # 'name': None,
@@ -256,6 +257,7 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
     prepared_jobs = []
     for reference, secondary, name in pairs[['reference', 'secondary', 'job_name']].itertuples(index=False):
         prepared_job = AUTORIFT_JOB_TEMPLATE.copy()
+        prepared_job['name']: name
         prepared_job['job_parameters']['reference'] = reference
         prepared_job['job_parameters']['secondary'] = secondary
 
