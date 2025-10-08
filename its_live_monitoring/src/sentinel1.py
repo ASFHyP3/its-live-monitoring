@@ -47,7 +47,7 @@ def get_frame_stacks(
     reference: ASFProduct,
     *,
     max_pair_separation: int = SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS,
-) -> tuple[pd.DataFrame, datetime]:
+) -> pd.DataFrame:
     """Find all (if any) bursts for the OPERA frame(s) that the given reference burst is in.
 
     Args:
@@ -99,7 +99,7 @@ def get_frame_stacks(
     df['startTime'] = pd.to_datetime(df['startTime'])
     df['fullBurstID'] = df.burst.apply(lambda x: x['fullBurstID'])
 
-    return df, ref_date
+    return df
 
 
 def get_sentinel1_pairs_for_reference_scene(
@@ -117,20 +117,21 @@ def get_sentinel1_pairs_for_reference_scene(
     Returns:
         DataFrame of pairs, which includes the burst scenes in the reference and secondary frames, and a name for each pair
     """
-    df, ref_date = get_frame_stacks(reference, max_pair_separation=max_pair_separation)
+    df = get_frame_stacks(reference, max_pair_separation=max_pair_separation)
 
     pair_data = []
     for frame in df.frame_id.unique():
         frames = list(df.loc[df.frame_id == frame].groupby(pd.Grouper(key='startTime', freq='12D', sort=True)))
         # pandas sorts earliest to latest
         ref_id, ref_products = frames[-1]
+        ref_date = ref_products.properties['startTime'].min()
         for sec_id, sec_products in frames[:-1]:
             pair_data.append(
                 (
                     ref_products.sceneName.totuple(),
                     ref_date,
                     sec_products.sceneName.totuple(),
-                    f'OPERA_{frame}_{ref_date.date():%Y%m%d}_{sec_products.iloc[0].startTime.date():%Y%m%d}',
+                    f'OPERA_{frame}_{ref_date.isoformat()}',
                 )
             )
 
