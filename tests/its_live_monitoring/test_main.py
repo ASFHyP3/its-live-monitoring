@@ -66,15 +66,16 @@ def test_get_key(mock_list_objects_v2):
 @patch('main.query_jobs_by_status_code')
 def test_deduplicate_hyp3_pairs(mock_query_jobs_by_status_code, hyp3_batch_factory):
     sec_scenes = [
-        'LC09_L1TP_138041_20240120_20240120_02_T1',
-        'LC08_L1TP_138041_20240112_20240123_02_T1',
-        'LC09_L1TP_138041_20240104_20240104_02_T1',
+        ('LC09_L1TP_138041_20240120_20240120_02_T1',),
+        ('LC08_L1TP_138041_20240112_20240123_02_T1',),
+        ('LC09_L1TP_138041_20240104_20240104_02_T1',),
     ]
-    ref_scenes = ['LC08_L1TP_138041_20240128_20240207_02_T1'] * 3
+    ref_scenes = [('LC08_L1TP_138041_20240128_20240207_02_T1',)] * 3
     ref_acquisitions = ['2024-01-28T04:29:49.361022Z'] * 3
+    names = ['LC08_L1TP_138041_20240128_20240207_02_T1'] * 3
 
     landsat_pairs = gpd.GeoDataFrame(
-        {'reference': ref_scenes, 'secondary': sec_scenes, 'reference_acquisition': ref_acquisitions}
+        {'reference': ref_scenes, 'secondary': sec_scenes, 'reference_acquisition': ref_acquisitions, 'job_name': names}
     )
 
     mock_query_jobs_by_status_code.side_effect = [sdk.Batch(), sdk.Batch()]
@@ -96,11 +97,12 @@ def test_deduplicate_hyp3_pairs(mock_query_jobs_by_status_code, hyp3_batch_facto
 @patch('main.get_key')
 def test_deduplicate_s3_pairs(mock_get_key):
     sec_scenes = [
-        'LC09_L1TP_138041_20240120_20240120_02_T1',
-        'LC08_L1TP_138041_20240112_20240123_02_T1',
-        'LC09_L1TP_138041_20240104_20240104_02_T1',
+        ('LC09_L1TP_138041_20240120_20240120_02_T1',),
+        ('LC08_L1TP_138041_20240112_20240123_02_T1',),
+        ('LC09_L1TP_138041_20240104_20240104_02_T1',),
     ]
-    ref_scenes = ['LC08_L1TP_138041_20240128_20240207_02_T1'] * 3
+    ref_scenes = [('LC08_L1TP_138041_20240128_20240207_02_T1',)] * 3
+    names = ['LC08_L1TP_138041_20240128_20240207_02_T1'] * 3
     ref_acquisitions = ['2024-01-28T04:29:49.361022Z'] * 3
     geometries = [Polygon.from_bounds(0, 0, 1, 1)] * 3
 
@@ -109,6 +111,7 @@ def test_deduplicate_s3_pairs(mock_get_key):
             'reference': ref_scenes,
             'secondary': sec_scenes,
             'reference_acquisition': ref_acquisitions,
+            'job_name': names,
             'geometry': geometries,
         }
     )
@@ -129,14 +132,15 @@ def test_deduplicate_s3_pairs(mock_get_key):
 @patch('main.HYP3.submit_prepared_jobs')
 def test_submit_pairs_for_processing(mock_submit_prepared_jobs, hyp3_batch_factory):
     sec_scenes = [
-        'LC09_L1TP_138041_20240120_20240120_02_T1',
-        'LC08_L1TP_138041_20240112_20240123_02_T1',
-        'LC09_L1TP_138041_20240104_20240104_02_T1',
+        ('LC09_L1TP_138041_20240120_20240120_02_T1',),
+        ('LC08_L1TP_138041_20240112_20240123_02_T1',),
+        ('LC09_L1TP_138041_20240104_20240104_02_T1',),
     ]
-    ref_scenes = ['LC08_L1TP_138041_20240128_20240207_02_T1'] * 3
+    ref_scenes = [('LC08_L1TP_138041_20240128_20240207_02_T1',)] * 3
+    names = ['LC08_L1TP_138041_20240128_20240207_02_T1'] * 3
 
     landsat_jobs = hyp3_batch_factory(zip(ref_scenes, sec_scenes))
-    landsat_pairs = gpd.GeoDataFrame({'reference': ref_scenes, 'secondary': sec_scenes})
+    landsat_pairs = gpd.GeoDataFrame({'reference': ref_scenes, 'secondary': sec_scenes, 'job_name': names})
 
     mock_submit_prepared_jobs.side_effect = [landsat_jobs]
     jobs = main.submit_pairs_for_processing(landsat_pairs)
@@ -248,7 +252,7 @@ def test_product_id_from_message(landsat_message, sentinel2_message, sentinel1_b
     with pytest.raises(ValueError):
         main.product_id_from_message({'name': 'S1X'})
 
-    assert 'S1_343508_IW3_20200405T171115_VV_4B5C-BURST' == main.product_id_from_message(sentinel1_burst_message)
+    assert 'S1_247728_IW1_20251003T154900_VH_657C-BURST' == main.product_id_from_message(sentinel1_burst_message)
     assert 'S1X' == main.product_id_from_message({'granule-ur': 'S1X'})
     with pytest.raises(ValueError):
         main.product_id_from_message({'granule-ur': 'FOO'})

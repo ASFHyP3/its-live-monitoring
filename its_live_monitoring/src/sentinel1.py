@@ -127,10 +127,11 @@ def get_sentinel1_pairs_for_reference_scene(
         for sec_id, sec_products in frames[:-1]:
             pair_data.append(
                 (
-                    ref_products.sceneName.tolist(),
-                    sec_products.sceneName.tolist(),
+                    ref_products.sceneName.totuple(),
+                    ref_date,
+                    sec_products.sceneName.totuple(),
                     f'OPERA_{frame}_{ref_date.date():%Y%m%d}_{sec_products.iloc[0].startTime.date():%Y%m%d}',
                 )
             )
 
-    return pd.DataFrame(pair_data, columns=['reference', 'secondary', 'name'])
+    return pd.DataFrame(pair_data, columns=['reference', 'reference_acquisition', 'secondary', 'name'])

@@ -124,7 +124,7 @@ def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
     s2_prefix = 'velocity_image_pair/sentinel2/v02'
     landsat_prefix = 'velocity_image_pair/landsatOLI/v02'
-    prefix = s2_prefix if pairs['reference'][0].startswith('S2') else landsat_prefix
+    prefix = s2_prefix if pairs['reference'][0][0].startswith('S2') else landsat_prefix
 
     regions = regions_from_bounds(*pairs['geometry'].total_bounds)
     tile_prefixes = [f'{prefix}/{region}' for region in regions]
@@ -234,10 +234,10 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
     assert EARTHDATA_USERNAME is not None
     pending_jobs = query_jobs_by_status_code(
-        'PENDING', EARTHDATA_USERNAME, pairs.iloc[0].reference, pairs.iloc[0].reference_acquisition
+        status_code='PENDING', user=EARTHDATA_USERNAME, name=pairs.iloc[0].job_name, start=pairs.iloc[0].reference_acquisition
     )
     running_jobs = query_jobs_by_status_code(
-        'RUNNING', EARTHDATA_USERNAME, pairs.iloc[0].reference, pairs.iloc[0].reference_acquisition
+        status_code='RUNNING', user=EARTHDATA_USERNAME, name=pairs.iloc[0].job_name, start=pairs.iloc[0].reference_acquisition
     )
     jobs = pending_jobs + running_jobs
 

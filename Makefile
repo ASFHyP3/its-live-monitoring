@@ -1,3 +1,4 @@
+MAKEFLAGS+=--always-make
 export PYTHONPATH = ${PWD}/its_live_monitoring/src
 LANDSAT_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-landsat-test
 SENTINEL2_TOPIC_ARN ?= arn:aws:sns:eu-west-1:986442313181:its-live-notify-sentinel2-test
@@ -11,10 +12,10 @@ install-lambda-deps:
 	python -m pip install --no-compile -r requirements-its_live_monitoring.txt -t its_live_monitoring/src/ && \
 	python -m pip install --no-compile -r requirements-status-messages.txt -t status-messages/src/
 
-test_file ?= 'tests/'
-test:
+test_files ?= 'tests/'
+tests:
 	export $$(xargs < tests/cfg.env); \
-	pytest $(test_file)
+	pytest $(test_files)
 
 landsat-integration:
 	export AWS_PAGER='' && \

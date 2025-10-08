@@ -57,7 +57,7 @@ def stac_search_factory():
 @pytest.fixture
 def hyp3_job_factory():
     def create_hyp3_job(granules: list) -> sdk.Job:
-        return NonCallableMock(job_parameters={'granules': granules})
+        return NonCallableMock(job_parameters={'reference': granules[0], 'secondary': granules[1]})
 
     return create_hyp3_job
 
