@@ -239,8 +239,9 @@ def test_product_id_from_message(landsat_message, sentinel2_message, sentinel1_b
     with pytest.raises(ValueError):
         main.product_id_from_message({'landsat_product_id': 'FOO'})
 
-
-    assert 'S2B_MSIL1C_20240430T142739_N0510_R139_T24VUR_20240430T162937' == main.product_id_from_message(sentinel2_message)
+    assert 'S2B_MSIL1C_20240430T142739_N0510_R139_T24VUR_20240430T162937' == main.product_id_from_message(
+        sentinel2_message
+    )
     assert 'S2X' == main.product_id_from_message({'name': 'S2X'})
     with pytest.raises(ValueError):
         main.product_id_from_message({'name': 'FOO'})

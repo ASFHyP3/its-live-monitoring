@@ -20,6 +20,7 @@ from landsat import (
     qualifies_for_landsat_processing,
 )
 from sentinel1 import (
+    get_sentinel1_cmr_item,
     get_sentinel1_pairs_for_reference_scene,
     qualifies_for_sentinel1_processing,
 )
@@ -31,6 +32,20 @@ from sentinel2 import (
     raise_for_missing_in_google_cloud,
 )
 
+
+# NOTE: Commented items will get set when submitting
+AUTORIFT_JOB_TEMPLATE = {
+    'job_parameters': {
+        # 'reference': [],
+        # 'secondary': [],
+        # 'frame_id' = int,
+        'parameter_file': '/vsicurl/https://its-live-data.s3.amazonaws.com/autorift_parameters/v001/autorift_landice_0120m.shp',
+        'publish_stac_prefix': 'stac-ingest',
+        'use_static_files': True,
+    },
+    'job_type': 'AUTORIFT',
+    # 'name': None,
+}
 
 EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
 EARTHDATA_PASSWORD = os.environ.get('EARTHDATA_PASSWORD')
@@ -194,39 +209,17 @@ def is_currently_processing(job_name: str) -> bool:
     return False
 
 
-def submit_sentinel1_pairs_for_processing(references: list, secondaries: list, job_names: list) -> sdk.Batch:  # noqa: D103
-    prepared_jobs = []
-    for ref_frame, sec_frames, names in zip(references, secondaries, job_names):
-        for sec_frame, name in zip(sec_frames, names):
-            if is_currently_processing(name):
-                continue
+def get_reference_secondary_from_Job(job: sdk.Job) -> tuple[list | str, list | str]:
+    """Get the reference and secondary scenes from an AUTORIFT HyP3 job."""
+    granules = job.job_parameters.get('granules')
+    if granules:
+        reference = granules[:1]
+        secondary = granules[1:]
+    else:
+        reference = job.job_parameters['reference']
+        secondary = job.job_parameters['secondary']
 
-            job_params = {
-                'job_type': 'AUTORIFT',
-                'name': name,
-                'job_parameters': {
-                    'reference': ref_frame,
-                    'secondary': list(sec_frame),
-                    'parameter_file': '/vsicurl/https://its-live-data.s3.amazonaws.com/autorift_parameters/v001/autorift_landice_0120m.shp',
-                    'publish_stac_prefix': 'test-space/stac/ndjson/ingest',
-                    'use_static_files': True,
-                    'frame_id': name.split('_')[1],
-                },
-            }
-
-            if publish_bucket := os.environ.get('PUBLISH_BUCKET', ''):
-                job_params['job_parameters']['publish_bucket'] = publish_bucket
-
-            prepared_jobs.append(job_params)
-
-    log.debug(prepared_jobs)
-
-    jobs = sdk.Batch()
-    if len(prepared_jobs) > 0:
-        for batch in sdk.util.chunk(prepared_jobs):
-            jobs += HYP3.submit_prepared_jobs(batch)
-
-    return jobs
+    return reference, secondary
 
 
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
@@ -248,7 +241,7 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     )
     jobs = pending_jobs + running_jobs
 
-    df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
+    df = pd.DataFrame([get_reference_secondary_from_Job(job) for job in jobs], columns=['reference', 'secondary'])
     df = df.set_index(['reference', 'secondary'])
     pairs = pairs.set_index(['reference', 'secondary'])
 
@@ -261,8 +254,10 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
 def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: D103
     prepared_jobs = []
-    for reference, secondary in pairs[['reference', 'secondary']].itertuples(index=False):
-        prepared_job = HYP3.prepare_autorift_job(reference, secondary, name=reference)
+    for reference, secondary, name in pairs[['reference', 'secondary', 'job_name']].itertuples(index=False):
+        prepared_job = AUTORIFT_JOB_TEMPLATE.copy()
+        prepared_job['job_parameters']['reference'] = reference
+        prepared_job['job_parameters']['secondary'] = secondary
 
         if publish_bucket := os.environ.get('PUBLISH_BUCKET', ''):
             prepared_job['job_parameters']['publish_bucket'] = publish_bucket
@@ -305,17 +300,9 @@ def process_scene(
         if qualifies_for_landsat_processing(reference, log_level=logging.INFO):
             pairs = get_landsat_pairs_for_reference_scene(reference)
     elif scene.startswith('S1'):
-        if qualifies_for_sentinel1_processing(scene):
-            refs, secs, job_names = get_sentinel1_pairs_for_reference_scene(scene)
-
-            log.info(f'Found {sum([len(sec) for sec in secs])} pairs for {scene} across {len(secs)} frame(s).')
-
-            jobs = sdk.Batch()
-            if submit:
-                jobs += submit_sentinel1_pairs_for_processing(refs, secs, job_names)
-
-            log.info(jobs)
-            return jobs
+        reference = get_sentinel1_cmr_item(scene)
+        if qualifies_for_sentinel1_processing(reference):
+            pairs = get_sentinel1_pairs_for_reference_scene(reference)
 
     if pairs is None:
         return sdk.Batch()
@@ -397,7 +384,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('reference', help='Reference scene name to build pairs for')
     parser.add_argument('--submit', action='store_true', help='Submit pairs to HyP3 for processing')
-    parser.add_argument('-v', '--verbose', action='count', default=0, help='Increase the logging verbosity. Can be used multiple times.')
+    parser.add_argument(
+        '-v', '--verbose', action='count', default=0, help='Increase the logging verbosity. Can be used multiple times.'
+    )
     args = parser.parse_args()
 
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -405,6 +394,7 @@ def main() -> None:
         log.setLevel(logging.DEBUG)
     if args.verbose < 2:
         import asf_search
+
         asf_logger = logging.getLogger(asf_search.__name__)
         asf_logger.disabled = True
 
