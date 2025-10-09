@@ -35,8 +35,9 @@ integration: landsat-integration sentinel2-integration sentinel1-integration
 
 static: mypy ruff cfn-lint
 
+mypy_excludes ?= '_test'
 mypy:
-	mypy .
+	mypy --exclude $(mypy_excludes) .
 
 ruff-check:
 	ruff check
