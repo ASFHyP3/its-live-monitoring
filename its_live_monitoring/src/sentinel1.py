@@ -32,8 +32,8 @@ def get_sentinel1_cmr_item(scene: str) -> ASFProduct:
 
 
 # FIXME: Is this really the only qualification criteria?
-def qualifies_for_sentinel1_processing(product: ASFProduct, log_level: int = logging.DEBUG) -> bool:
-    """Check if a Sentinel-1 Burst overlaps land-ice."""
+def product_qualifies_for_sentinel1_processing(product: ASFProduct, log_level: int = logging.DEBUG) -> bool:
+    """Check if a Sentinel-1 Burst product qualifies for processing."""
     burst_id = product.properties['burst']['fullBurstID']
     if burst_id not in SENTINEL1_BURSTS_TO_PROCESS:
         log.log(log_level, f'{burst_id} disqualifies for processing because it is not from a burst containing land-ice')
@@ -102,6 +102,15 @@ def get_frame_stacks(
     return df
 
 
+def frame_qualifies_for_sentinel1_processing(frame: pd.DataFrame, frame_id: int) -> bool:
+    """Check if an OPERA frame qualifies for processing."""
+    expected_burst_ids = set(OPERA_FRAMES_TO_BURST_IDS[str(frame_id)])
+    if set(frame.fullBurstID) != expected_burst_ids:
+        log.debug(f'Burst IDs in OPERA frame {frame_id} do not match expected burst IDs')
+        return False
+
+    return True
+
 def get_sentinel1_pairs_for_reference_scene(
     reference: ASFProduct,
     *,
@@ -124,15 +133,19 @@ def get_sentinel1_pairs_for_reference_scene(
         frames = list(df.loc[df.frame_id == frame].groupby(pd.Grouper(key='startTime', freq='12D', sort=True)))
         # pandas sorts earliest to latest
         ref_id, ref_products = frames[-1]
-        ref_date = ref_products.properties['startTime'].min()
-        for sec_id, sec_products in frames[:-1]:
-            pair_data.append(
-                (
-                    ref_products.sceneName.totuple(),
-                    ref_date,
-                    sec_products.sceneName.totuple(),
-                    f'OPERA_{frame}_{ref_date.isoformat()}',
-                )
-            )
+        ref_date = ref_products.startTime.min()
 
-    return pd.DataFrame(pair_data, columns=['reference', 'reference_acquisition', 'secondary', 'name'])
+        assert frame_qualifies_for_sentinel1_processing(ref_products, frame_id=frame)
+
+        for sec_id, sec_products in frames[:-1]:
+            if frame_qualifies_for_sentinel1_processing(sec_products, frame_id=frame):
+                pair_data.append(
+                    (
+                        tuple(ref_products.sceneName),
+                        ref_date,
+                        tuple(sec_products.sceneName),
+                        f'OPERA_{frame}_{ref_date.isoformat()}',
+                    )
+                )
+
+    return pd.DataFrame(pair_data, columns=['reference', 'reference_acquisition', 'secondary', 'job_name'])

@@ -22,7 +22,7 @@ from landsat import (
 from sentinel1 import (
     get_sentinel1_cmr_item,
     get_sentinel1_pairs_for_reference_scene,
-    qualifies_for_sentinel1_processing,
+    product_qualifies_for_sentinel1_processing,
 )
 from sentinel2 import (
     get_sentinel2_pairs_for_reference_scene,
@@ -309,7 +309,7 @@ def process_scene(
             pairs = get_landsat_pairs_for_reference_scene(reference)
     elif scene.startswith('S1'):
         reference = get_sentinel1_cmr_item(scene)
-        if qualifies_for_sentinel1_processing(reference):
+        if product_qualifies_for_sentinel1_processing(reference):
             pairs = get_sentinel1_pairs_for_reference_scene(reference)
 
     if pairs is None:
@@ -326,7 +326,9 @@ def process_scene(
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
             log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
-    if len(pairs) > 0:
+    # FIXME: Sentinel-1's file name is not easily predictable from the burst acquisitions so we can't do this yet
+    # TODO: Instead of looking in the bucket, we should look in the (pending) STAC ITS_LIVE catalog
+    if len(pairs) > 0 and not scene.startswith('S1'):
         pairs = deduplicate_s3_pairs(pairs)
 
         log.info(f'Deduplicated already published pairs; {len(pairs)} remaining')
