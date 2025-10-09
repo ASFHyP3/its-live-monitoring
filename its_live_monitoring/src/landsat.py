@@ -119,9 +119,10 @@ def get_landsat_pairs_for_reference_scene(
     features = []
     for item in items:
         feature = item.to_dict()
-        feature['properties']['reference'] = reference.id
+        feature['properties']['reference'] = (reference.id,)
+        feature['properties']['secondary'] = (item.id,)
         feature['properties']['reference_acquisition'] = reference.datetime
-        feature['properties']['secondary'] = item.id
+        feature['properties']['job_name'] = reference.id
         features.append(feature)
 
     df = gpd.GeoDataFrame.from_features(features)

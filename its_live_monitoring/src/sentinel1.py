@@ -6,7 +6,10 @@ import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import asf_search
+import asf_search as asf
+import geopandas as gpd
+import pandas as pd
+from asf_search.ASFProduct import ASFProduct
 
 
 log = logging.getLogger('its_live_monitoring')
@@ -16,120 +19,136 @@ OPERA_FRAMES_TO_BURST_IDS = json.loads((Path(__file__).parent / 'opera_frame_to_
 BURST_IDS_TO_OPERA_FRAMES = json.loads((Path(__file__).parent / 'burst_id_to_opera_frame_ids.json').read_text())
 SENTINEL1_BURSTS_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel1_tiles_to_process.json').read_text())
 SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS = 544
-SENTINEL1_MIN_PAIR_SEPARATION_IN_DAYS = 5
 
 
-def get_burst_id(granule: str) -> str:
-    """Get the OPERA Burst ID for a given Sentinel-1 Burst."""
-    res = asf_search.granule_search(granule)
-    return res[0].get_stack_opts().fullBurstID[0]
-
-
-def qualifies_for_sentinel1_processing(scene: str) -> bool:
-    """Check if a Sentinel-1 Burst overlaps land-ice."""
-    burst_id = get_burst_id(scene)
-    if burst_id in SENTINEL1_BURSTS_TO_PROCESS:
-        return True
-    return False
-
-
-def check_frame(granule: str) -> tuple[list, list, list, datetime]:
-    """Find all (if any) reference and secondary bursts for the OPERA frame(s) that the given burst is in.
-
-    Args:
-        granule: The Sentinel-1 Burst granule name
-
-    Returns:
-        list containing lists of reference bursts corresponding to OPERA frames
-        list containing lists of secondary bursts corresponding to the reference OPERA frames
-        list of the OPERA frame ids
-        the reference aquisition date
-    """
-    results = asf_search.granule_search(granule)
+def get_sentinel1_cmr_item(scene: str) -> ASFProduct:
+    """Get the CMR Metadata fora  given Sentinel-1 Burst granule."""
+    results = asf.granule_search(scene)
 
     if len(results) == 0:
-        raise ValueError(f'Reference Sentinel-1 granule {granule} could not be found')
+        raise ValueError(f'Sentinel-1 Burst {scene} could not be found')
 
-    reference = results[0]
-    burst_id = reference.get_stack_opts().fullBurstID[0]
-    ref_date = datetime.strptime(reference.properties['startTime'], '%Y-%m-%dT%H:%M:%SZ')
-    start = ref_date - timedelta(minutes=3)
-    end = start + timedelta(minutes=6)
-    polarization = granule.split('_')[4]
-    frame_ids = BURST_IDS_TO_OPERA_FRAMES[burst_id]
+    return results[0]
 
-    burst_ids = []
-    for f_id in frame_ids:
-        burst_ids.append(OPERA_FRAMES_TO_BURST_IDS[str(f_id)])
 
-    bursts = []
-    for b_ids in burst_ids:
-        burst_subset = []
-        for b_id in b_ids:
-            response = asf_search.search(fullBurstID=b_id, start=start, end=end, polarization=polarization)
+# FIXME: Is this really the only qualification criteria?
+# TODO: Polarization? VV, HH, VH, HV?
+def product_qualifies_for_sentinel1_processing(product: ASFProduct, log_level: int = logging.DEBUG) -> bool:
+    """Check if a Sentinel-1 Burst product qualifies for processing."""
+    burst_id = product.properties['burst']['fullBurstID']
+    if burst_id not in SENTINEL1_BURSTS_TO_PROCESS:
+        log.log(log_level, f'{burst_id} disqualifies for processing because it is not from a burst containing land-ice')
+        return False
 
-            if len(response) == 0:
-                raise ValueError(f'Not all bursts are available for the OPERA frame that contains {reference}.')
+    log.log(log_level, f'{burst_id} qualifies for processing')
+    return True
 
-            assert len(response) == 1
 
-            burst_subset.append(response[0].properties['sceneName'])
-        bursts.append(burst_subset)
+def get_frame_stacks(
+    reference: ASFProduct,
+    *,
+    max_pair_separation: int = SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS,
+) -> pd.DataFrame:
+    """Find all (if any) bursts for the OPERA frame(s) that the given reference burst is in.
 
-    return bursts, burst_ids, frame_ids, ref_date
+    Args:
+        reference: The CMR metadata for a reference Sentinel-1 Burst product
+        max_pair_separation: How many days back from a reference scene's acquisition date to start searching for
+            secondary scenes
+
+    Returns:
+        df: a DataFrame of every burst product in every from for as far back in time as the max pair seperation
+    """
+    reference_burst_id = reference.properties['burst']['fullBurstID']
+
+    ref_date = datetime.fromisoformat(reference.properties['startTime'])
+    start = ref_date - timedelta(days=max_pair_separation, minutes=3)
+    end = ref_date + timedelta(minutes=3)
+    polarization = reference.properties['sceneName'].split('_')[4]
+    frame_ids = BURST_IDS_TO_OPERA_FRAMES[reference_burst_id]
+
+    frame_stacks: list[pd.DataFrame] = []
+    for frame_id in frame_ids:
+        burst_ids = OPERA_FRAMES_TO_BURST_IDS[str(frame_id)]
+
+        burst_stacks: list[pd.DataFrame] = []
+        for burst_id in burst_ids:
+            stack = asf.search(fullBurstID=burst_id, start=start, end=end, polarization=polarization)
+
+            if len(stack) == 0:
+                raise ValueError(
+                    f'No bursts found in {burst_id} stack for the OPERA frame that contains {reference_burst_id}.'
+                )
+
+            if not ref_date - timedelta(minutes=3) < datetime.fromisoformat(stack[0].properties['startTime']):
+                raise ValueError(
+                    f'No reference {burst_id} burst product available for the OPERA frame that contains {reference_burst_id}.'
+                )
+
+            if len(stack) < 2:
+                raise ValueError(
+                    f'No secondary {burst_id} burst products available for the OPERA frame that contains {reference_burst_id}.'
+                )
+
+            burst_stacks.append(gpd.GeoDataFrame.from_features(stack.geojson()))
+
+        all_burst_stacks: pd.DataFrame = pd.concat(burst_stacks)
+        all_burst_stacks['frame_id'] = frame_id
+        frame_stacks.append(all_burst_stacks)
+
+    df: pd.DataFrame = pd.concat(frame_stacks)
+    df['startTime'] = pd.to_datetime(df['startTime'])
+    df['fullBurstID'] = df.burst.apply(lambda x: x['fullBurstID'])
+
+    return df
+
+
+def frame_qualifies_for_sentinel1_processing(frame: pd.DataFrame, frame_id: int) -> bool:
+    """Check if an OPERA frame qualifies for processing."""
+    expected_burst_ids = set(OPERA_FRAMES_TO_BURST_IDS[str(frame_id)])
+    # FIXME: Check is subset instead of exact match?
+    if set(frame.fullBurstID) != expected_burst_ids:
+        log.debug(f'Burst IDs in OPERA frame {frame_id} do not match expected burst IDs')
+        return False
+
+    return True
 
 
 def get_sentinel1_pairs_for_reference_scene(
-    reference: str,
+    reference: ASFProduct,
     *,
-    max_pair_separation: timedelta = timedelta(days=SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS),
-    min_pair_separation: timedelta = timedelta(days=SENTINEL1_MIN_PAIR_SEPARATION_IN_DAYS),
-) -> tuple[list, list, list]:
+    max_pair_separation: int = SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS,
+) -> pd.DataFrame:
     """Generate potential ITS_LIVE velocity pairs for a given Sentinel-1 scene.
 
     Args:
-        reference: reference Sentinel-1 granule name
+        reference: The CMR metadata for a reference Sentinel-1 Burst product
         max_pair_separation: How many days back from a reference scene's acquisition date to start searching for
-            secondary scenes
-        min_pair_separation: How many days back from a reference scene's acquisition date to stop searching for
             secondary scenes
 
     Returns:
-        list of reference frames containing the reference scenes for 1 or 2 Opera frames
-        list of secondary frames continaing the secondary scenes for 1 or 2 Opera frames
-        list of job names
+        DataFrame of pairs, which includes the burst scenes in the reference and secondary frames, and a name for each pair
     """
-    polarization = reference.split('_')[4]
-    references, burst_id_group, frame_ids, ref_date = check_frame(granule=reference)
+    df = get_frame_stacks(reference, max_pair_separation=max_pair_separation)
 
-    secondaries = []
-    secondary_dates = []
-    for burst_ids in burst_id_group:
-        secondary_subset = []
-        secondary_frame_dates: list[datetime] = []
-        for burst_id in burst_ids:
-            results = asf_search.search(
-                platform='S1',
-                start=ref_date - max_pair_separation,
-                end=ref_date - min_pair_separation,
-                fullBurstID=burst_id,
-                polarization=polarization,
-            )
-            assert len(results) >= 1
+    pair_data = []
+    for frame in df.frame_id.unique():
+        frames = list(df.loc[df.frame_id == frame].groupby(pd.Grouper(key='startTime', freq='12D', sort=True)))
+        # pandas sorts earliest to latest
+        ref_id, ref_products = frames[-1]
+        ref_date = ref_products.startTime.min()
 
-            if secondary_frame_dates == []:
-                secondary_frame_dates = [result.properties['startTime'].split('T')[0] for result in results]
+        assert frame_qualifies_for_sentinel1_processing(ref_products, frame_id=frame)
 
-            secondary_subset.append([result.properties['sceneName'] for result in results])
-        secondary_dates.append(secondary_frame_dates)
-        secondaries.append(list(zip(*secondary_subset)))
+        for sec_id, sec_products in frames[:-1]:
+            if frame_qualifies_for_sentinel1_processing(sec_products, frame_id=frame):
+                pair_data.append(
+                    (
+                        tuple(ref_products.sceneName),
+                        ref_date,
+                        tuple(sec_products.sceneName),
+                        f'OPERA_{frame}_{ref_date.isoformat()}',
+                    )
+                )
 
-    ref_date_str = datetime.strftime(ref_date, '%Y-%m-%d')
-    frame_job_names = []
-    for frame_id, sec_dates in zip(frame_ids, secondary_dates):
-        job_names = []
-        for sec_date in sec_dates:
-            job_names.append(f'OPERA_{frame_id}_{ref_date_str}_{sec_date}')
-        frame_job_names.append(job_names)
-
-    return references, secondaries, frame_job_names
+    return pd.DataFrame(pair_data, columns=['reference', 'reference_acquisition', 'secondary', 'job_name'])
