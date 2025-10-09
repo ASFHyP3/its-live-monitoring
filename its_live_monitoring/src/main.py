@@ -235,8 +235,8 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: D103
     prepared_jobs = []
     for reference, secondary, name in pairs[['reference', 'secondary', 'job_name']].itertuples(index=False):
-        prepared_job = AUTORIFT_JOB_TEMPLATE.copy()
-        prepared_job['name']: name
+        prepared_job: dict = AUTORIFT_JOB_TEMPLATE.copy()
+        prepared_job['name'] = name
         prepared_job['job_parameters']['reference'] = reference
         prepared_job['job_parameters']['secondary'] = secondary
 

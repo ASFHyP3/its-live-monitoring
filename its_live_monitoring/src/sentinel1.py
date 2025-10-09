@@ -67,11 +67,11 @@ def get_frame_stacks(
     polarization = reference.properties['sceneName'].split('_')[4]
     frame_ids = BURST_IDS_TO_OPERA_FRAMES[reference_burst_id]
 
-    frame_stacks = []
+    frame_stacks: list[pd.DataFrame] = []
     for frame_id in frame_ids:
         burst_ids = OPERA_FRAMES_TO_BURST_IDS[str(frame_id)]
 
-        burst_stacks = []
+        burst_stacks: list[pd.DataFrame] = []
         for burst_id in burst_ids:
             stack = asf.search(fullBurstID=burst_id, start=start, end=end, polarization=polarization)
 
@@ -92,11 +92,11 @@ def get_frame_stacks(
 
             burst_stacks.append(gpd.GeoDataFrame.from_features(stack.geojson()))
 
-        burst_stacks = pd.concat(burst_stacks)
-        burst_stacks['frame_id'] = frame_id
-        frame_stacks.append(burst_stacks)
+        all_burst_stacks: pd.DataFrame = pd.concat(burst_stacks)
+        all_burst_stacks['frame_id'] = frame_id
+        frame_stacks.append(all_burst_stacks)
 
-    df = pd.concat(frame_stacks)
+    df: pd.DataFrame = pd.concat(frame_stacks)
     df['startTime'] = pd.to_datetime(df['startTime'])
     df['fullBurstID'] = df.burst.apply(lambda x: x['fullBurstID'])
 

@@ -33,7 +33,10 @@ sentinel1-integration:
 
 integration: landsat-integration sentinel2-integration sentinel1-integration
 
-static: ruff cfn-lint
+static: mypy ruff cfn-lint
+
+mypy:
+	mypy .
 
 ruff-check:
 	ruff check
