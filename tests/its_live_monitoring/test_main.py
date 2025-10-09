@@ -4,6 +4,7 @@ from unittest.mock import patch
 import geopandas as gpd
 import hyp3_sdk as sdk
 import pytest
+import requests
 from shapely import Polygon
 
 import main
@@ -128,9 +129,9 @@ def test_deduplicate_s3_pairs(mock_get_key):
     pairs = main.deduplicate_s3_pairs(landsat_pairs)
     assert pairs.equals(landsat_pairs.drop(0).drop(1).drop(2))
 
-
-@patch('main.HYP3.submit_prepared_jobs')
-def test_submit_pairs_for_processing(mock_submit_prepared_jobs, hyp3_batch_factory):
+@patch('hyp3_sdk.HyP3.submit_prepared_jobs')
+@patch('hyp3_sdk.util.get_authenticated_session')
+def test_submit_pairs_for_processing(mock_get_authenticated_session, mock_submit_prepared_jobs, hyp3_batch_factory):
     sec_scenes = [
         ('LC09_L1TP_138041_20240120_20240120_02_T1',),
         ('LC08_L1TP_138041_20240112_20240123_02_T1',),
@@ -142,6 +143,7 @@ def test_submit_pairs_for_processing(mock_submit_prepared_jobs, hyp3_batch_facto
     landsat_jobs = hyp3_batch_factory(zip(ref_scenes, sec_scenes))
     landsat_pairs = gpd.GeoDataFrame({'reference': ref_scenes, 'secondary': sec_scenes, 'job_name': names})
 
+    mock_get_authenticated_session.side_effect = [requests.Session()]
     mock_submit_prepared_jobs.side_effect = [landsat_jobs]
     jobs = main.submit_pairs_for_processing(landsat_pairs)
     assert jobs == landsat_jobs

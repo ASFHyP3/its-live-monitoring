@@ -48,14 +48,6 @@ AUTORIFT_JOB_TEMPLATE = {
     # 'name': None,
 }
 
-EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
-EARTHDATA_PASSWORD = os.environ.get('EARTHDATA_PASSWORD')
-HYP3 = sdk.HyP3(
-    os.environ.get('HYP3_API', 'https://hyp3-its-live.asf.alaska.edu'),
-    username=EARTHDATA_USERNAME,
-    password=EARTHDATA_PASSWORD,
-)
-
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
@@ -189,27 +181,6 @@ def query_jobs_by_status_code(status_code: str, user: str, name: str, start: dat
     return sdk.Batch([sdk.Job.from_dict(job) for job in jobs])
 
 
-def is_currently_processing(job_name: str) -> bool:
-    """Search HyP3's `PENDING` and `RUNNING` jobs for the given Sentinel-1 job.
-
-    Args:
-         job_name: The name of the job to check for.
-
-    Returns:
-         True if the job is currently RUNNING or PENDING else False.
-    """
-    assert EARTHDATA_USERNAME is not None
-    date = datetime.strptime(job_name.split('_')[2], '%Y-%m-%d %H:%M:%S')
-    pending_jobs = query_jobs_by_status_code('PENDING', EARTHDATA_USERNAME, job_name, date)
-    running_jobs = query_jobs_by_status_code('RUNNING', EARTHDATA_USERNAME, job_name, date)
-    jobs = pending_jobs + running_jobs
-
-    if len(jobs) > 0:
-        return True
-
-    return False
-
-
 def get_reference_secondary_from_Job(job: sdk.Job) -> tuple[list | str, list | str]:
     """Get the reference and secondary scenes from an AUTORIFT HyP3 job."""
     granules = job.job_parameters.get('granules')
@@ -233,16 +204,18 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
-    assert EARTHDATA_USERNAME is not None
+    earthdata_username = os.environ['EARTHDATA_USERNAME']
+    assert earthdata_username is not None
+
     pending_jobs = query_jobs_by_status_code(
         status_code='PENDING',
-        user=EARTHDATA_USERNAME,
+        user=earthdata_username,
         name=pairs.iloc[0].job_name,
         start=pairs.iloc[0].reference_acquisition,
     )
     running_jobs = query_jobs_by_status_code(
         status_code='RUNNING',
-        user=EARTHDATA_USERNAME,
+        user=earthdata_username,
         name=pairs.iloc[0].job_name,
         start=pairs.iloc[0].reference_acquisition,
     )
@@ -274,9 +247,15 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
 
     log.debug(prepared_jobs)
 
+    hyp3 = sdk.HyP3(
+        os.environ.get('HYP3_API', 'https://hyp3-its-live-test.asf.alaska.edu'),
+        username=os.environ.get('EARTHDATA_USERNAME'),
+        password=os.environ.get('EARTHDATA_PASSWORD'),
+    )
+
     jobs = sdk.Batch()
     for batch in sdk.util.chunk(prepared_jobs):
-        jobs += HYP3.submit_prepared_jobs(batch)
+        jobs += hyp3.submit_prepared_jobs(batch)
 
     return jobs
 
