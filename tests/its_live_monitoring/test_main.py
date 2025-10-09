@@ -129,6 +129,7 @@ def test_deduplicate_s3_pairs(mock_get_key):
     pairs = main.deduplicate_s3_pairs(landsat_pairs)
     assert pairs.equals(landsat_pairs.drop(0).drop(1).drop(2))
 
+
 @patch('hyp3_sdk.HyP3.submit_prepared_jobs')
 @patch('hyp3_sdk.util.get_authenticated_session')
 def test_submit_pairs_for_processing(mock_get_authenticated_session, mock_submit_prepared_jobs, hyp3_batch_factory):

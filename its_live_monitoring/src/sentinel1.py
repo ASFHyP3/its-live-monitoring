@@ -113,6 +113,7 @@ def frame_qualifies_for_sentinel1_processing(frame: pd.DataFrame, frame_id: int)
 
     return True
 
+
 def get_sentinel1_pairs_for_reference_scene(
     reference: ASFProduct,
     *,
