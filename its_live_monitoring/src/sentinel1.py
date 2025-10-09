@@ -32,6 +32,7 @@ def get_sentinel1_cmr_item(scene: str) -> ASFProduct:
 
 
 # FIXME: Is this really the only qualification criteria?
+# TODO: Polarization? VV, HH, VH, HV?
 def product_qualifies_for_sentinel1_processing(product: ASFProduct, log_level: int = logging.DEBUG) -> bool:
     """Check if a Sentinel-1 Burst product qualifies for processing."""
     burst_id = product.properties['burst']['fullBurstID']
@@ -76,7 +77,7 @@ def get_frame_stacks(
 
             if len(stack) == 0:
                 raise ValueError(
-                    f'Nu bursts found in {burst_id} stack for the OPERA frame that contains {reference_burst_id}.'
+                    f'No bursts found in {burst_id} stack for the OPERA frame that contains {reference_burst_id}.'
                 )
 
             if not ref_date - timedelta(minutes=3) < datetime.fromisoformat(stack[0].properties['startTime']):
@@ -105,6 +106,7 @@ def get_frame_stacks(
 def frame_qualifies_for_sentinel1_processing(frame: pd.DataFrame, frame_id: int) -> bool:
     """Check if an OPERA frame qualifies for processing."""
     expected_burst_ids = set(OPERA_FRAMES_TO_BURST_IDS[str(frame_id)])
+    # FIXME: Check is subset instead of exact match?
     if set(frame.fullBurstID) != expected_burst_ids:
         log.debug(f'Burst IDs in OPERA frame {frame_id} do not match expected burst IDs')
         return False
