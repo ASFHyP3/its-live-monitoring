@@ -108,11 +108,16 @@ def get_frame_stacks(
 def frame_qualifies_for_sentinel1_processing(frame: pd.DataFrame, frame_id: int) -> bool:
     """Check if an OPERA frame qualifies for processing."""
     expected_burst_ids = set(OPERA_FRAMES_TO_BURST_IDS[str(frame_id)])
-    # FIXME: Check is subset instead of exact match?
-    if set(frame.fullBurstID) != expected_burst_ids:
-        log.debug(f'Burst IDs in OPERA frame {frame_id} do not match expected burst IDs')
+    frame_burst_ids = set(frame.fullBurstID)
+    if not frame_burst_ids.issubset(expected_burst_ids):
+        log.debug(f'Burst IDs in OPERA frame {frame_id} not in expected burst IDs: {frame_burst_ids - expected_burst_ids}')
         return False
 
+    if len(frame) < 5:
+        log.debug(f'Not enough Burst IDs in OPERA frame {frame_id}: {frame}')
+        return False
+
+    log.debug(f'Frame {frame_id} qualifies for processing.')
     return True
 
 
