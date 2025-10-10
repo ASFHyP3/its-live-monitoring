@@ -31,13 +31,15 @@ def get_sentinel1_cmr_item(scene: str) -> ASFProduct:
     return results[0]
 
 
-# FIXME: Is this really the only qualification criteria?
-# TODO: Polarization? VV, HH, VH, HV?
 def product_qualifies_for_sentinel1_processing(product: ASFProduct, log_level: int = logging.DEBUG) -> bool:
     """Check if a Sentinel-1 Burst product qualifies for processing."""
     burst_id = product.properties['burst']['fullBurstID']
     if burst_id not in SENTINEL1_BURSTS_TO_PROCESS:
         log.log(log_level, f'{burst_id} disqualifies for processing because it is not from a burst containing land-ice')
+        return False
+
+    if (polarization := product.properties['polarization']) not in [asf.constants.VV, asf.constants.HH]:
+        log.log(log_level, f'{burst_id} disqualifies for processing because it has a {polarization} polarization')
         return False
 
     log.log(log_level, f'{burst_id} qualifies for processing')
