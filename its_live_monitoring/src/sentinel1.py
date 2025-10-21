@@ -18,7 +18,7 @@ log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 OPERA_FRAMES_TO_BURST_IDS = json.loads((Path(__file__).parent / 'opera_frame_to_burst_ids.json').read_text())
 BURST_IDS_TO_OPERA_FRAMES = json.loads((Path(__file__).parent / 'burst_id_to_opera_frame_ids.json').read_text())
 SENTINEL1_BURSTS_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel1_tiles_to_process.json').read_text())
-SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS = 12
+SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS = 13
 
 
 def get_sentinel1_cmr_item(scene: str) -> ASFProduct:
