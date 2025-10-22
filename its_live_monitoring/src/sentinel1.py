@@ -15,9 +15,9 @@ from asf_search.ASFProduct import ASFProduct
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
-OPERA_FRAMES_TO_BURST_IDS = json.loads((Path(__file__).parent / 'opera_frame_to_burst_ids.json').read_text())
-BURST_IDS_TO_OPERA_FRAMES = json.loads((Path(__file__).parent / 'burst_id_to_opera_frame_ids.json').read_text())
-SENTINEL1_BURSTS_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel1_tiles_to_process.json').read_text())
+OPERA_FRAMES_TO_BURST_IDS = json.loads((Path(__file__).parent / 'data' / 'opera_frame_to_burst_ids.json').read_text())
+BURST_IDS_TO_OPERA_FRAMES = json.loads((Path(__file__).parent / 'data' / 'burst_id_to_opera_frame_ids.json').read_text())
+SENTINEL1_BURSTS_TO_PROCESS = json.loads((Path(__file__).parent / 'data' / 'sentinel1_tiles_to_process.json').read_text())
 SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS = 13
 
 

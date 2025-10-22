@@ -17,7 +17,7 @@ SENTINEL2_CATALOG_API = 'https://earth-search.aws.element84.com/v1/'
 SENTINEL2_CATALOG = pystac_client.Client.open(SENTINEL2_CATALOG_API)
 SENTINEL2_COLLECTION_NAME = 'sentinel-2-l1c'
 SENTINEL2_COLLECTION = SENTINEL2_CATALOG.get_collection(SENTINEL2_COLLECTION_NAME)
-SENTINEL2_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'sentinel2_tiles_to_process.json').read_text())
+SENTINEL2_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'data' / 'sentinel2_tiles_to_process.json').read_text())
 
 SENTINEL2_MAX_PAIR_SEPARATION_IN_DAYS = 544
 SENTINEL2_MIN_PAIR_SEPARATION_IN_DAYS = 5
