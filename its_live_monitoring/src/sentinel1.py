@@ -15,9 +15,15 @@ from asf_search.ASFProduct import ASFProduct
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
-OPERA_FRAMES_TO_BURST_IDS = json.loads((Path(__file__).parent / 'data' / 'sentinel1_opera_frame_to_burst_ids.json').read_text())
-BURST_IDS_TO_OPERA_FRAMES = json.loads((Path(__file__).parent / 'data' / 'sentinel1_burst_id_to_opera_frame_ids.json').read_text())
-SENTINEL1_BURSTS_TO_PROCESS = json.loads((Path(__file__).parent / 'data' / 'sentinel1_tiles_to_process.json').read_text())
+OPERA_FRAMES_TO_BURST_IDS = json.loads(
+    (Path(__file__).parent / 'data' / 'sentinel1_opera_frame_to_burst_ids.json').read_text()
+)
+BURST_IDS_TO_OPERA_FRAMES = json.loads(
+    (Path(__file__).parent / 'data' / 'sentinel1_burst_id_to_opera_frame_ids.json').read_text()
+)
+SENTINEL1_BURSTS_TO_PROCESS = json.loads(
+    (Path(__file__).parent / 'data' / 'sentinel1_tiles_to_process.json').read_text()
+)
 SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS = 13
 
 
@@ -110,7 +116,9 @@ def frame_qualifies_for_sentinel1_processing(frame: pd.DataFrame, frame_id: int)
     expected_burst_ids = set(OPERA_FRAMES_TO_BURST_IDS[str(frame_id)])
     frame_burst_ids = set(frame.fullBurstID)
     if not frame_burst_ids.issubset(expected_burst_ids):
-        log.debug(f'Burst IDs in OPERA frame {frame_id} not in expected burst IDs: {frame_burst_ids - expected_burst_ids}')
+        log.debug(
+            f'Burst IDs in OPERA frame {frame_id} not in expected burst IDs: {frame_burst_ids - expected_burst_ids}'
+        )
         return False
 
     if len(frame) < 5:
