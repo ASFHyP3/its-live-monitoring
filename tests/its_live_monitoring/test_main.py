@@ -255,7 +255,7 @@ def test_product_id_from_message(landsat_message, sentinel2_message, sentinel1_b
     with pytest.raises(ValueError):
         main.product_id_from_message({'name': 'S1X'})
 
-    assert 'S1_247728_IW1_20251003T154900_VH_657C-BURST' == main.product_id_from_message(sentinel1_burst_message)
+    assert 'S1_247728_IW1_20251003T154900_VV_657C-BURST' == main.product_id_from_message(sentinel1_burst_message)
     assert 'S1X' == main.product_id_from_message({'granule-ur': 'S1X'})
     with pytest.raises(ValueError):
         main.product_id_from_message({'granule-ur': 'FOO'})
