@@ -24,7 +24,7 @@ jobs:
 
       - run: make install
 
-      - run: make test
+      - run: make tests
         env:
           EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_LOGIN_USER }}
           EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_LOGIN_PASSWORD }}

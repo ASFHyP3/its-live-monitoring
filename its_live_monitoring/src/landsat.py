@@ -16,7 +16,7 @@ LANDSAT_CATALOG_API = 'https://landsatlook.usgs.gov/stac-server'
 LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_CATALOG_API)
 LANDSAT_COLLECTION_NAME = 'landsat-c2l1'
 LANDSAT_COLLECTION = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION_NAME)
-LANDSAT_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'landsat_tiles_to_process.json').read_text())
+LANDSAT_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'data' / 'landsat_tiles_to_process.json').read_text())
 
 LANDSAT_MAX_PAIR_SEPARATION_IN_DAYS = 544
 LANDSAT_MAX_CLOUD_COVER_PERCENT = 60
@@ -119,9 +119,10 @@ def get_landsat_pairs_for_reference_scene(
     features = []
     for item in items:
         feature = item.to_dict()
-        feature['properties']['reference'] = reference.id
+        feature['properties']['reference'] = (reference.id,)
+        feature['properties']['secondary'] = (item.id,)
         feature['properties']['reference_acquisition'] = reference.datetime
-        feature['properties']['secondary'] = item.id
+        feature['properties']['job_name'] = reference.id
         features.append(feature)
 
     df = gpd.GeoDataFrame.from_features(features)

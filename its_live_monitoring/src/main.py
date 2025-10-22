@@ -19,6 +19,11 @@ from landsat import (
     get_landsat_stac_item,
     qualifies_for_landsat_processing,
 )
+from sentinel1 import (
+    get_sentinel1_cmr_item,
+    get_sentinel1_pairs_for_reference_scene,
+    product_qualifies_for_sentinel1_processing,
+)
 from sentinel2 import (
     get_sentinel2_pairs_for_reference_scene,
     get_sentinel2_stac_item,
@@ -28,13 +33,20 @@ from sentinel2 import (
 )
 
 
-EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
-EARTHDATA_PASSWORD = os.environ.get('EARTHDATA_PASSWORD')
-HYP3 = sdk.HyP3(
-    os.environ.get('HYP3_API', 'https://hyp3-its-live.asf.alaska.edu'),
-    username=EARTHDATA_USERNAME,
-    password=EARTHDATA_PASSWORD,
-)
+# NOTE: Commented items will get set when submitting
+AUTORIFT_JOB_TEMPLATE = {
+    'job_parameters': {
+        # 'reference': [],
+        # 'secondary': [],
+        'parameter_file': '/vsicurl/https://its-live-data.s3.amazonaws.com/autorift_parameters/v001/autorift_landice_0120m.shp',
+        # 'publish_bucket': null,
+        'publish_stac_prefix': 'stac-ingest',
+        'use_static_files': True,
+        # 'frame_id' = int,
+    },
+    'job_type': 'AUTORIFT',
+    # 'name': None,
+}
 
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
@@ -105,7 +117,7 @@ def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
     s2_prefix = 'velocity_image_pair/sentinel2/v02'
     landsat_prefix = 'velocity_image_pair/landsatOLI/v02'
-    prefix = s2_prefix if pairs['reference'][0].startswith('S2') else landsat_prefix
+    prefix = s2_prefix if pairs['reference'][0][0].startswith('S2') else landsat_prefix
 
     regions = regions_from_bounds(*pairs['geometry'].total_bounds)
     tile_prefixes = [f'{prefix}/{region}' for region in regions]
@@ -169,6 +181,19 @@ def query_jobs_by_status_code(status_code: str, user: str, name: str, start: dat
     return sdk.Batch([sdk.Job.from_dict(job) for job in jobs])
 
 
+def get_reference_secondary_from_Job(job: sdk.Job) -> tuple[list | str, list | str]:
+    """Get the reference and secondary scenes from an AUTORIFT HyP3 job."""
+    granules = job.job_parameters.get('granules')
+    if granules:
+        reference = granules[:1]
+        secondary = granules[1:]
+    else:
+        reference = job.job_parameters['reference']
+        secondary = job.job_parameters['secondary']
+
+    return reference, secondary
+
+
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """Search HyP3 jobs since the reference scene's acquisition date and remove already submitted (in PENDING or RUNNING state) pairs.
 
@@ -179,16 +204,24 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
-    assert EARTHDATA_USERNAME is not None
+    earthdata_username = os.environ['EARTHDATA_USERNAME']
+    assert earthdata_username is not None
+
     pending_jobs = query_jobs_by_status_code(
-        'PENDING', EARTHDATA_USERNAME, pairs.iloc[0].reference, pairs.iloc[0].reference_acquisition
+        status_code='PENDING',
+        user=earthdata_username,
+        name=pairs.iloc[0].job_name,
+        start=pairs.iloc[0].reference_acquisition,
     )
     running_jobs = query_jobs_by_status_code(
-        'RUNNING', EARTHDATA_USERNAME, pairs.iloc[0].reference, pairs.iloc[0].reference_acquisition
+        status_code='RUNNING',
+        user=earthdata_username,
+        name=pairs.iloc[0].job_name,
+        start=pairs.iloc[0].reference_acquisition,
     )
     jobs = pending_jobs + running_jobs
 
-    df = pd.DataFrame([job.job_parameters['granules'] for job in jobs], columns=['reference', 'secondary'])
+    df = pd.DataFrame([get_reference_secondary_from_Job(job) for job in jobs], columns=['reference', 'secondary'])
     df = df.set_index(['reference', 'secondary'])
     pairs = pairs.set_index(['reference', 'secondary'])
 
@@ -201,8 +234,11 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
 def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: D103
     prepared_jobs = []
-    for reference, secondary in pairs[['reference', 'secondary']].itertuples(index=False):
-        prepared_job = HYP3.prepare_autorift_job(reference, secondary, name=reference)
+    for reference, secondary, name in pairs[['reference', 'secondary', 'job_name']].itertuples(index=False):
+        prepared_job: dict = AUTORIFT_JOB_TEMPLATE.copy()
+        prepared_job['name'] = name
+        prepared_job['job_parameters']['reference'] = reference
+        prepared_job['job_parameters']['secondary'] = secondary
 
         if publish_bucket := os.environ.get('PUBLISH_BUCKET', ''):
             prepared_job['job_parameters']['publish_bucket'] = publish_bucket
@@ -211,9 +247,15 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
 
     log.debug(prepared_jobs)
 
+    hyp3 = sdk.HyP3(
+        os.environ.get('HYP3_API', 'https://hyp3-its-live-test.asf.alaska.edu'),
+        username=os.environ.get('EARTHDATA_USERNAME'),
+        password=os.environ.get('EARTHDATA_PASSWORD'),
+    )
+
     jobs = sdk.Batch()
     for batch in sdk.util.chunk(prepared_jobs):
-        jobs += HYP3.submit_prepared_jobs(batch)
+        jobs += hyp3.submit_prepared_jobs(batch)
 
     return jobs
 
@@ -240,11 +282,14 @@ def process_scene(
                 # Note: Time between attempts is controlled by they SQS VisibilityTimeout
                 raise_for_missing_in_google_cloud(scene)
                 pairs = get_sentinel2_pairs_for_reference_scene(reference)
-
-    else:
+    elif scene.startswith('L'):
         reference = get_landsat_stac_item(scene)
         if qualifies_for_landsat_processing(reference, log_level=logging.INFO):
             pairs = get_landsat_pairs_for_reference_scene(reference)
+    elif scene.startswith('S1'):
+        reference = get_sentinel1_cmr_item(scene)
+        if product_qualifies_for_sentinel1_processing(reference):
+            pairs = get_sentinel1_pairs_for_reference_scene(reference)
 
     if pairs is None:
         return sdk.Batch()
@@ -260,7 +305,9 @@ def process_scene(
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
             log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
-    if len(pairs) > 0:
+    # FIXME: Sentinel-1's file name is not easily predictable from the burst acquisitions so we can't do this yet
+    # TODO: Instead of looking in the bucket, we should look in the (pending) STAC ITS_LIVE catalog
+    if len(pairs) > 0 and not scene.startswith('S1'):
         pairs = deduplicate_s3_pairs(pairs)
 
         log.info(f'Deduplicated already published pairs; {len(pairs)} remaining')
@@ -273,6 +320,27 @@ def process_scene(
 
     log.info(jobs)
     return jobs
+
+
+def product_id_from_message(message: dict) -> str:
+    """Return a scene product ID from an SQS message.
+
+    Args:
+        message: SQS message as received from supported satellite missions (Landsat, Sentinel-1, and Sentinel-2)
+
+    Returns:
+        product_id: the product ID of a scene
+    """
+    # See `tests/integration/*-valid.json` for example messages
+    match message:
+        case {'landsat_product_id': product_id} if product_id.startswith('L'):
+            return product_id
+        case {'name': product_id} if product_id.startswith('S2'):
+            return product_id
+        case {'granule-ur': product_id} if product_id.startswith('S1'):
+            return product_id
+        case _:
+            raise ValueError(f'Unable to determine product ID from message {message}')
 
 
 def lambda_handler(event: dict, context: object) -> dict:
@@ -292,8 +360,8 @@ def lambda_handler(event: dict, context: object) -> dict:
         try:
             body = json.loads(record['body'])
             message = json.loads(body['Message'])
-            product_id = 'landsat_product_id' if 'landsat_product_id' in message.keys() else 'name'
-            _ = process_scene(message[product_id])
+            product_id = product_id_from_message(message)
+            _ = process_scene(product_id)
         except Exception:
             log.exception(f'Could not process message {record["messageId"]}')
             batch_item_failures.append({'itemIdentifier': record['messageId']})
@@ -303,14 +371,21 @@ def lambda_handler(event: dict, context: object) -> dict:
 def main() -> None:
     """Command Line wrapper around `process_scene`."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('reference', help='Reference Landsat scene name to build pairs for')
+    parser.add_argument('reference', help='Reference scene name to build pairs for')
     parser.add_argument('--submit', action='store_true', help='Submit pairs to HyP3 for processing')
-    parser.add_argument('-v', '--verbose', action='store_true', help='Turn on verbose logging')
+    parser.add_argument(
+        '-v', '--verbose', action='count', default=0, help='Increase the logging verbosity. Can be used multiple times.'
+    )
     args = parser.parse_args()
 
     logging.basicConfig(stream=sys.stdout, format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
-    if args.verbose:
+    if args.verbose > 0:
         log.setLevel(logging.DEBUG)
+    if args.verbose < 2:
+        import asf_search
+
+        asf_logger = logging.getLogger(asf_search.__name__)
+        asf_logger.disabled = True
 
     log.debug(' '.join(sys.argv))
     _ = process_scene(args.reference, submit=args.submit)

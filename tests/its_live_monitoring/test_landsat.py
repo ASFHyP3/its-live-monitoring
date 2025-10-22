@@ -140,7 +140,7 @@ def test_get_landsat_pairs_for_reference_scene(mock_landsat_get_item, pystac_ite
     assert (df['landsat:wrs_row'] == ref_item.properties['landsat:wrs_row']).all()
     assert (df['view:off_nadir'] == ref_item.properties['view:off_nadir']).all()
     assert (df['instruments'].apply(lambda x: ''.join(x)) == ''.join(ref_item.properties['instruments'])).all()
-    assert (df['reference'] == ref_item.id).all()
+    assert (df['reference'] == (ref_item.id,)).all()
 
 
 @patch('landsat.LANDSAT_CATALOG.search')
@@ -185,4 +185,4 @@ def test_get_landsat_pairs_for_off_nadir_reference_scene(
     assert (df['landsat:wrs_path'] == ref_item.properties['landsat:wrs_path']).all()
     assert (df['landsat:wrs_row'] == ref_item.properties['landsat:wrs_row']).all()
     assert (df['instruments'].apply(lambda x: ''.join(x)) == ''.join(ref_item.properties['instruments'])).all()
-    assert (df['reference'] == ref_item.id).all()
+    assert (df['reference'] == (ref_item.id,)).all()
