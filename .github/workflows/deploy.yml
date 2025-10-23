@@ -1,30 +1,45 @@
-name: Deploy ITS_LIVE Monitoring Test
+name: Deploy ITS_LIVE Monitoring
 
 on:
-  workflow_run:
-    workflows:
-      - "Build"
+  push:
     branches:
       - develop
+  workflow_run:
+    workflows:
+      - "Tag New Version"
+    branches:
+      - main
     types:
       - completed
 
-concurrency: deploy-test
+concurrency: deploy-${{ github.ref == 'refs/heads/main' && 'prod' || 'test' }}
 
 jobs:
   call-version-info-workflow:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     uses: ASFHyP3/actions/.github/workflows/reusable-version-info.yml@v0.20.0
     permissions:
       contents: read
     with:
       python_version: '3.12'
 
+  call-docker-ecr-workflow:
+    if:
+    needs: call-version-info-workflow
+    uses: ASFHyP3/actions/.github/workflows/reusable-docker-ecr.yml@v0.20.0
+    permissions:
+      contents: read
+    with:
+      version_tag: ${{ needs.call-version-info-workflow.outputs.version_tag }}
+      ecr_registry: ${{ vars.ECR_REGISTRY }}
+      aws_region: us-west-2
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
   deploy:
-    environment: test
+    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'test' }}
     runs-on: ubuntu-latest
-    needs: call-version-info-workflow
+    needs: call-docker-ecr-workflow
 
     steps:
       - uses: actions/checkout@v5
@@ -45,15 +60,15 @@ jobs:
 
       - uses: ./.github/actions/deploy
         with:
-          STACK_NAME: its-live-monitoring-test
+          STACK_NAME: ${{ vars.STACK_NAME }}
           EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_USERNAME }}
           EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD }}
           CF_TEMPLATE_BUCKET: cf-templates-3o5lnspmwmzg-us-west-2
-          LANDSAT_TOPIC_ARN: arn:aws:sns:us-west-2:986442313181:its-live-notify-landsat-test
-          SENTINEL2_TOPIC_ARN: arn:aws:sns:eu-west-1:986442313181:its-live-notify-sentinel2-test
-          HYP3_API: https://hyp3-its-live-test.asf.alaska.edu
-          HYP3_JOBS_TABLE: hyp3-its-live-test-JobsTable-1FT990PLG5K45
+          LANDSAT_TOPIC_ARN: ${{ vars.LANDSAT_TOPIC_ARN }}
+          SENTINEL2_TOPIC_ARN: ${{ vars.SENTINEL2_TOPIC_ARN }}
+          HYP3_API: ${{ vars.HYP3_API }}
+          HYP3_JOBS_TABLE: ${{ vars.HYP3_JOBS_TABLE }}
           LAMBDA_LOGGING_LEVEL: INFO
-          PUBLISH_BUCKET: its-live-data-test
+          PUBLISH_BUCKET: ${{ vars.PUBLISH_BUCKET }}
           MATTERMOST_PAT: ${{ secrets.MATTERMOST_PAT }}
           ECR_IMAGE_URI:   ${{ vars.ECR_REGISTRY }}/${{ env.REPO }}:${{ needs.call-version-info-workflow.outputs.version_tag }}

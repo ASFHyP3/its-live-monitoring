@@ -1,11 +1,7 @@
 name: Build
 
 on:
-  push:
-    branches:
-      - develop
-    tags:
-      - 'v*'
+  # NOTE: Builds on pushes to develop or v* tags are done as part of deploy.yml
   pull_request:
     branches:
       - main
