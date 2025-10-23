@@ -75,7 +75,6 @@ Resources:
           QUEUE_URL: !Ref QueueURL
           LOGGING_LEVEL: !Ref LambdaLoggingLevel
 
-
   Schedule:
     Type: AWS::Events::Rule
     Properties:

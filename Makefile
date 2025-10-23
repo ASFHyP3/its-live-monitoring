@@ -54,10 +54,3 @@ ruff: ruff-check ruff-format
 
 cfn-lint:
 	cfn-lint --template `find . -name cloudformation.yml` --info --ignore-checks W3002
-
-clean:
-	git ls-files -o -- its_live_monitoring/src/ | xargs rm; \
-	git ls-files -o -- status-messages/src/ | xargs rm; \
-	git ls-files -o -- .pytest_cache | xargs rm; \
-	find ./ -empty -type d -delete; \
-	rm -f packaged.yml
