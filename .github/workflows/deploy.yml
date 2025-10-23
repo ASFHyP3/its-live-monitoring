@@ -73,4 +73,4 @@ jobs:
           LAMBDA_LOGGING_LEVEL: INFO
           PUBLISH_BUCKET: ${{ vars.PUBLISH_BUCKET }}
           MATTERMOST_PAT: ${{ secrets.MATTERMOST_PAT }}
-          ECR_IMAGE_URI:   ${{ vars.ECR_REGISTRY }}/${{ env.REPO }}:${{ needs.call-version-info-workflow.outputs.version_tag }}
+          ECR_IMAGE_URI: "${{ vars.ECR_REGISTRY }}/${{ env.REPO }}:${{ needs.call-version-info-workflow.outputs.version_tag }}"
