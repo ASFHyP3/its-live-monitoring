@@ -40,6 +40,8 @@ jobs:
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'test' }}
     runs-on: ubuntu-latest
     needs: call-docker-ecr-workflow
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v5
