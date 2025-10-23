@@ -6,7 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.0]
 ### Added
-- Added Sentinel-1 pair-picking and processing
+- Support for processing Sentinel-1 SQS messages and submitting jobs to hyp3-its-live has been added.
+- Lambda functions deployment packages have been switched to container images instead of binary zips.
+- Added the make target `image` for building the lambda container image
+
+### Removed
+- The no-longer used `install-lambda-deps` make target
 
 ## [0.5.11]
 ### Added

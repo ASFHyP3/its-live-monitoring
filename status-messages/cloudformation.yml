@@ -19,6 +19,10 @@ Parameters:
       - INFO
       - DEBUG
 
+  EcrImageUri:
+    Description: ECR image URI
+    Type: String
+
 Resources:
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -56,16 +60,20 @@ Resources:
   Lambda:
     Type: AWS::Lambda::Function
     Properties:
+      PackageType: Image
+      ImageConfig:
+        Command:
+          - status_messages.lambda_handler
+      Code:
+        ImageUri: !Ref EcrImageUri
+      Role: !GetAtt Role.Arn
+      MemorySize: 128
+      Timeout: 10
       Environment:
         Variables:
           MATTERMOST_PAT: !Ref MattermostPAT
           QUEUE_URL: !Ref QueueURL
           LOGGING_LEVEL: !Ref LambdaLoggingLevel
-      Code: src/
-      Handler: status_messages.lambda_handler
-      Role: !GetAtt Role.Arn
-      Runtime: python3.12
-      Timeout: 10
 
   Schedule:
     Type: AWS::Events::Rule

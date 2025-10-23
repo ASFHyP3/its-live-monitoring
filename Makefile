@@ -1,5 +1,11 @@
 MAKEFLAGS+=--always-make
-export PYTHONPATH = ${PWD}/its_live_monitoring/src
+
+export PYTHONPATH = ${PWD}/its_live_monitoring/src:${PWD}/status-messages/src
+
+ECR_REGISTRY ?= 986442313181.dkr.ecr.us-west-2.amazonaws.com
+ECR_REPOSITORY ?= asfhyp3/its-live-monitoring
+PLATFORM ?= linux/amd64
+
 LANDSAT_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-landsat-test
 SENTINEL2_TOPIC_ARN ?= arn:aws:sns:eu-west-1:986442313181:its-live-notify-sentinel2-test
 SENITNEL1_SQS_URL ?= https://sqs.us-west-2.amazonaws.com/986442313181/its-live-monitoring-test-Queue-1UIaYnVv4j5I
@@ -9,10 +15,9 @@ install:
 	python -m pip install --upgrade pip && \
 	python -m pip install -r requirements-all.txt
 
-install-lambda-deps:
-	python -m pip install --upgrade pip && \
-	python -m pip install --no-compile -r requirements-its_live_monitoring.txt -t its_live_monitoring/src/ && \
-	python -m pip install --no-compile -r requirements-status-messages.txt -t status-messages/src/
+image:
+	export SDIST_VERSION=$$(python -m setuptools_scm) && \
+	docker buildx build --platform ${PLATFORM} --provenance=false -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:$(subst +,_,${SDIST_VERSION}) .
 
 test_files ?= 'tests/'
 tests:
