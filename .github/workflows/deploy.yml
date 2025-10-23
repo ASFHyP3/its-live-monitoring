@@ -39,7 +39,9 @@ jobs:
   deploy:
     environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'test' }}
     runs-on: ubuntu-latest
-    needs: call-docker-ecr-workflow
+    needs:
+      - call-version-info-workflow
+      - call-docker-ecr-workflow
     permissions:
       contents: read
 
