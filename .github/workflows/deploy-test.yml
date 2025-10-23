@@ -1,16 +1,30 @@
 name: Deploy ITS_LIVE Monitoring Test
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - "Build"
     branches:
       - develop
+    types:
+      - completed
 
 concurrency: deploy-test
 
 jobs:
+  call-version-info-workflow:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    uses: ASFHyP3/actions/.github/workflows/reusable-version-info.yml@v0.20.0
+    permissions:
+      contents: read
+    with:
+      python_version: '3.12'
+
+
   deploy:
     environment: test
     runs-on: ubuntu-latest
+    needs: call-version-info-workflow
 
     steps:
       - uses: actions/checkout@v5
@@ -25,6 +39,10 @@ jobs:
         with:
           python-version: 3.12
 
+      - name: Lowercase repo for container registry
+        run: |
+          echo "REPO=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
+
       - uses: ./.github/actions/deploy
         with:
           STACK_NAME: its-live-monitoring-test
@@ -38,3 +56,4 @@ jobs:
           LAMBDA_LOGGING_LEVEL: INFO
           PUBLISH_BUCKET: its-live-data-test
           MATTERMOST_PAT: ${{ secrets.MATTERMOST_PAT }}
+          ECR_IMAGE_URI:   ${{ vars.ECR_REGISTRY }}/${{ env.REPO }}:${{ needs.call-version-info-workflow.outputs.version_tag }}
