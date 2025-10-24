@@ -71,7 +71,7 @@ jobs:
       - name: push image
         id: push
         if: ${{ ! github.event.pull_request.head.repo.fork }}
-        run:
+        run: |
           docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${VERSION_TAG}
           echo "image_uri=${ECR_REGISTRY}/${ECR_REPOSITORY}:${VERSION_TAG}" >> $GITHUB_OUTPUT
 
