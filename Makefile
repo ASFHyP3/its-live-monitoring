@@ -10,14 +10,17 @@ LANDSAT_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-landsat-
 SENTINEL2_TOPIC_ARN ?= arn:aws:sns:eu-west-1:986442313181:its-live-notify-sentinel2-test
 SENITNEL1_SQS_URL ?= https://sqs.us-west-2.amazonaws.com/986442313181/its-live-monitoring-test-Queue-1UIaYnVv4j5I
 
+ifndef IMAGE_TAG
+SDIST_VERSION != python -m setuptools_scm
+IMAGE_TAG = $(subst +,_,$(SDIST_VERSION))
+endif
 
 install:
 	python -m pip install --upgrade pip && \
 	python -m pip install -r requirements-all.txt
 
 image:
-	export SDIST_VERSION=$$(python -m setuptools_scm) && \
-	docker buildx build --platform ${PLATFORM} --provenance=false -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:$(subst +,_,${SDIST_VERSION}) .
+	docker buildx build --platform ${PLATFORM} --provenance=false -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} .
 
 test_files ?= 'tests/'
 tests:
