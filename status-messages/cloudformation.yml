@@ -56,6 +56,13 @@ Resources:
           - Effect: Allow
             Action: sqs:GetQueueAttributes
             Resource: !Sub "arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${QueueName}"
+          - Effect: Allow
+            Action:
+              - ecr:BatchGetImage
+              - ecr:BatchCheckLayerAvailability
+              - ecr:GetAuthorizationToken
+              - ecr:GetDownloadUrlForLayer
+            Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*"
 
   Lambda:
     Type: AWS::Lambda::Function

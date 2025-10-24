@@ -164,6 +164,13 @@ Resources:
             Resource:
               - !Sub "arn:aws:s3:::${PublishBucket}/*"
               - !Sub "arn:aws:s3:::${PublishBucket}"
+          - Effect: Allow
+            Action:
+              - ecr:BatchGetImage
+              - ecr:BatchCheckLayerAvailability
+              - ecr:GetAuthorizationToken
+              - ecr:GetDownloadUrlForLayer
+            Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*"
 
   StatusMessages:
     Type: AWS::CloudFormation::Stack
