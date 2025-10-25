@@ -36,7 +36,7 @@ jobs:
       ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
       VERSION_TAG: ${{ needs.call-version-info-workflow.outputs.version_tag }}
     outputs:
-      image_uri: ${{ steps.push.outputs.image_uri }}
+      image_uri: ${{ steps.build.outputs.image_uri }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -65,15 +65,14 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: build image
+        id: build
+        env:
+          BUILDX_OUTPUT_TYPE: ${{ ! github.event.pull_request.head.repo.fork && 'registry' || 'docker' }}
         run: |
           make image
-
-      - name: push image
-        id: push
-        if: ${{ ! github.event.pull_request.head.repo.fork }}
-        run: |
-          docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${VERSION_TAG}
-          echo "image_uri=${ECR_REGISTRY}/${ECR_REPOSITORY}:${VERSION_TAG}" >> $GITHUB_OUTPUT
+          if [ "${BUILDX_OUTPUT_TYPE}" == "registry" ]; then
+            echo "image_uri=${ECR_REGISTRY}/${ECR_REPOSITORY}:${VERSION_TAG}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Add test tag
         if: ${{ github.event_name != 'pull_request' && contains(env.VERSION_TAG, '.dev') }}
