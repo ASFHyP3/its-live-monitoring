@@ -95,7 +95,7 @@ Resources:
       Code:
         ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaRole.Arn
-      MemorySize: 128
+      MemorySize: 256
       Timeout: 900
       Environment:
         Variables:
