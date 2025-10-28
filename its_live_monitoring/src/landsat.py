@@ -114,7 +114,7 @@ def get_landsat_pairs_for_reference_scene(
 
     log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
     if len(items) == 0:
-        return gpd.GeoDataFrame({'reference': [], 'secondary': []})
+        return gpd.GeoDataFrame({'reference': [], 'reference_acquisition': [], 'secondary': [], 'job_name': []})
 
     features = []
     for item in items:

@@ -166,4 +166,8 @@ def get_sentinel1_pairs_for_reference_scene(
                     )
                 )
 
+        log.debug(f'Found {len(pair_data)} pairs for {reference.properties["burst"]["fullBurstID"]}')
+        if len(pair_data) == 0:
+            return gpd.GeoDataFrame({'reference': [], 'reference_acquisition': [], 'secondary': [], 'job_name': []})
+
     return pd.DataFrame(pair_data, columns=['reference', 'reference_acquisition', 'secondary', 'job_name'])
