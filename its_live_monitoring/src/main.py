@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+from copy import deepcopy
 from datetime import UTC, datetime
 
 import boto3
@@ -235,7 +236,7 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: D103
     prepared_jobs = []
     for reference, secondary, name in pairs[['reference', 'secondary', 'job_name']].itertuples(index=False):
-        prepared_job: dict = AUTORIFT_JOB_TEMPLATE.copy()
+        prepared_job: dict = deepcopy(AUTORIFT_JOB_TEMPLATE)
         prepared_job['name'] = name
         prepared_job['job_parameters']['reference'] = reference
         prepared_job['job_parameters']['secondary'] = secondary
