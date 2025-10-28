@@ -233,8 +233,8 @@ def get_sentinel2_pairs_for_reference_scene(
     for item in items:
         feature = item.to_dict()
         feature['properties']['reference'] = (reference_scene_id,)
-        feature['properties']['secondary'] = (item.properties['s2:product_uri'].removesuffix('.SAFE'),)
         feature['properties']['reference_acquisition'] = reference.datetime
+        feature['properties']['secondary'] = (item.properties['s2:product_uri'].removesuffix('.SAFE'),)
         feature['properties']['job_name'] = reference_scene_id
         features.append(feature)
 
