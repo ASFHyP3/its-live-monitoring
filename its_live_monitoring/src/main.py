@@ -125,7 +125,7 @@ def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     drop_indexes = []
     for idx, reference, secondary in pairs[['reference', 'secondary']].itertuples():
-        if get_key(tile_prefixes=tile_prefixes, reference=reference, secondary=secondary):
+        if get_key(tile_prefixes=tile_prefixes, reference=reference[0], secondary=secondary[0]):
             drop_indexes.append(idx)
 
     return pairs.drop(index=drop_indexes)
@@ -182,7 +182,7 @@ def query_jobs_by_status_code(status_code: str, user: str, name: str, start: dat
     return sdk.Batch([sdk.Job.from_dict(job) for job in jobs])
 
 
-def get_reference_secondary_from_Job(job: sdk.Job) -> tuple[list | str, list | str]:
+def get_reference_secondary_from_Job(job: sdk.Job) -> tuple[tuple | str, tuple | str]:
     """Get the reference and secondary scenes from an AUTORIFT HyP3 job."""
     granules = job.job_parameters.get('granules')
     if granules:
@@ -192,7 +192,7 @@ def get_reference_secondary_from_Job(job: sdk.Job) -> tuple[list | str, list | s
         reference = job.job_parameters['reference']
         secondary = job.job_parameters['secondary']
 
-    return reference, secondary
+    return tuple(reference), tuple(secondary)
 
 
 def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
