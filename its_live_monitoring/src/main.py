@@ -338,7 +338,7 @@ def product_id_from_message(message: dict) -> str:
             return product_id
         case {'name': product_id} if product_id.startswith('S2'):
             return product_id
-        case {'granule-ur': product_id} if product_id.startswith('S1'):
+        case {'granule_ur': product_id} if product_id.startswith('S1'):
             return product_id
         case _:
             raise ValueError(f'Unable to determine product ID from message {message}')

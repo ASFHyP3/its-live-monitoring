@@ -13,8 +13,8 @@ IMAGE_TAG = $(subst +,_,$(SDIST_VERSION))
 endif
 
 LANDSAT_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-landsat-test
+SENITNEL1_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-sentinel1-test
 SENTINEL2_TOPIC_ARN ?= arn:aws:sns:eu-west-1:986442313181:its-live-notify-sentinel2-test
-SENITNEL1_SQS_URL ?= https://sqs.us-west-2.amazonaws.com/986442313181/its-live-monitoring-test-Queue-1UIaYnVv4j5I
 
 install:
 	python -m pip install --upgrade pip && \
@@ -32,15 +32,15 @@ landsat-integration:
 	export AWS_PAGER='' && \
 	$(foreach file, $(wildcard tests/integration/landsat*.json), aws sns publish --profile saml-pub --topic-arn ${LANDSAT_TOPIC_ARN} --message file://${file} --output json;)
 
+sentinel1-integration:
+	export AWS_PAGER='' && \
+	$(foreach file, $(wildcard tests/integration/sentinel1*.json), aws sns publish --profile saml-pub --topic-arn ${SENITNEL1_TOPIC_ARN} --message file://${file} --output json;)
+
 sentinel2-integration:
 	export AWS_PAGER='' && \
 	$(foreach file, $(wildcard tests/integration/sentinel2*.json), aws sns publish --region eu-west-1 --profile saml-pub --topic-arn ${SENTINEL2_TOPIC_ARN} --message file://${file} --output json;)
 
-sentinel1-integration:
-	export AWS_PAGER='' && \
-	$(foreach file, $(wildcard tests/integration/sentinel1*.json), aws sqs send-message --profile saml-pub --queue-url ${SENITNEL1_SQS_URL} --message-body file://${file} --output json;)
-
-integration: landsat-integration sentinel2-integration sentinel1-integration
+integration: landsat-integration sentinel1-integration sentinel2-integration
 
 static: mypy ruff cfn-lint
 

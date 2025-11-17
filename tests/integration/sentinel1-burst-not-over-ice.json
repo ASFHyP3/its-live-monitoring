@@ -1,5 +1,5 @@
 {
-  "concept-id": "G3031732073-ASF",
-  "granule-ur": "S1_294649_IW3_20250414T034451_VV_4403-BURST",
-  "location": "[https://cmr.earthdata.nasa.gov:443/search/concepts/G3031732073-ASF/2"
+  "granule_ur": "S1_294649_IW3_20250414T034451_VV_4403-BURST",
+  "metadata_url": "https://cmr.earthdata.nasa.gov/search/granules.umm_json?provider=ASF&granule_ur=S1_294649_IW3_20250414T034451_VV_4403-BURST",
+  "access_urls": []
 }
