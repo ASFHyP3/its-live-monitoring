@@ -116,6 +116,7 @@ jobs:
           EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD }}
           CF_TEMPLATE_BUCKET: cf-templates-3o5lnspmwmzg-us-west-2
           LANDSAT_TOPIC_ARN: ${{ vars.LANDSAT_TOPIC_ARN }}
+          SENTINEL1_TOPIC_ARN: ${{ vars.SENTINEL1_TOPIC_ARN }}
           SENTINEL2_TOPIC_ARN: ${{ vars.SENTINEL2_TOPIC_ARN }}
           HYP3_API: ${{ vars.HYP3_API }}
           HYP3_JOBS_TABLE: ${{ vars.HYP3_JOBS_TABLE }}
