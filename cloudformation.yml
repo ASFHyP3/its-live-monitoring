@@ -2,6 +2,9 @@ Parameters:
   LandsatTopicArn:
     Type: String
 
+  Sentinel1TopicArn:
+    Type: String
+
   Sentinel2TopicArn:
     Type: String
 
@@ -67,7 +70,7 @@ Resources:
             Resource: !GetAtt Queue.Arn
             Condition:
               ArnEquals:
-                aws:SourceArn: [!Ref LandsatTopicArn, !Ref Sentinel2TopicArn]
+                aws:SourceArn: [!Ref LandsatTopicArn, !Ref Sentinel1TopicArn, !Ref Sentinel2TopicArn]
       Queues:
         - !Ref Queue
 
@@ -84,6 +87,17 @@ Resources:
           - suffix: '_T2'
         s3_location:
           - prefix: 's3://usgs-landsat/collection02/level-1/standard/oli-tirs/'
+
+  Sentinel1Subscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref Sentinel1TopicArn
+      Protocol: sqs
+      Endpoint: !GetAtt Queue.Arn
+      FilterPolicyScope: MessageBody
+      FilterPolicy:
+        granule_ur:
+          - suffix: '-BURST'
 
   Lambda:
     Type: AWS::Lambda::Function
