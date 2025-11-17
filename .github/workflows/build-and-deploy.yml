@@ -1,5 +1,4 @@
-name: Build and Deploy ITS_LIVE Monitoring
-
+name: Build image and deploy
 on:
   pull_request:
     branches:
@@ -8,13 +7,8 @@ on:
   push:
     branches:
       - develop
-  workflow_run:
-    workflows:
-      - "Tag New Version"
-    branches:
-      - main
-    types:
-      - completed
+    tags:
+      - 'v*'
 
 jobs:
   call-version-info-workflow:
@@ -35,25 +29,25 @@ jobs:
     env:
       ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
       VERSION_TAG: ${{ needs.call-version-info-workflow.outputs.version_tag }}
+      PLATFORMS: 'linux/amd64'
     outputs:
-      image_uri: ${{ steps.build.outputs.image_uri }}
+      image_uri: ${{ steps.set_outputs.outputs.IMAGE_URI }}
     steps:
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version: 3.12
-
-      - run: make install
-
-      - name: Lowercase repository for container registry
+      - name: set env and outputs
+        id: set_outputs
         run: |
-          echo "ECR_REPOSITORY=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
+          export ECR_REPOSITORY=${GITHUB_REPOSITORY,,}
+          echo "ECR_REPOSITORY=${ECR_REPOSITORY}" >> ${GITHUB_ENV}
+          export IMAGE_URI=${ECR_REGISTRY}/${ECR_REPOSITORY}:${VERSION_TAG}
+          echo "IMAGE_URI=${IMAGE_URI}" >> ${GITHUB_ENV}
+          echo "IMAGE_URI=${IMAGE_URI}" >> ${GITHUB_OUTPUT}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          platforms: ${{ env.PLATFORMS }}
 
       - uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -64,28 +58,29 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: build image
+      - name: Build, tag, and push image to Amazon ECR
         id: build
-        env:
-          BUILDX_OUTPUT_TYPE: ${{ ! github.event.pull_request.head.repo.fork && 'registry' || 'docker' }}
-        run: |
-          make image
-          if [ "${BUILDX_OUTPUT_TYPE}" == "registry" ]; then
-            echo "image_uri=${ECR_REGISTRY}/${ECR_REPOSITORY}:${VERSION_TAG}" >> $GITHUB_OUTPUT
-          fi
+        uses: docker/build-push-action@v6
+        with:
+          build-args: "SETUPTOOLS_SCM_PRETEND_VERSION=${{ needs.call-version-info-workflow.outputs.version }}"
+          push: ${{ ! github.event.pull_request.head.repo.fork }}
+          platforms: ${{ env.PLATFORMS }}
+          provenance: false
+          tags: |
+            ${{ env.IMAGE_URI }}
 
       - name: Add test tag
         if: ${{ github.event_name != 'pull_request' && contains(env.VERSION_TAG, '.dev') }}
         uses: akhilerm/tag-push-action@v2.2.0
         with:
-          src: ${{ vars.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.VERSION_TAG }}
+          src: ${{ env.IMAGE_URI }}
           dst: ${{ vars.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:test
 
       - name: Add latest tag
         if: ${{ github.event_name != 'pull_request' && ! contains(env.VERSION_TAG, '.dev') }}
         uses: akhilerm/tag-push-action@v2.2.0
         with:
-          src: ${{ vars.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.VERSION_TAG }}
+          src: ${{ env.IMAGE_URI }}
           dst: ${{ vars.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
 
       - name: Logout of Amazon ECR
@@ -96,10 +91,11 @@ jobs:
   deploy:
     if: ${{ github.event_name != 'pull_request' }}
     concurrency:
-      group: deploy-${{ github.ref == 'refs/heads/main' && 'prod' || 'test' }}
-    environment: ${{ github.ref == 'refs/heads/main' && 'prod' || 'test' }}
+      group: deploy-${{ contains(needs.call-version-info-workflow.outputs.version_tag, '.dev') && 'test' || 'prod' }}
+    environment: -${{ contains(needs.call-version-info-workflow.outputs.version_tag, '.dev') && 'test' || 'prod' }}
     runs-on: ubuntu-latest
     needs:
+      - call-version-info-workflow
       - dockerize
     permissions:
       contents: read
@@ -120,6 +116,7 @@ jobs:
           EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD }}
           CF_TEMPLATE_BUCKET: cf-templates-3o5lnspmwmzg-us-west-2
           LANDSAT_TOPIC_ARN: ${{ vars.LANDSAT_TOPIC_ARN }}
+          SENTINEL1_TOPIC_ARN: ${{ vars.SENTINEL1_TOPIC_ARN }}
           SENTINEL2_TOPIC_ARN: ${{ vars.SENTINEL2_TOPIC_ARN }}
           HYP3_API: ${{ vars.HYP3_API }}
           HYP3_JOBS_TABLE: ${{ vars.HYP3_JOBS_TABLE }}

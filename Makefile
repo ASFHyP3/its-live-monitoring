@@ -13,7 +13,7 @@ IMAGE_TAG = $(subst +,_,$(SDIST_VERSION))
 endif
 
 LANDSAT_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-landsat-test
-SENITNEL1_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-sentinel1-test
+SENTINEL1_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-sentinel1-test
 SENTINEL2_TOPIC_ARN ?= arn:aws:sns:eu-west-1:986442313181:its-live-notify-sentinel2-test
 
 install:
@@ -34,7 +34,7 @@ landsat-integration:
 
 sentinel1-integration:
 	export AWS_PAGER='' && \
-	$(foreach file, $(wildcard tests/integration/sentinel1*.json), aws sns publish --profile saml-pub --topic-arn ${SENITNEL1_TOPIC_ARN} --message file://${file} --output json;)
+	$(foreach file, $(wildcard tests/integration/sentinel1*.json), aws sns publish --profile saml-pub --topic-arn ${SENTINEL1_TOPIC_ARN} --message file://${file} --output json;)
 
 sentinel2-integration:
 	export AWS_PAGER='' && \
