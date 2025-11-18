@@ -70,7 +70,6 @@ def hyp3_batch_factory(hyp3_job_factory):
     return create_hyp3_batch
 
 
-@mock_aws
 @pytest.fixture
 def tables():
     table_properties = {

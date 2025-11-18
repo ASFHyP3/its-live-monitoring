@@ -133,7 +133,7 @@ def get_sentinel1_pairs_for_reference_scene(
     reference: ASFProduct,
     *,
     max_pair_separation: int = SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS,
-) -> pd.DataFrame:
+) -> gpd.GeoDataFrame:
     """Generate potential ITS_LIVE velocity pairs for a given Sentinel-1 scene.
 
     Args:
@@ -170,4 +170,4 @@ def get_sentinel1_pairs_for_reference_scene(
         if len(pair_data) == 0:
             return gpd.GeoDataFrame({'reference': [], 'reference_acquisition': [], 'secondary': [], 'job_name': []})
 
-    return pd.DataFrame(pair_data, columns=['reference', 'reference_acquisition', 'secondary', 'job_name'])
+    return gpd.GeoDataFrame(pair_data, columns=['reference', 'reference_acquisition', 'secondary', 'job_name'])
