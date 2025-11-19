@@ -2,6 +2,9 @@ Parameters:
   LandsatTopicArn:
     Type: String
 
+  Sentinel1TopicArn:
+    Type: String
+
   Sentinel2TopicArn:
     Type: String
 
@@ -35,6 +38,10 @@ Parameters:
     Type: String
     NoEcho: true
 
+  EcrImageUri:
+    Description: ECR image URI
+    Type: String
+
 Resources:
   DeadLetterQueue:
     Type: AWS::SQS::Queue
@@ -63,7 +70,7 @@ Resources:
             Resource: !GetAtt Queue.Arn
             Condition:
               ArnEquals:
-                aws:SourceArn: [!Ref LandsatTopicArn, !Ref Sentinel2TopicArn]
+                aws:SourceArn: [!Ref LandsatTopicArn, !Ref Sentinel1TopicArn, !Ref Sentinel2TopicArn]
       Queues:
         - !Ref Queue
 
@@ -81,14 +88,28 @@ Resources:
         s3_location:
           - prefix: 's3://usgs-landsat/collection02/level-1/standard/oli-tirs/'
 
+  Sentinel1Subscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref Sentinel1TopicArn
+      Protocol: sqs
+      Endpoint: !GetAtt Queue.Arn
+      FilterPolicyScope: MessageBody
+      FilterPolicy:
+        granule_ur:
+          - suffix: '-BURST'
+
   Lambda:
     Type: AWS::Lambda::Function
     Properties:
-      Code: its_live_monitoring/src/
-      Handler: main.lambda_handler
-      MemorySize: 128
+      PackageType: Image
+      ImageConfig:
+        Command:
+          - main.lambda_handler
+      Code:
+        ImageUri: !Ref EcrImageUri
       Role: !GetAtt LambdaRole.Arn
-      Runtime: python3.12
+      MemorySize: 256
       Timeout: 900
       Environment:
         Variables:
@@ -157,6 +178,13 @@ Resources:
             Resource:
               - !Sub "arn:aws:s3:::${PublishBucket}/*"
               - !Sub "arn:aws:s3:::${PublishBucket}"
+          - Effect: Allow
+            Action:
+              - ecr:BatchGetImage
+              - ecr:BatchCheckLayerAvailability
+              - ecr:GetAuthorizationToken
+              - ecr:GetDownloadUrlForLayer
+            Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*"
 
   StatusMessages:
     Type: AWS::CloudFormation::Stack
@@ -166,6 +194,7 @@ Resources:
         QueueName: !GetAtt DeadLetterQueue.QueueName
         MattermostPAT: !Ref MattermostPAT
         LambdaLoggingLevel: !Ref LambdaLoggingLevel
+        EcrImageUri: !Ref EcrImageUri
       TemplateURL: status-messages/cloudformation.yml
 
 Outputs:

@@ -13,7 +13,7 @@ Resources:
       Protocol: sqs
       Endpoint: !Ref ItsLiveMonitoringQueueArn
       FilterPolicyScope: MessageBody
-      FilterPolicy: |
-        {
-          "name": [{"prefix": "S2A_MSIL1C_"}, {"prefix": "S2B_MSIL1C_"}]
-        }
+      FilterPolicy:
+        name:
+          - prefix: 'S2A_MSIL1C_'
+          - prefix: 'S2B_MSIL1C_'

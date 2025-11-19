@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0]
+### Added
+- Support for processing Sentinel-1 SNS messages and submitting jobs to hyp3-its-live has been added.
+  - When deploying the CloudFormation template, the Sentinel-1 SNS Topic ARN must be specified with the `Sentinel1TopicArn` parameter.
+  - ⚠️ Sentinel-1 jobs will _not_ be deduplicated against existing products in the publication S3 bucket because the synthetic SAFE names produced by `burst2safe` are not easily predicted.
+- Lambda functions deployment packages have been switched to container images instead of binary zips. 
+  - When deploying the CloudFormation template, the lambda container image URI must be specified with the `EcrImageUri` parameter.
+- Added the make target `image` for building the lambda container image. 
+
+### Changed
+- The `test` make target has been renamed to `tests` due to frequent miss-use.
+- The GeoPandas GeoDataFrames specifying image pair lists must now specify the job name for each pair in the `job_name` column.
+- All datasets will now submit HyP3 jobs using the `reference` and `secondary` scene list parameters instead of the deprecated `granules` parameter. Deduplication will still handle jobs submitted with either the `reference` and `secondary` parameters or the `granules` parameter.
+- The `-v`/`--verbose` argument to `main.py` can be specified multiple times to first turn on debug logging for its-live-monitoring and second turn on verbose logging for `asf_search`.
+
+### Removed
+- The no-longer used `install-lambda-deps` make target has been removed.
+
 ## [0.5.11]
 ### Added
 - Add `mypy` to static analysis workflow.

@@ -1,0 +1,26 @@
+name: Static analysis
+
+on: push
+
+jobs:
+  call-ruff-workflow:
+    uses: ASFHyP3/actions/.github/workflows/reusable-ruff.yml@v0.21.0
+    permissions:
+      contents: read
+
+  call-mypy-workflow:
+    uses: ASFHyP3/actions/.github/workflows/reusable-mypy.yml@v0.21.0
+    permissions:
+      contents: read
+
+  cfn-lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.12
+      - run: make install
+      - run: make cfn-lint

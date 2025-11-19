@@ -8,6 +8,8 @@ inputs:
     required: true
   LANDSAT_TOPIC_ARN:
     required: true
+  SENTINEL1_TOPIC_ARN:
+    required: true
   SENTINEL2_TOPIC_ARN:
     required: true
   HYP3_API:
@@ -24,14 +26,12 @@ inputs:
     required: true
   MATTERMOST_PAT:
     required: true
+  ECR_IMAGE_URI:
+    required: true
 
 runs:
   using: composite
   steps:
-    - name: Install
-      shell: bash
-      run: make install-lambda-deps
-
     - name: Package and deploy
       shell: bash
       run: |
@@ -46,6 +46,7 @@ runs:
           --capabilities CAPABILITY_IAM \
           --parameter-overrides \
             LandsatTopicArn=${{ inputs.LANDSAT_TOPIC_ARN }} \
+            Sentinel1TopicArn=${{ inputs.SENTINEL1_TOPIC_ARN }} \
             Sentinel2TopicArn=${{ inputs.SENTINEL2_TOPIC_ARN }} \
             Hyp3Api=${{ inputs.HYP3_API }} \
             Hyp3JobsTable=${{ inputs.HYP3_JOBS_TABLE }} \
@@ -53,7 +54,8 @@ runs:
             EarthdataUsername=${{ inputs.EARTHDATA_USERNAME }} \
             EarthdataPassword=${{ inputs.EARTHDATA_PASSWORD }} \
             PublishBucket=${{ inputs.PUBLISH_BUCKET }} \
-            MattermostPAT=${{ inputs.MATTERMOST_PAT }}
+            MattermostPAT=${{ inputs.MATTERMOST_PAT }} \
+            EcrImageUri=${{ inputs.ECR_IMAGE_URI }}
 
         export CF_TEMPLATE_BUCKET=${{ inputs.CF_TEMPLATE_BUCKET }}
         export ITS_LIVE_MONITORING_QUEUE_ARN=$( \

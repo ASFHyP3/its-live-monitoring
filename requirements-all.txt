@@ -1,8 +1,9 @@
 -r requirements-its_live_monitoring.txt
 -r requirements-status-messages.txt
-cfn-lint==1.22.1
-ruff
-mypy
-pytest==8.3.4
-responses==0.25.3
-moto==5.0.23
+cfn-lint==1.40.3
+ruff==0.14.3
+moto==5.1.16
+mypy==1.18.2
+pytest==8.4.2
+responses==0.25.8
+setuptools_scm==9.2.2
