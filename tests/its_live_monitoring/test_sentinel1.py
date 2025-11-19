@@ -53,9 +53,10 @@ def test_get_frame_stacks(mock_asf_search, asf_product_factory, asf_stack_factor
     start_time = '2025-10-03T15:49:00+00:00'
     reference = asf_product_factory(scene_name, full_burst_id, polarization, start_time)
 
-
     max_pair_seperation_in_days = 12
-    expected_stacks = asf_stack_factory(scene_name, full_burst_id, days_seperation=range(0, max_pair_seperation_in_days+1, 6))
+    expected_stacks = asf_stack_factory(
+        scene_name, full_burst_id, days_seperation=range(0, max_pair_seperation_in_days + 1, 6)
+    )
     mock_asf_search.side_effect = [*expected_stacks]
 
     df = sentinel1.get_frame_stacks(reference, max_pair_separation=max_pair_seperation_in_days)
@@ -68,8 +69,9 @@ def test_get_frame_stacks(mock_asf_search, asf_product_factory, asf_stack_factor
     with pytest.raises(ValueError, match=r'No bursts found in *'):
         sentinel1.get_frame_stacks(reference, max_pair_separation=max_pair_seperation_in_days)
 
-
-    expected_stacks = asf_stack_factory(scene_name, full_burst_id, days_seperation=range(6, max_pair_seperation_in_days+1, 6))
+    expected_stacks = asf_stack_factory(
+        scene_name, full_burst_id, days_seperation=range(6, max_pair_seperation_in_days + 1, 6)
+    )
     mock_asf_search.side_effect = [*expected_stacks]
     with pytest.raises(ValueError, match=r'No reference *'):
         sentinel1.get_frame_stacks(reference, max_pair_separation=max_pair_seperation_in_days)
@@ -80,18 +82,17 @@ def test_get_frame_stacks(mock_asf_search, asf_product_factory, asf_stack_factor
         sentinel1.get_frame_stacks(reference, max_pair_separation=max_pair_seperation_in_days)
 
 
-
 def test_frame_qualifies_for_sentinel1_processing() -> None:
     frame_id = 56
     df = pd.DataFrame(
         data=[
-            "001_000443_IW1",
-            "001_000444_IW1",
-            "001_000445_IW1",
-            "001_000446_IW1",
-            "001_000447_IW1",
-            "001_000448_IW1",
-            "001_000449_IW1",
+            '001_000443_IW1',
+            '001_000444_IW1',
+            '001_000445_IW1',
+            '001_000446_IW1',
+            '001_000447_IW1',
+            '001_000448_IW1',
+            '001_000449_IW1',
         ],
         columns=['fullBurstID'],
     )
@@ -114,7 +115,9 @@ def test_get_sentinel1_pairs_for_reference_scene(mock_asf_search, asf_product_fa
     reference = asf_product_factory(scene_name, full_burst_id, polarization, start_time)
 
     max_pair_seperation_in_days = 12
-    expected_stacks = asf_stack_factory(scene_name, full_burst_id, days_seperation=range(0, max_pair_seperation_in_days+1, 6))
+    expected_stacks = asf_stack_factory(
+        scene_name, full_burst_id, days_seperation=range(0, max_pair_seperation_in_days + 1, 6)
+    )
     mock_asf_search.side_effect = [*expected_stacks]
 
     df = sentinel1.get_sentinel1_pairs_for_reference_scene(reference, max_pair_separation=max_pair_seperation_in_days)

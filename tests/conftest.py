@@ -9,7 +9,6 @@ import boto3
 import hyp3_sdk as sdk
 import pystac
 import pytest
-import pytz
 from asf_search.ASFProduct import ASFProduct
 from asf_search.ASFSearchResults import ASFSearchResults
 from dateutil.parser import parse as date_parser
@@ -21,13 +20,13 @@ from sentinel1 import BURST_IDS_TO_OPERA_FRAMES, OPERA_FRAMES_TO_BURST_IDS
 @pytest.fixture
 def pystac_item_factory():
     def create_pystac_item(
-            id: str,
-            datetime: str | dt.datetime,
-            properties: dict,
-            collection: str,
-            geometry: dict | None = None,
-            bbox: list | None = None,
-            assets: dict | None = None,
+        id: str,
+        datetime: str | dt.datetime,
+        properties: dict,
+        collection: str,
+        geometry: dict | None = None,
+        bbox: list | None = None,
+        assets: dict | None = None,
     ) -> pystac.item.Item:
         if isinstance(datetime, str):
             datetime = date_parser(datetime)
@@ -62,10 +61,10 @@ def stac_search_factory():
 @pytest.fixture
 def asf_product_factory():
     def create_asf_product(
-            scene_name: str,
-            full_burst_id: str,
-            polarization: str,
-            start_time: str | dt.datetime,
+        scene_name: str,
+        full_burst_id: str,
+        polarization: str,
+        start_time: str | dt.datetime,
     ) -> ASFProduct:
         if isinstance(start_time, str):
             start_time = date_parser(start_time)
@@ -73,18 +72,17 @@ def asf_product_factory():
         if start_time.tzinfo is None:
             start_time = start_time.replace(tzinfo=dt.UTC)
 
-
         start_time = start_time.isoformat(timespec='seconds')
 
         product = ASFProduct()
-        product.properties.update({
-            'sceneName': scene_name,
-            'startTime': start_time,
-            'polarization': polarization,
-            'burst': {
-                'fullBurstID': full_burst_id
+        product.properties.update(
+            {
+                'sceneName': scene_name,
+                'startTime': start_time,
+                'polarization': polarization,
+                'burst': {'fullBurstID': full_burst_id},
             }
-        })
+        )
         return deepcopy(product)
 
     return create_asf_product
@@ -93,9 +91,9 @@ def asf_product_factory():
 @pytest.fixture
 def asf_stack_factory(asf_product_factory):
     def create_asf_burst_stacks(
-            scene_name: str,
-            full_burst_id: str,  # track is not easily derived from scene name
-            days_seperation: range = range(0, 13, 6),
+        scene_name: str,
+        full_burst_id: str,  # track is not easily derived from scene name
+        days_seperation: range = range(0, 13, 6),
     ) -> list[ASFSearchResults]:
         _, _, _, start_time, polarization, _ = scene_name.split('_')
         start_times = [date_parser(start_time) - dt.timedelta(days=ii) for ii in days_seperation]
@@ -108,8 +106,7 @@ def asf_stack_factory(asf_product_factory):
             for burst_id in burst_ids:
                 stack = ASFSearchResults()
                 stack.data = [
-                    asf_product_factory(sn, burst_id, polarization, st)
-                    for sn, st in zip(scene_names, start_times)
+                    asf_product_factory(sn, burst_id, polarization, st) for sn, st in zip(scene_names, start_times)
                 ]
                 stacks.append(stack)
 
