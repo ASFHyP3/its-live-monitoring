@@ -4,9 +4,10 @@ The ITS_LIVE monitoring stack provides the AWS architecture to support low-laten
 
 ## Architecture overview
 
-ITS_LIVE Monitoring uses a pub-sub model for the optical missions. These Open Data on AWS datasets include SNS Topics to which messages are published for each new scene added to the dataset:
+ITS_LIVE Monitoring uses a pub-sub model all missions. Data providers publish new scene messages to SNS Topics for each new scene added to the dataset. The SNS Topics for each mission data are described on these pages:
 * Landsat: <https://registry.opendata.aws/usgs-landsat/>
 * Sentinel-2: <https://registry.opendata.aws/sentinel-2/>
+* Sentinel-1: <https://github.com/ASFHyP3/CMR-notifier>
 
 ITS_LIVE Monitoring subscribes to these messages and collects them in an SQS Queue. An AWS Lambda function consumes messages from the SQS Queue and:
 * determines if the scene in the message should be processed
@@ -26,16 +27,19 @@ conda activate its-live-monitoring
 
 A `Makefile` has been provided to run some common development steps:
 * `make static` runs the static analysis suite, including `ruff` for linting and formatting of Python code, and `cfn-lin` for linting CloudFormation.
-* `make test` runs the PyTest test suite.
+* `make tests` runs the PyTest test suite.
 
 Review the `Makefile` for a complete list of commands.
 
 ### Environment variables
 
-Many parts of this stack are controlled by environment variables. Refer to the `deploy-*.yml` GitHub Actions [workflows](.github/workflows) to see which are set upon deployment. Below is a non-exhaustive list of some environment variables that you may want to set.
+Many parts of this stack are controlled by environment variables. Below is a non-exhaustive list of some environment variables that you may want to set.
 * `HYP3_API`: The HyP3 deployment to which jobs will be submitted, e.g. https://hyp3-its-live.asf.alaska.edu.
 * `EARTHDATA_USERNAME`: Earthdata Login username for the account which will submit jobs to HyP3. In the production stack, this should the ITS_LIVE operational user; in the test stack, this should be the team testing user.
 * `EARTHDATA_PASSWORD`: Earthdata Login password for the account which will submit jobs to HyP3.
+* `JOBS_TABLE_NAME` The jobs table name for the DynamoDB database associated with the HyP3 deployment jobs are submitted to.
+
+ Refer to [`tests/cfg.env`](tests/cfg.env) for a complete list of environment variables.
 
 ### Running the Lambda functions locally
 
@@ -91,7 +95,11 @@ To submit _just_ the Landsat integration test payloads to the default Landsat te
 ```shell
 make landsat-integration
 ```
-Likewise, to submit _just_ the Sentinel-2 integration test payloads to the default Sentinel-2 test SNS topic, run:
+To submit _just_ the Sentinel-1 integration test payloads to the default Sentinel-1 test SNS topic, run:
+```shell
+make Sentinel1-integration
+```
+To submit _just_ the Sentinel-2 integration test payloads to the default Sentinel-2 test SNS topic, run:
 ```shell
 make Sentinel2-integration
 ```
@@ -99,5 +107,6 @@ make Sentinel2-integration
 or, you can submit to an alternative SNS topic like:
 ```shell
 LANDSAT_TOPIC_ARN=foobar make landsat-integration
+SENTINEL1_TOPIC_ARN=foobar make sentinel1-integration
 SENTINEL2_TOPIC_ARN=foobar make sentinel2-integration
 ```
