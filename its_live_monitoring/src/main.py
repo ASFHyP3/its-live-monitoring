@@ -289,7 +289,7 @@ def process_scene(
             pairs = get_landsat_pairs_for_reference_scene(reference)
     elif scene.startswith('S1'):
         reference = get_sentinel1_cmr_item(scene)
-        if product_qualifies_for_sentinel1_processing(reference):
+        if product_qualifies_for_sentinel1_processing(reference, log_level=logging.INFO):
             pairs = get_sentinel1_pairs_for_reference_scene(reference)
 
     if pairs is None:
