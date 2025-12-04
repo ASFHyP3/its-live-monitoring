@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.6.1]
+### Added
+- A check to ensure that an orbit file is availble for Sentinel-1 scenes
 ### Changed
 - Sentinel-1 frame overlap has been removed such that bursts that could occur in multiple opera frames now only occur in one.
 
