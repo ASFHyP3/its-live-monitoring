@@ -37,16 +37,16 @@ from sentinel2 import (
 # NOTE: Commented items will get set when submitting
 AUTORIFT_JOB_TEMPLATE = {
     'job_parameters': {
-        # 'reference': [],
-        # 'secondary': [],
+        # 'reference': list[str],
+        # 'secondary': list[str],
         'parameter_file': '/vsicurl/https://its-live-data.s3.amazonaws.com/autorift_parameters/v001/autorift_landice_0120m.shp',
-        # 'publish_bucket': null,
+        # 'publish_bucket': str | None,
         'publish_stac_prefix': 'stac-ingest',
         'use_static_files': True,
-        # 'frame_id' = int,
+        # 'frame_id' = str | None,
     },
     'job_type': 'AUTORIFT',
-    # 'name': None,
+    # 'name': str | None,
 }
 
 log = logging.getLogger('its_live_monitoring')
@@ -243,6 +243,9 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
 
         if publish_bucket := os.environ.get('PUBLISH_BUCKET', ''):
             prepared_job['job_parameters']['publish_bucket'] = publish_bucket
+
+        if name.startswith('OPERA'):
+            prepared_job['job_parameters']['frame_id'] = name.split('_')[1]
 
         prepared_jobs.append(prepared_job)
 
