@@ -3,13 +3,13 @@
 import json
 import logging
 import os
-import requests
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import asf_search as asf
 import geopandas as gpd
 import pandas as pd
+import requests
 from asf_search.ASFProduct import ASFProduct
 
 
@@ -29,7 +29,7 @@ SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS = 13
 
 
 def check_sentinel1_orbit_exists(scene: str) -> bool:
-    """Check that an orbit file is available for a Sentinel-1 SLC"""
+    """Check that an orbit file is available for a Sentinel-1 SLC."""
     api_url = 'https://s1-orbits.asf.alaska.edu/scene/'
 
     with requests.get(api_url + scene, stream=True) as response:
@@ -84,9 +84,7 @@ def get_frame_stacks(
     reference_scene = reference.properties['url'].split('/')[3]
 
     if not check_sentinel1_orbit_exists(scene=reference_scene):
-        raise ValueError(
-            f'No orbit file available yet for {reference_scene}.'
-        )
+        raise ValueError(f'No orbit file available yet for {reference_scene}.')
 
     ref_date = datetime.fromisoformat(reference.properties['startTime'])
     start = ref_date - timedelta(days=max_pair_separation, minutes=3)
