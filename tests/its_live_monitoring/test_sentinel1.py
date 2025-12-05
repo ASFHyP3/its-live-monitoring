@@ -120,8 +120,10 @@ def test_get_sentinel1_pairs_for_reference_scene(mock_asf_search, asf_product_fa
     )
     mock_asf_search.side_effect = [*expected_stacks]
 
-    with patch("sentinel1.check_sentinel1_orbit_exists", return_value=True):
-        df = sentinel1.get_sentinel1_pairs_for_reference_scene(reference, max_pair_separation=max_pair_seperation_in_days)
+    with patch('sentinel1.check_sentinel1_orbit_exists', return_value=True):
+        df = sentinel1.get_sentinel1_pairs_for_reference_scene(
+            reference, max_pair_separation=max_pair_seperation_in_days
+        )
 
     print(df.job_name.values)
     assert isinstance(df, pd.DataFrame)

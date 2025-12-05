@@ -84,12 +84,8 @@ def asf_product_factory():
             }
         )
 
-        date_str = f'{scene_name.split('_')[3]}_{scene_name.split('_')[3]}'
-        product.umm = {
-            'InputGranules': [
-                f'S1A_IW_SLC__1SDV_{date_str}_000000_000000_0000-SLC'
-            ]
-        }
+        date_str = f'{scene_name.split("_")[3]}_{scene_name.split("_")[3]}'
+        product.umm = {'InputGranules': [f'S1A_IW_SLC__1SDV_{date_str}_000000_000000_0000-SLC']}
         return deepcopy(product)
 
     return create_asf_product
