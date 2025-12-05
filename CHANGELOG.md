@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.1]
 ### Added
 - A check to ensure that an orbit file is availble for Sentinel-1 scenes
+
 ### Changed
 - Sentinel-1 frame overlap has been removed such that bursts that could occur in multiple opera frames now only occur in one.
+
+### Fixed
+- The OPERA frame ID will be added to the AUTORIFT job parameters for Sentinel-1 jobs.
 
 ## [0.6.0]
 ### Added
