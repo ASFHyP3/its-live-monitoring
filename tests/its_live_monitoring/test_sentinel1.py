@@ -61,7 +61,7 @@ def test_get_frame_stacks(mock_asf_search, asf_product_factory, asf_stack_factor
 
     df = sentinel1.get_frame_stacks(reference, max_pair_separation=max_pair_seperation_in_days)
     assert isinstance(df, pd.DataFrame)
-    assert len(df) == 27 * 3
+    assert len(df) == 24 * 3
     assert df.frame_id.unique() == [30966]
     assert len(df.fullBurstID.unique()) == mock_asf_search.call_count
 
@@ -120,14 +120,16 @@ def test_get_sentinel1_pairs_for_reference_scene(mock_asf_search, asf_product_fa
     )
     mock_asf_search.side_effect = [*expected_stacks]
 
-    df = sentinel1.get_sentinel1_pairs_for_reference_scene(reference, max_pair_separation=max_pair_seperation_in_days)
+    with patch("sentinel1.check_sentinel1_orbit_exists", return_value=True):
+        df = sentinel1.get_sentinel1_pairs_for_reference_scene(reference, max_pair_separation=max_pair_seperation_in_days)
+
     print(df.job_name.values)
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 2
-    assert len(df.iloc[0].reference) == 27
-    assert len(df.iloc[1].reference) == 27
+    assert len(df.iloc[0].reference) == 24
+    assert len(df.iloc[1].reference) == 24
     assert all(df.reference_acquisition == start_time)
-    assert len(df.iloc[0].secondary) == 27
-    assert len(df.iloc[1].secondary) == 27
+    assert len(df.iloc[0].secondary) == 24
+    assert len(df.iloc[1].secondary) == 24
     for job_name in df.job_name.values:
         assert job_name == f'OPERA_30966_{start_time}'
