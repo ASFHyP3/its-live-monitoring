@@ -81,7 +81,7 @@ def get_frame_stacks(
         df: a DataFrame of every burst product in every from for as far back in time as the max pair seperation
     """
     reference_burst_id = reference.properties['burst']['fullBurstID']
-    reference_scene = reference.properties['url'].split('/')[3]
+    reference_scene = reference.umm['InputGranules'][0].replace('-SLC', '')
 
     if not check_sentinel1_orbit_exists(scene=reference_scene):
         raise ValueError(f'No orbit file available yet for {reference_scene}.')
