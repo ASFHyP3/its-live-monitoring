@@ -9,6 +9,7 @@ from pathlib import Path
 import asf_search as asf
 import geopandas as gpd
 import pandas as pd
+import requests
 from asf_search.ASFProduct import ASFProduct
 
 
@@ -25,6 +26,18 @@ SENTINEL1_BURSTS_TO_PROCESS = json.loads(
     (Path(__file__).parent / 'data' / 'sentinel1_tiles_to_process.json').read_text()
 )
 SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS = 13
+
+
+def check_sentinel1_orbit_exists(scene: str) -> bool:
+    """Check that an orbit file is available for a Sentinel-1 SLC."""
+    api_url = 'https://s1-orbits.asf.alaska.edu/scene/'
+
+    with requests.get(api_url + scene, stream=True) as response:
+        try:
+            response.raise_for_status()
+            return True
+        except requests.exceptions.HTTPError:
+            return False
 
 
 def get_sentinel1_cmr_item(scene: str) -> ASFProduct:
@@ -68,6 +81,10 @@ def get_frame_stacks(
         df: a DataFrame of every burst product in every from for as far back in time as the max pair seperation
     """
     reference_burst_id = reference.properties['burst']['fullBurstID']
+    reference_scene = reference.umm['InputGranules'][0].replace('-SLC', '')
+
+    if not check_sentinel1_orbit_exists(scene=reference_scene):
+        raise ValueError(f'No orbit file available yet for {reference_scene}.')
 
     ref_date = datetime.fromisoformat(reference.properties['startTime'])
     start = ref_date - timedelta(days=max_pair_separation, minutes=3)
