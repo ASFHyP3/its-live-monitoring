@@ -33,7 +33,7 @@ jobs:
     outputs:
       image_uri: ${{ steps.set_outputs.outputs.IMAGE_URI }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: set env and outputs
         id: set_outputs
@@ -63,7 +63,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           build-args: "SETUPTOOLS_SCM_PRETEND_VERSION=${{ needs.call-version-info-workflow.outputs.version }}"
-          push: ${{ ! github.event.pull_request.head.repo.fork }}
+          push: ${{ ! github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]' }}
           platforms: ${{ env.PLATFORMS }}
           provenance: false
           tags: |
@@ -101,7 +101,7 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: aws-actions/configure-aws-credentials@v5
         with:
