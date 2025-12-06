@@ -63,7 +63,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           build-args: "SETUPTOOLS_SCM_PRETEND_VERSION=${{ needs.call-version-info-workflow.outputs.version }}"
-          push: ${{ ! github.event.pull_request.head.repo.fork }}
+          push: ${{ ! github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]' }}
           platforms: ${{ env.PLATFORMS }}
           provenance: false
           tags: |
