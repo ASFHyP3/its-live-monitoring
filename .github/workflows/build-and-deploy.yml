@@ -122,5 +122,4 @@ jobs:
           HYP3_JOBS_TABLE: ${{ vars.HYP3_JOBS_TABLE }}
           LAMBDA_LOGGING_LEVEL: INFO
           PUBLISH_BUCKET: ${{ vars.PUBLISH_BUCKET }}
-          MATTERMOST_PAT: ${{ secrets.MATTERMOST_PAT }}
           ECR_IMAGE_URI: ${{ needs.dockerize.outputs.image_uri }}

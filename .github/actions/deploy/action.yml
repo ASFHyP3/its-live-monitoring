@@ -24,8 +24,6 @@ inputs:
     required: true
   PUBLISH_BUCKET:
     required: true
-  MATTERMOST_PAT:
-    required: true
   ECR_IMAGE_URI:
     required: true
 
@@ -54,7 +52,6 @@ runs:
             EarthdataUsername=${{ inputs.EARTHDATA_USERNAME }} \
             EarthdataPassword=${{ inputs.EARTHDATA_PASSWORD }} \
             PublishBucket=${{ inputs.PUBLISH_BUCKET }} \
-            MattermostPAT=${{ inputs.MATTERMOST_PAT }} \
             EcrImageUri=${{ inputs.ECR_IMAGE_URI }}
 
         export CF_TEMPLATE_BUCKET=${{ inputs.CF_TEMPLATE_BUCKET }}
