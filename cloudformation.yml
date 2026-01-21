@@ -34,10 +34,6 @@ Parameters:
       - its-live-data
       - its-live-data-test
 
-  MattermostPAT:
-    Type: String
-    NoEcho: true
-
   EcrImageUri:
     Description: ECR image URI
     Type: String
@@ -185,17 +181,6 @@ Resources:
               - ecr:GetAuthorizationToken
               - ecr:GetDownloadUrlForLayer
             Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*"
-
-  StatusMessages:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      Parameters:
-        QueueURL: !Ref DeadLetterQueue
-        QueueName: !GetAtt DeadLetterQueue.QueueName
-        MattermostPAT: !Ref MattermostPAT
-        LambdaLoggingLevel: !Ref LambdaLoggingLevel
-        EcrImageUri: !Ref EcrImageUri
-      TemplateURL: status-messages/cloudformation.yml
 
 Outputs:
   ItsLiveMonitoringQueueArn:
