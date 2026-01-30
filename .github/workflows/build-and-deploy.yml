@@ -122,4 +122,6 @@ jobs:
           HYP3_JOBS_TABLE: ${{ vars.HYP3_JOBS_TABLE }}
           LAMBDA_LOGGING_LEVEL: INFO
           PUBLISH_BUCKET: ${{ vars.PUBLISH_BUCKET }}
+          STAC_ITEMS_ENDPOINT: ${{ vars.STAC_ITEMS_ENDPOINT }}
+          STAC_EXISTS_OK: ${{ vars.STAC_EXISTS_OK }}
           ECR_IMAGE_URI: ${{ needs.dockerize.outputs.image_uri }}
