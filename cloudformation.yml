@@ -34,6 +34,18 @@ Parameters:
       - its-live-data
       - its-live-data-test
 
+  StacItemsEndpoint:
+    Type: String
+    Default: "None"
+
+  StacExistsOk:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "false"
+      - "true"
+
+
   EcrImageUri:
     Description: ECR image URI
     Type: String
@@ -115,6 +127,8 @@ Resources:
           EARTHDATA_USERNAME: !Ref EarthdataUsername
           EARTHDATA_PASSWORD: !Ref EarthdataPassword
           PUBLISH_BUCKET: !Ref PublishBucket
+          STAC_ITEMS_ENDPOINT: !Ref StacItemsEndpoint
+          STAC_EXISTS_OK: !Ref StacExistsOk
 
   LambdaEventSourceMapping:
     Type: AWS::Lambda::EventSourceMapping

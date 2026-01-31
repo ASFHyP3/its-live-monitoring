@@ -26,6 +26,10 @@ inputs:
     required: true
   ECR_IMAGE_URI:
     required: true
+  STAC_ITEMS_ENDPOINT:
+    required: true
+  STAC_EXISTS_OK:
+    required: true
 
 runs:
   using: composite
@@ -52,7 +56,9 @@ runs:
             EarthdataUsername=${{ inputs.EARTHDATA_USERNAME }} \
             EarthdataPassword=${{ inputs.EARTHDATA_PASSWORD }} \
             PublishBucket=${{ inputs.PUBLISH_BUCKET }} \
-            EcrImageUri=${{ inputs.ECR_IMAGE_URI }}
+            EcrImageUri=${{ inputs.ECR_IMAGE_URI }} \
+            StacItemsEndpoint=${{ inputs.STAC_ITEMS_ENDPOINT }} \
+            StacExistsOk=${{ inputs.STAC_EXISTS_OK }}
 
         export CF_TEMPLATE_BUCKET=${{ inputs.CF_TEMPLATE_BUCKET }}
         export ITS_LIVE_MONITORING_QUEUE_ARN=$( \
