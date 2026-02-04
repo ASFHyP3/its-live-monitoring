@@ -98,7 +98,7 @@ def get_key(tile_prefixes: list[str], reference: str, secondary: str) -> str | N
     for tile_prefix in tile_prefixes:
         prefix = f'{tile_prefix}/{reference}_X_{secondary}'
         response = s3.list_objects_v2(
-            Bucket=os.environ.get('PUBLISH_BUCKET', 'its-live-data'),
+            Bucket=os.environ['PUBLISH_BUCKET'],
             Prefix=prefix,
         )
         for item in response.get('Contents', []):
@@ -325,12 +325,13 @@ def process_scene(
 
     # FIXME: Sentinel-1's file name is not easily predictable from the burst acquisitions so we can't do this yet
     # TODO: Instead of looking in the bucket, we should look in the (pending) STAC ITS_LIVE catalog
-    if len(pairs) > 0 and not scene.startswith('S1'):
-        pairs = deduplicate_s3_pairs(pairs)
+    if os.environ.get('PUBLISH_BUCKET', ''):
+        if len(pairs) > 0 and not scene.startswith('S1'):
+            pairs = deduplicate_s3_pairs(pairs)
 
-        log.info(f'Deduplicated already published pairs; {len(pairs)} remaining')
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
-            log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
+            log.info(f'Deduplicated already published pairs; {len(pairs)} remaining')
+            with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
+                log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
     jobs = sdk.Batch()
     if submit:
