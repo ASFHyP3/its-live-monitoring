@@ -256,7 +256,7 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
 
         if stac_items_endpoints := os.environ.get('STAC_ITEMS_ENDPOINT', ''):
             prepared_job['job_parameters']['stac_items_endpoint'] = _nullable_str(stac_items_endpoints)
-            prepared_job['job_parameters']['stack_exists_ok'] = _string_is_true(os.environ.get('STAC_EXISTS_OK', ''))
+            prepared_job['job_parameters']['stac_exists_ok'] = _string_is_true(os.environ.get('STAC_EXISTS_OK', ''))
 
         if name.startswith('OPERA'):
             prepared_job['job_parameters']['frame_id'] = name.split('_')[1]
