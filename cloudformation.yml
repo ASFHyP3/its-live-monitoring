@@ -34,9 +34,17 @@ Parameters:
       - its-live-data
       - its-live-data-test
 
-  MattermostPAT:
+  StacItemsEndpoint:
     Type: String
-    NoEcho: true
+    Default: "None"
+
+  StacExistsOk:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "false"
+      - "true"
+
 
   EcrImageUri:
     Description: ECR image URI
@@ -119,6 +127,8 @@ Resources:
           EARTHDATA_USERNAME: !Ref EarthdataUsername
           EARTHDATA_PASSWORD: !Ref EarthdataPassword
           PUBLISH_BUCKET: !Ref PublishBucket
+          STAC_ITEMS_ENDPOINT: !Ref StacItemsEndpoint
+          STAC_EXISTS_OK: !Ref StacExistsOk
 
   LambdaEventSourceMapping:
     Type: AWS::Lambda::EventSourceMapping
@@ -185,17 +195,6 @@ Resources:
               - ecr:GetAuthorizationToken
               - ecr:GetDownloadUrlForLayer
             Resource: !Sub "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*"
-
-  StatusMessages:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      Parameters:
-        QueueURL: !Ref DeadLetterQueue
-        QueueName: !GetAtt DeadLetterQueue.QueueName
-        MattermostPAT: !Ref MattermostPAT
-        LambdaLoggingLevel: !Ref LambdaLoggingLevel
-        EcrImageUri: !Ref EcrImageUri
-      TemplateURL: status-messages/cloudformation.yml
 
 Outputs:
   ItsLiveMonitoringQueueArn:

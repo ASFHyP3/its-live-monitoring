@@ -41,9 +41,10 @@ AUTORIFT_JOB_TEMPLATE = {
         # 'secondary': list[str],
         'parameter_file': '/vsicurl/https://its-live-data.s3.amazonaws.com/autorift_parameters/v001/autorift_landice_0120m.shp',
         # 'publish_bucket': str | None,
-        'publish_stac_prefix': 'stac-ingest',
         'use_static_files': True,
         # 'frame_id' = str | None,
+        # 'stac_items_endpoint': str | None,
+        # 'stac_exists_ok': bool,
     },
     'job_type': 'AUTORIFT',
     # 'name': str | None,
@@ -97,7 +98,7 @@ def get_key(tile_prefixes: list[str], reference: str, secondary: str) -> str | N
     for tile_prefix in tile_prefixes:
         prefix = f'{tile_prefix}/{reference}_X_{secondary}'
         response = s3.list_objects_v2(
-            Bucket=os.environ.get('PUBLISH_BUCKET', 'its-live-data'),
+            Bucket=os.environ['PUBLISH_BUCKET'],
             Prefix=prefix,
         )
         for item in response.get('Contents', []):
@@ -233,6 +234,15 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return pairs.reset_index()
 
 
+def _nullable_str(s: str) -> str | None:
+    s = s.replace('None', '').strip()
+    return s if s else None
+
+
+def _string_is_true(s: str) -> bool:
+    return s.lower() == 'true'
+
+
 def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: D103
     prepared_jobs = []
     for reference, secondary, name in pairs[['reference', 'secondary', 'job_name']].itertuples(index=False):
@@ -242,7 +252,11 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
         prepared_job['job_parameters']['secondary'] = secondary
 
         if publish_bucket := os.environ.get('PUBLISH_BUCKET', ''):
-            prepared_job['job_parameters']['publish_bucket'] = publish_bucket
+            prepared_job['job_parameters']['publish_bucket'] = _nullable_str(publish_bucket)
+
+        if stac_items_endpoints := os.environ.get('STAC_ITEMS_ENDPOINT', ''):
+            prepared_job['job_parameters']['stac_items_endpoint'] = _nullable_str(stac_items_endpoints)
+            prepared_job['job_parameters']['stac_exists_ok'] = _string_is_true(os.environ.get('STAC_EXISTS_OK', ''))
 
         if name.startswith('OPERA'):
             prepared_job['job_parameters']['frame_id'] = name.split('_')[1]
@@ -311,12 +325,13 @@ def process_scene(
 
     # FIXME: Sentinel-1's file name is not easily predictable from the burst acquisitions so we can't do this yet
     # TODO: Instead of looking in the bucket, we should look in the (pending) STAC ITS_LIVE catalog
-    if len(pairs) > 0 and not scene.startswith('S1'):
-        pairs = deduplicate_s3_pairs(pairs)
+    if os.environ.get('PUBLISH_BUCKET', ''):
+        if len(pairs) > 0 and not scene.startswith('S1'):
+            pairs = deduplicate_s3_pairs(pairs)
 
-        log.info(f'Deduplicated already published pairs; {len(pairs)} remaining')
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
-            log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
+            log.info(f'Deduplicated already published pairs; {len(pairs)} remaining')
+            with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
+                log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
     jobs = sdk.Batch()
     if submit:

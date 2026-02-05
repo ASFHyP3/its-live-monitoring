@@ -4,9 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0]
+## Added
+- `StacItemsEndpoint` and `StacExistsOk` cloudformation parameters to allow publishing STAC items directly to a STAC catalog. Accordingly:
+  - `STAC_ITEMS_ENDPOINT` and `STAC_EXISTS_OK` environment variables are set for the monitoring lambda.
+  - The cloud formation parameters are set in the build and deploy GitHub Actions workflow by the `STAC_ITEMS_ENDPOINT` and `STAC_EXISTS_OK` deploy environment variables.
+
+## Changed
+- Updated the `AUTORIFT_JOB_TEMPLATE` for [HyP3 v10.13.0+](https://github.com/ASFHyP3/hyp3/pull/3003) to allow posting/putting STAC items in the catalog instead of writing them to an alternate ingest location.
+
+### Removed
+- Support for dead-letter queue monitoring through Mattermost.
+
 ## [0.6.1]
 ### Added
-- A check to ensure that an orbit file is availble for Sentinel-1 scenes
+- A check to ensure that an orbit file is available for Sentinel-1 scenes
 
 ### Changed
 - Sentinel-1 frame overlap has been removed such that bursts that could occur in multiple opera frames now only occur in one.
