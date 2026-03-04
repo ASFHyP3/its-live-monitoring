@@ -1,4 +1,5 @@
 """Functions for interacting with published ITS_LIVE products."""
+
 from datetime import datetime
 
 import geopandas as gpd
@@ -59,7 +60,7 @@ def bursts_in_item(ref_datetime: datetime, sec_datetime: datetime, item: pystac.
     return False
 
 
-def pair_exists(reference: str, secondary: str, name: str | None = None) -> bool:
+def pair_exists(reference: str, secondary: str, name: str) -> bool:
     """Determine if a velocity granule for a scene pair has already been published to the ITS_LIVE STAC catalog."""
     reference, secondary = sort_earliest_first(reference, secondary)
     ref_datetime = get_datetime(reference)

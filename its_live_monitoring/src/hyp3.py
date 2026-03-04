@@ -1,9 +1,9 @@
 """Functions for interacting with HyP3 ITS_LIVE."""
+
 import logging
 import os
 from copy import deepcopy
 from datetime import UTC, datetime
-from typing import cast
 
 import boto3
 import geopandas as gpd
@@ -32,6 +32,7 @@ AUTORIFT_JOB_TEMPLATE = {
     'job_type': 'AUTORIFT',
     # 'name': str | None,
 }
+
 
 def format_time(time: datetime) -> str:
     """Format time to ISO with UTC timezone.
@@ -91,7 +92,6 @@ def get_reference_secondary_from_job(job: sdk.Job) -> tuple[tuple | str, tuple |
         reference = granules[:1]
         secondary = granules[1:]
     else:
-
         reference = job.job_parameters['reference']
         secondary = job.job_parameters['secondary']
 
@@ -133,7 +133,7 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     if len(duplicates) > 0:
         pairs = pairs.drop(duplicates.index)
 
-    return cast(gpd.GeoDataFrame, pairs.reset_index())
+    return pairs.reset_index()
 
 
 def _nullable_str(s: str) -> str | None:
