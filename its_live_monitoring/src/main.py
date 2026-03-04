@@ -5,16 +5,12 @@ import json
 import logging
 import os
 import sys
-from copy import deepcopy
-from datetime import UTC, datetime
 
-import boto3
-import geopandas as gpd
 import hyp3_sdk as sdk
-import numpy as np
 import pandas as pd
-from boto3.dynamodb.conditions import Attr, Key
 
+from hyp3 import deduplicate_hyp3_pairs, submit_pairs_for_processing
+from itslive import deduplicate_published_pairs
 from landsat import (
     get_landsat_pairs_for_reference_scene,
     get_landsat_stac_item,
@@ -34,248 +30,8 @@ from sentinel2 import (
 )
 
 
-# NOTE: Commented items will get set when submitting
-AUTORIFT_JOB_TEMPLATE = {
-    'job_parameters': {
-        # 'reference': list[str],
-        # 'secondary': list[str],
-        'parameter_file': '/vsicurl/https://its-live-data.s3.amazonaws.com/autorift_parameters/v001/autorift_landice_0120m.shp',
-        # 'publish_bucket': str | None,
-        'use_static_files': True,
-        # 'frame_id' = str | None,
-        # 'stac_items_endpoint': str | None,
-        # 'stac_exists_ok': bool,
-    },
-    'job_type': 'AUTORIFT',
-    # 'name': str | None,
-}
-
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
-
-s3 = boto3.client('s3')
-dynamo = boto3.resource('dynamodb')
-
-
-def point_to_region(lat: float, lon: float) -> str:
-    """Returns a string (for example, N78W124) of a region name based on granule center point lat,lon."""
-    nw_hemisphere = 'S' if np.signbit(lat) else 'N'
-    ew_hemisphere = 'W' if np.signbit(lon) else 'E'
-
-    region_lat = int(np.abs(np.fix(lat / 10) * 10))
-    if region_lat == 90:  # if you are exactly at a pole, put in lat = 80 bin
-        region_lat = 80
-
-    region_lon = int(np.abs(np.fix(lon / 10) * 10))
-    if region_lon >= 180:  # if you are at the dateline, back off to the 170 bin
-        region_lon = 170
-
-    return f'{nw_hemisphere}{region_lat:02d}{ew_hemisphere}{region_lon:03d}'
-
-
-def regions_from_bounds(min_lon: float, min_lat: float, max_lon: float, max_lat: float) -> set[str]:
-    """Returns a set of all region names within a bounding box."""
-    # mypy complains about using float as index, but numpy supports it
-    lats, lons = np.mgrid[min_lat : max_lat + 10 : 10, min_lon : max_lon + 10 : 10]  # type: ignore[misc]
-    return {point_to_region(lat, lon) for lat, lon in zip(lats.ravel(), lons.ravel())}
-
-
-def get_key(tile_prefixes: list[str], reference: str, secondary: str) -> str | None:
-    """Search S3 for the key of a processed pair.
-
-    Args:
-        tile_prefixes: s3 tile path prefixes
-        reference: reference scene name
-        secondary: secondary scene name
-
-    Returns:
-        The key or None if one wasn't found.
-    """
-    # NOTE: hyp3-autorift enforces earliest scene as the reference scene and will write files accordingly,
-    #       but its-live-monitoring uses the latest scene as the reference scene, so enforce autorift convention
-    reference, secondary = sorted([reference, secondary])
-
-    for tile_prefix in tile_prefixes:
-        prefix = f'{tile_prefix}/{reference}_X_{secondary}'
-        response = s3.list_objects_v2(
-            Bucket=os.environ['PUBLISH_BUCKET'],
-            Prefix=prefix,
-        )
-        for item in response.get('Contents', []):
-            if item['Key'].endswith('.nc'):
-                return item['Key']
-    return None
-
-
-def deduplicate_s3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """Ensures that pairs aren't submitted if they already have a product in S3.
-
-    Args:
-         pairs: A GeoDataFrame containing *at least*  these columns: `reference`, `reference_acquisition`, and
-          `secondary`.
-
-    Returns:
-         The pairs GeoDataFrame with any already submitted pairs removed.
-    """
-    s2_prefix = 'velocity_image_pair/sentinel2/v02'
-    landsat_prefix = 'velocity_image_pair/landsatOLI/v02'
-    prefix = s2_prefix if pairs['reference'][0][0].startswith('S2') else landsat_prefix
-
-    regions = regions_from_bounds(*pairs['geometry'].total_bounds)
-    tile_prefixes = [f'{prefix}/{region}' for region in regions]
-
-    drop_indexes = []
-    for idx, reference, secondary in pairs[['reference', 'secondary']].itertuples():
-        if get_key(tile_prefixes=tile_prefixes, reference=reference[0], secondary=secondary[0]):
-            drop_indexes.append(idx)
-
-    return pairs.drop(index=drop_indexes)
-
-
-def format_time(time: datetime) -> str:
-    """Format time to ISO with UTC timezone.
-
-    Args:
-        time: a datetime object to format
-
-    Returns:
-        datetime: the UTC time in ISO format
-    """
-    if time.tzinfo is None:
-        raise ValueError(f'missing tzinfo for datetime {time}')
-    utc_time = time.astimezone(UTC)
-    return utc_time.isoformat(timespec='seconds')
-
-
-def query_jobs_by_status_code(status_code: str, user: str, name: str, start: datetime) -> sdk.Batch:
-    """Query dynamodb for jobs by status_code, then filter by user, name, and date.
-
-    Args:
-        status_code: `status_code` of the desired jobs
-        user: the `user_id` that submitted the jobs
-        name: the name of the jobs
-        start: the earliest submission date of the jobs
-
-    Returns:
-        sdk.Batch: batch of jobs matching the filters
-    """
-    table = dynamo.Table(os.environ['JOBS_TABLE_NAME'])
-
-    key_expression = Key('status_code').eq(status_code)
-
-    filter_expression = Attr('user_id').eq(user) & Attr('name').eq(name) & Attr('request_time').gte(format_time(start))
-
-    params = {
-        'IndexName': 'status_code',
-        'KeyConditionExpression': key_expression,
-        'FilterExpression': filter_expression,
-        'ScanIndexForward': False,
-    }
-
-    jobs = []
-    while True:
-        response = table.query(**params)
-        jobs.extend(response['Items'])
-        if (next_key := response.get('LastEvaluatedKey')) is None:
-            break
-        params['ExclusiveStartKey'] = next_key
-
-    return sdk.Batch([sdk.Job.from_dict(job) for job in jobs])
-
-
-def get_reference_secondary_from_Job(job: sdk.Job) -> tuple[tuple | str, tuple | str]:
-    """Get the reference and secondary scenes from an AUTORIFT HyP3 job."""
-    granules = job.job_parameters.get('granules')
-    if granules:
-        reference = granules[:1]
-        secondary = granules[1:]
-    else:
-        reference = job.job_parameters['reference']
-        secondary = job.job_parameters['secondary']
-
-    return tuple(reference), tuple(secondary)
-
-
-def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """Search HyP3 jobs since the reference scene's acquisition date and remove already submitted (in PENDING or RUNNING state) pairs.
-
-    Args:
-         pairs: A GeoDataFrame containing *at least*  these columns: `reference`, `reference_acquisition`, and
-          `secondary`.
-
-    Returns:
-         The pairs GeoDataFrame with any already submitted pairs removed.
-    """
-    earthdata_username = os.environ['EARTHDATA_USERNAME']
-    assert earthdata_username is not None
-
-    pending_jobs = query_jobs_by_status_code(
-        status_code='PENDING',
-        user=earthdata_username,
-        name=pairs.iloc[0].job_name,
-        start=pairs.iloc[0].reference_acquisition,
-    )
-    running_jobs = query_jobs_by_status_code(
-        status_code='RUNNING',
-        user=earthdata_username,
-        name=pairs.iloc[0].job_name,
-        start=pairs.iloc[0].reference_acquisition,
-    )
-    jobs = pending_jobs + running_jobs
-
-    df = pd.DataFrame([get_reference_secondary_from_Job(job) for job in jobs], columns=['reference', 'secondary'])
-    df = df.set_index(['reference', 'secondary'])
-    pairs = pairs.set_index(['reference', 'secondary'])
-
-    duplicates = df.loc[df.index.isin(pairs.index)]
-    if len(duplicates) > 0:
-        pairs = pairs.drop(duplicates.index)
-
-    return pairs.reset_index()
-
-
-def _nullable_str(s: str) -> str | None:
-    s = s.replace('None', '').strip()
-    return s if s else None
-
-
-def _string_is_true(s: str) -> bool:
-    return s.lower() == 'true'
-
-
-def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: D103
-    prepared_jobs = []
-    for reference, secondary, name in pairs[['reference', 'secondary', 'job_name']].itertuples(index=False):
-        prepared_job: dict = deepcopy(AUTORIFT_JOB_TEMPLATE)
-        prepared_job['name'] = name
-        prepared_job['job_parameters']['reference'] = reference
-        prepared_job['job_parameters']['secondary'] = secondary
-
-        if publish_bucket := os.environ.get('PUBLISH_BUCKET', ''):
-            prepared_job['job_parameters']['publish_bucket'] = _nullable_str(publish_bucket)
-
-        if stac_items_endpoints := os.environ.get('STAC_ITEMS_ENDPOINT', ''):
-            prepared_job['job_parameters']['stac_items_endpoint'] = _nullable_str(stac_items_endpoints)
-            prepared_job['job_parameters']['stac_exists_ok'] = _string_is_true(os.environ.get('STAC_EXISTS_OK', ''))
-
-        if name.startswith('OPERA'):
-            prepared_job['job_parameters']['frame_id'] = name.split('_')[1]
-
-        prepared_jobs.append(prepared_job)
-
-    log.debug(prepared_jobs)
-
-    hyp3 = sdk.HyP3(
-        os.environ.get('HYP3_API', 'https://hyp3-its-live-test.asf.alaska.edu'),
-        username=os.environ.get('EARTHDATA_USERNAME'),
-        password=os.environ.get('EARTHDATA_PASSWORD'),
-    )
-
-    jobs = sdk.Batch()
-    for batch in sdk.util.chunk(prepared_jobs):
-        jobs += hyp3.submit_prepared_jobs(batch)
-
-    return jobs
 
 
 def process_scene(
@@ -323,15 +79,12 @@ def process_scene(
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
             log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
-    # FIXME: Sentinel-1's file name is not easily predictable from the burst acquisitions so we can't do this yet
-    # TODO: Instead of looking in the bucket, we should look in the (pending) STAC ITS_LIVE catalog
-    if os.environ.get('PUBLISH_BUCKET', ''):
-        if len(pairs) > 0 and not scene.startswith('S1'):
-            pairs = deduplicate_s3_pairs(pairs)
+    if len(pairs) > 0:
+        pairs = deduplicate_published_pairs(pairs)
 
-            log.info(f'Deduplicated already published pairs; {len(pairs)} remaining')
-            with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
-                log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
+        log.info(f'Deduplicated published ITS_LIVE pairs; {len(pairs)} remaining')
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
+            log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
     jobs = sdk.Batch()
     if submit:

@@ -1,7 +1,11 @@
+"""Functions for interacting with published ITS_LIVE products."""
 from datetime import datetime
 
+import geopandas as gpd
 import pystac
 import pystac_client
+
+from sentinel1 import get_safe_acquisition_times
 
 
 ITS_LIVE_CATALOG_API = 'https://stac.itslive.cloud/'
@@ -11,6 +15,7 @@ ITS_LIVE_COLLECTION = ITS_LIVE_CATALOG.get_collection(ITS_LIVE_COLLECTION_NAME)
 
 
 def get_datetime(scene_name: str) -> datetime:
+    """Get the acquisition start time from a Landsat, Sentinel-1 (SLC or Burst), or Sentinel-2 scene name."""
     if 'BURST' in scene_name:
         return datetime.strptime(scene_name[14:29], '%Y%m%dT%H%M%S')
     if scene_name.startswith('S1'):
@@ -25,16 +30,8 @@ def get_datetime(scene_name: str) -> datetime:
     raise ValueError(f'Unsupported scene format: {scene_name}')
 
 
-def get_safe_acquisition_times(safe_name: str) -> tuple[datetime, datetime]:
-    if not safe_name.startswith('S1'):
-        raise ValueError(f'Only Sentinel-1 SAFEs are supported: {safe_name}')
-
-    start_time = datetime.strptime(safe_name[17:32], '%Y%m%dT%H%M%S')
-    stop_time = datetime.strptime(safe_name[33:48], '%Y%m%dT%H%M%S')
-    return start_time, stop_time
-
-
 def sort_earliest_first(reference: str, secondary: str) -> tuple[str, str]:
+    """Sort reference and secondary scene names according to the ITS_LIVE convention."""
     ref_datetime = get_datetime(reference)
     sec_datetime = get_datetime(secondary)
 
@@ -45,6 +42,11 @@ def sort_earliest_first(reference: str, secondary: str) -> tuple[str, str]:
 
 
 def bursts_in_item(ref_datetime: datetime, sec_datetime: datetime, item: pystac.Item) -> bool:
+    """Determines if the reference and secondary burst pairs fall within an ITS_LIVE granules.
+
+    ITS_LIVE granules for Sentinel-1 report the synthetic burst2safe name for scene_1 (reference), scene_2 (secondary),
+    so we must check and see if the bursts' acquisition start times falls with the start,stop time reported in the name.
+    """
     scene_1, scene_2 = sort_earliest_first(item.properties['scene_1_id'], item.properties['scene_2_id'])
 
     scene_1_start, scene_1_stop = get_safe_acquisition_times(scene_1)
@@ -58,10 +60,10 @@ def bursts_in_item(ref_datetime: datetime, sec_datetime: datetime, item: pystac.
 
 
 def pair_exists(reference: str, secondary: str, name: str | None = None) -> bool:
+    """Determine if a velocity granule for a scene pair has already been published to the ITS_LIVE STAC catalog."""
     reference, secondary = sort_earliest_first(reference, secondary)
     ref_datetime = get_datetime(reference)
     sec_datetime = get_datetime(secondary)
-
 
     if reference.startswith('S1'):
         frame = name.split('_')[1]
@@ -98,3 +100,21 @@ def pair_exists(reference: str, secondary: str, name: str | None = None) -> bool
     if items:
         return True
     return False
+
+
+def deduplicate_published_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Ensures that pairs aren't submitted if they already have a product in S3.
+
+    Args:
+         pairs: A GeoDataFrame containing *at least*  these columns: `reference`, `reference_acquisition`, and
+          `secondary`.
+
+    Returns:
+         The pairs GeoDataFrame with any already submitted pairs removed.
+    """
+    drop_indexes = []
+    for idx, reference, secondary, name in pairs[['reference', 'secondary', 'job_name']].itertuples():
+        if pair_exists(reference, secondary, name):
+            drop_indexes.append(idx)
+
+    return pairs.drop(index=drop_indexes)
