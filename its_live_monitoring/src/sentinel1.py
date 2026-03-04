@@ -28,6 +28,16 @@ SENTINEL1_BURSTS_TO_PROCESS = json.loads(
 SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS = 13
 
 
+def get_safe_acquisition_times(safe_name: str) -> tuple[datetime, datetime]:
+    """Get the start and stop times for a Sentinel-1 SLC from the SAFE name."""
+    if not safe_name.startswith('S1'):
+        raise ValueError(f'Only Sentinel-1 SAFEs are supported: {safe_name}')
+
+    start_time = datetime.strptime(safe_name[17:32], '%Y%m%dT%H%M%S')
+    stop_time = datetime.strptime(safe_name[33:48], '%Y%m%dT%H%M%S')
+    return start_time, stop_time
+
+
 def check_sentinel1_orbit_exists(scene: str) -> bool:
     """Check that an orbit file is available for a Sentinel-1 SLC."""
     api_url = 'https://s1-orbits.asf.alaska.edu/scene/'

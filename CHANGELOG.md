@@ -4,13 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0]
+### Added
+- An `itslive` module with functions to deduplicate already published pairs based on the STAC catalog.
+
+### Changed
+- `deduplicate_hyp3_pairs`, `submit_pairs_for_processing`, and other HyP3 specific functionality has been moved to the `hyp3` module from `main`. 
+
+### Fixed
+- Sentinel-1 burst or SLC image pairs are now deduplicated against already published ITS_LIVE pairs in the STAC catalog.See [#331](https://github.com/ASFHyP3/its-live-monitoring/issues/331) for more info.
+
+### Removed
+- `deduplicate_s3_pairs` and supporting functions in favor of `itslive.deduplicate_published_pairs`.
+
 ## [0.7.0]
-## Added
+### Added
 - `StacItemsEndpoint` and `StacExistsOk` cloudformation parameters to allow publishing STAC items directly to a STAC catalog. Accordingly:
   - `STAC_ITEMS_ENDPOINT` and `STAC_EXISTS_OK` environment variables are set for the monitoring lambda.
   - The cloud formation parameters are set in the build and deploy GitHub Actions workflow by the `STAC_ITEMS_ENDPOINT` and `STAC_EXISTS_OK` deploy environment variables.
 
-## Changed
+### Changed
 - Updated the `AUTORIFT_JOB_TEMPLATE` for [HyP3 v10.13.0+](https://github.com/ASFHyP3/hyp3/pull/3003) to allow posting/putting STAC items in the catalog instead of writing them to an alternate ingest location.
 
 ### Removed

@@ -7,6 +7,16 @@ import pytest
 import sentinel1
 
 
+def test_get_safe_acquisition_times():
+    # TODO
+    pass
+
+
+def test_check_sentinel1_orbit_exits():
+    # TODO
+    pass
+
+
 @patch('sentinel1.asf.granule_search')
 def test_get_sentinel1_cmr_item(mock_asf_granule_search, asf_product_factory) -> None:
     scene_name = 'S1_247728_IW1_20251003T154900_VV_657C-BURST'
