@@ -24,7 +24,7 @@ NISAR_MAX_PAIR_SEPARATION_IN_DAYS = 183  # 6 months
 
 
 def get_nisar_cmr_item(scene: str) -> ASFProduct:
-    """Get the CMR Metadata fora  given NISAR granule."""
+    """Get the CMR Metadata for a given NISAR granule."""
     results = asf.product_search(scene)
 
     if len(results) == 0:

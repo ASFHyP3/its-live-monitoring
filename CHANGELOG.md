@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.8.0]
 ### Added
+- Support for processing NISAR SNS messages and submitting jobs to hyp3-its-live has been added, but no NISAR topic has been subscribed because NISAR data is still uncalibrated.
+  - NISAR specific functions have been added to a new `nisar` module.
 - An `itslive` module with functions to deduplicate already published pairs based on the STAC catalog.
 
 ### Changed
