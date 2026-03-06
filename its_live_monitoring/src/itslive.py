@@ -16,7 +16,7 @@ ITS_LIVE_COLLECTION = ITS_LIVE_CATALOG.get_collection(ITS_LIVE_COLLECTION_NAME)
 
 
 def get_datetime(scene_name: str) -> datetime:
-    """Get the acquisition start time from a Landsat, Sentinel-1 (SLC or Burst), or Sentinel-2 scene name."""
+    """Get the acquisition start time from a Landsat, Sentinel-1 (SLC or Burst), or Sentinel-2 or NISAR scene name."""
     if 'BURST' in scene_name:
         return datetime.strptime(scene_name[14:29], '%Y%m%dT%H%M%S')
     if scene_name.startswith('S1'):
@@ -27,6 +27,8 @@ def get_datetime(scene_name: str) -> datetime:
         return datetime.strptime(scene_name.split('_')[2], '%Y%m%d')
     if scene_name.startswith('L'):
         return datetime.strptime(scene_name[17:25], '%Y%m%d')
+    if scene_name.startswith('NISAR'):
+        return datetime.strptime(scene_name.split('_')[11], '%Y%m%dT%H%M%S')
 
     raise ValueError(f'Unsupported scene format: {scene_name}')
 
