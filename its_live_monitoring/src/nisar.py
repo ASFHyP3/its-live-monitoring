@@ -16,7 +16,7 @@ log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
 NISAR_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'data' / 'nisar_tiles_to_process.json').read_text())
 # FIXME: Which ones do we want to process?
-NISAR_PRODUCTS_TO_PROCESS = ['RSLC', 'GLSC']
+NISAR_PRODUCTS_TO_PROCESS = ['RSLC', 'GSLC']
 # NISAR_MIN_PAIR_SEPARATION_IN_DAYS = 12
 NISAR_MAX_PAIR_SEPARATION_IN_DAYS = 183  # 6 months
 
