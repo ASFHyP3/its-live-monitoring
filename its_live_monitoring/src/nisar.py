@@ -14,9 +14,7 @@ from asf_search.ASFProduct import ASFProduct
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
 
-NISAR_TILES_TO_PROCESS = json.loads(
-    (Path(__file__).parent / 'data' / 'nisar_tiles_to_process.json').read_text()
-)
+NISAR_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'data' / 'nisar_tiles_to_process.json').read_text())
 # FIXME: Which ones do we want to process?
 NISAR_PRODUCTS_TO_PROCESS = ['RSLC', 'GLSC']
 # NISAR_MIN_PAIR_SEPARATION_IN_DAYS = 12
@@ -49,7 +47,10 @@ def product_qualifies_for_nisar_processing(product: ASFProduct, log_level: int =
         return False
 
     if product.properties['processingLevel'] not in NISAR_PRODUCTS_TO_PROCESS:
-        log.log(log_level, f'{scene} disqualifies for processing because it is not a supported product type: {NISAR_PRODUCTS_TO_PROCESS}')
+        log.log(
+            log_level,
+            f'{scene} disqualifies for processing because it is not a supported product type: {NISAR_PRODUCTS_TO_PROCESS}',
+        )
         return False
 
     if tile not in NISAR_TILES_TO_PROCESS:
@@ -87,14 +88,12 @@ def get_nisar_pairs_for_reference_scene(
         relativeOrbit=reference.properties['pathNumber'],
         frame=reference.properties['frameNumber'],
         start=start,
-        end=end
+        end=end,
     )
 
     tile = '_'.join(ref_name.split('_')[5:8])
     if len(stack) == 0:
-        raise ValueError(
-            f'No NISAR scenes found in {tile} stack.'
-        )
+        raise ValueError(f'No NISAR scenes found in {tile} stack.')
 
     secondaries = [product for product in stack if product_qualifies_for_nisar_processing(product)]
     log.debug(f'Found {len(secondaries)} secondary scenes for {ref_name}')
