@@ -15,8 +15,11 @@ ITS_LIVE_COLLECTION_NAME = 'itslive-granules'
 ITS_LIVE_COLLECTION = ITS_LIVE_CATALOG.get_collection(ITS_LIVE_COLLECTION_NAME)
 
 
-def get_datetime(scene_name: str) -> datetime:
+def get_datetime(scene_name: tuple[str] | str) -> datetime:
     """Get the acquisition start time from a Landsat, Sentinel-1 (SLC or Burst), or Sentinel-2 or NISAR scene name."""
+    if isinstance(scene_name, tuple):
+        scene_name: str = scene_name[0]
+
     if 'BURST' in scene_name:
         return datetime.strptime(scene_name[14:29], '%Y%m%dT%H%M%S')
     if scene_name.startswith('S1'):
@@ -33,7 +36,7 @@ def get_datetime(scene_name: str) -> datetime:
     raise ValueError(f'Unsupported scene format: {scene_name}')
 
 
-def sort_earliest_first(reference: str, secondary: str) -> tuple[str, str]:
+def sort_earliest_first(reference: tuple[str] | str, secondary: tuple[str]| str) -> tuple[tuple[str] | str, tuple[str] | str]:
     """Sort reference and secondary scene names according to the ITS_LIVE convention."""
     ref_datetime = get_datetime(reference)
     sec_datetime = get_datetime(secondary)
@@ -62,13 +65,13 @@ def bursts_in_item(ref_datetime: datetime, sec_datetime: datetime, item: pystac.
     return False
 
 
-def pair_exists(reference: str, secondary: str, name: str) -> bool:
+def pair_exists(reference: tuple[str], secondary: tuple[str], name: str) -> bool:
     """Determine if a velocity granule for a scene pair has already been published to the ITS_LIVE STAC catalog."""
     reference, secondary = sort_earliest_first(reference, secondary)
     ref_datetime = get_datetime(reference)
     sec_datetime = get_datetime(secondary)
 
-    if reference.startswith('S1'):
+    if reference[0].startswith('S1'):
         frame = name.split('_')[1]
         results = ITS_LIVE_CATALOG.search(
             collections=[ITS_LIVE_COLLECTION_NAME],
@@ -88,7 +91,7 @@ def pair_exists(reference: str, secondary: str, name: str) -> bool:
         results = ITS_LIVE_CATALOG.search(
             collections=[ITS_LIVE_COLLECTION_NAME],
             datetime=[ref_datetime, sec_datetime],
-            query=[f'scene_1_id={reference}', f'scene_2_id={secondary}'],
+            query=[f'scene_1_id={reference[0]}', f'scene_2_id={secondary[0]}'],
         )
         items = [item for page in results.pages() for item in page]
 
