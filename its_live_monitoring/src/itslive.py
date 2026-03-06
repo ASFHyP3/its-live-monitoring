@@ -1,6 +1,7 @@
 """Functions for interacting with published ITS_LIVE products."""
 
 from datetime import datetime
+from typing import cast
 
 import geopandas as gpd
 import pystac
@@ -15,10 +16,12 @@ ITS_LIVE_COLLECTION_NAME = 'itslive-granules'
 ITS_LIVE_COLLECTION = ITS_LIVE_CATALOG.get_collection(ITS_LIVE_COLLECTION_NAME)
 
 
-def get_datetime(scene_name: tuple[str] | str) -> datetime:
+def get_datetime(scene: tuple[str] | str) -> datetime:
     """Get the acquisition start time from a Landsat, Sentinel-1 (SLC or Burst), or Sentinel-2 or NISAR scene name."""
-    if isinstance(scene_name, tuple):
-        scene_name: str = scene_name[0]
+    if isinstance(scene, tuple):
+        scene_name: str = scene[0]
+    else:
+        scene_name = scene
 
     if 'BURST' in scene_name:
         return datetime.strptime(scene_name[14:29], '%Y%m%dT%H%M%S')
@@ -36,7 +39,9 @@ def get_datetime(scene_name: tuple[str] | str) -> datetime:
     raise ValueError(f'Unsupported scene format: {scene_name}')
 
 
-def sort_earliest_first(reference: tuple[str] | str, secondary: tuple[str]| str) -> tuple[tuple[str] | str, tuple[str] | str]:
+def sort_earliest_first(
+    reference: tuple[str] | str, secondary: tuple[str] | str
+) -> tuple[tuple[str] | str, tuple[str] | str]:
     """Sort reference and secondary scene names according to the ITS_LIVE convention."""
     ref_datetime = get_datetime(reference)
     sec_datetime = get_datetime(secondary)
@@ -55,8 +60,8 @@ def bursts_in_item(ref_datetime: datetime, sec_datetime: datetime, item: pystac.
     """
     scene_1, scene_2 = sort_earliest_first(item.properties['scene_1_id'], item.properties['scene_2_id'])
 
-    scene_1_start, scene_1_stop = get_safe_acquisition_times(scene_1)
-    scene_2_start, scene_2_stop = get_safe_acquisition_times(scene_2)
+    scene_1_start, scene_1_stop = get_safe_acquisition_times(cast(str, scene_1))
+    scene_2_start, scene_2_stop = get_safe_acquisition_times(cast(str, scene_2))
 
     # Bounds need to be inclusive because burst2safe just uses the first and last bursts datetimes
     if scene_1_start <= ref_datetime <= scene_1_stop and scene_2_start <= sec_datetime <= scene_2_stop:
@@ -67,7 +72,7 @@ def bursts_in_item(ref_datetime: datetime, sec_datetime: datetime, item: pystac.
 
 def pair_exists(reference: tuple[str], secondary: tuple[str], name: str) -> bool:
     """Determine if a velocity granule for a scene pair has already been published to the ITS_LIVE STAC catalog."""
-    reference, secondary = sort_earliest_first(reference, secondary)
+    reference, secondary = cast(tuple[tuple[str], tuple[str]], sort_earliest_first(reference, secondary))
     ref_datetime = get_datetime(reference)
     sec_datetime = get_datetime(secondary)
 
