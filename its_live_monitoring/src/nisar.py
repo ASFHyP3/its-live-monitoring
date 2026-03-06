@@ -104,9 +104,9 @@ def get_nisar_pairs_for_reference_scene(
     for secondary in secondaries:
         pair_data.append(
             (
-                ref_name,
+                (ref_name,),
                 ref_date,
-                secondary.properties['sceneName'],
+                (secondary.properties['sceneName'],),
                 ref_name,
             )
         )
