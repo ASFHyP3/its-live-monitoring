@@ -16,6 +16,11 @@ from landsat import (
     get_landsat_stac_item,
     qualifies_for_landsat_processing,
 )
+from nisar import (
+    get_nisar_cmr_item,
+    get_nisar_pairs_for_reference_scene,
+    product_qualifies_for_nisar_processing,
+)
 from sentinel1 import (
     get_sentinel1_cmr_item,
     get_sentinel1_pairs_for_reference_scene,
@@ -64,6 +69,10 @@ def process_scene(
         reference = get_sentinel1_cmr_item(scene)
         if product_qualifies_for_sentinel1_processing(reference, log_level=logging.INFO):
             pairs = get_sentinel1_pairs_for_reference_scene(reference)
+    elif scene.startswith('NISAR'):
+        reference = get_nisar_cmr_item(scene)
+        if product_qualifies_for_nisar_processing(reference, log_level=logging.INFO):
+            pairs = get_nisar_pairs_for_reference_scene(reference)
 
     if pairs is None:
         return sdk.Batch()
@@ -110,6 +119,8 @@ def product_id_from_message(message: dict) -> str:
         case {'name': product_id} if product_id.startswith('S2'):
             return product_id
         case {'granule_ur': product_id} if product_id.startswith('S1'):
+            return product_id
+        case {'granule_ur': product_id} if product_id.startswith('NISAR'):
             return product_id
         case _:
             raise ValueError(f'Unable to determine product ID from message {message}')
