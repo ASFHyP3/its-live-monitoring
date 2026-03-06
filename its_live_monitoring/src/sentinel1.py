@@ -183,6 +183,7 @@ def get_sentinel1_pairs_for_reference_scene(
         assert frame_qualifies_for_sentinel1_processing(ref_products, frame_id=frame)
 
         for sec_id, sec_products in frames[:-1]:
+            # TODO: ensure same number of bursts in ref, sec.
             if frame_qualifies_for_sentinel1_processing(sec_products, frame_id=frame):
                 pair_data.append(
                     (

@@ -1,11 +1,12 @@
 # ITS_LIVE Monitoring
 
-The ITS_LIVE monitoring stack provides the AWS architecture to support low-latency production of netCDF glacier velocity products produced from Optical (Landsat 8/9, Sentinel-2) and SAR (Sentinel-1) image pairs.
+The ITS_LIVE monitoring stack provides the AWS architecture to support low-latency production of netCDF glacier velocity products produced from Optical (Landsat 8/9, Sentinel-2) and SAR (Sentinel-1, NISAR) image pairs.
 
 ## Architecture overview
 
 ITS_LIVE Monitoring uses a pub-sub model all missions. Data providers publish new scene messages to SNS Topics for each new scene added to the dataset. The SNS Topics for each mission data are described on these pages:
 * Landsat: <https://registry.opendata.aws/usgs-landsat/>
+* NISAR: <https://github.com/ASFHyP3/CMR-notifier>
 * Sentinel-2: <https://registry.opendata.aws/sentinel-2/>
 * Sentinel-1: <https://github.com/ASFHyP3/CMR-notifier>
 
@@ -95,6 +96,10 @@ To submit _just_ the Landsat integration test payloads to the default Landsat te
 ```shell
 make landsat-integration
 ```
+To submit _just_ the NISAR integration test payloads to the default NISAR test SNS topic, run:
+```shell
+make nisar-integration
+```
 To submit _just_ the Sentinel-1 integration test payloads to the default Sentinel-1 test SNS topic, run:
 ```shell
 make Sentinel1-integration
@@ -107,6 +112,7 @@ make Sentinel2-integration
 or, you can submit to an alternative SNS topic like:
 ```shell
 LANDSAT_TOPIC_ARN=foobar make landsat-integration
+NISAR_TOPIC_ARN=foobar make nisar-integration
 SENTINEL1_TOPIC_ARN=foobar make sentinel1-integration
 SENTINEL2_TOPIC_ARN=foobar make sentinel2-integration
 ```
