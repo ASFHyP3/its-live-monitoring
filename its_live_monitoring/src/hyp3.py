@@ -3,7 +3,6 @@
 import logging
 from copy import deepcopy
 from datetime import UTC, datetime
-from typing import cast
 
 import boto3
 import geopandas as gpd
@@ -114,13 +113,13 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     pending_jobs = query_jobs_by_status_code(
         status_code='PENDING',
-        user=cast(str, config.EARTHDATA_USERNAME),
+        user=config.EARTHDATA_USERNAME,
         name=pairs.iloc[0].job_name,
         start=pairs.iloc[0].reference_acquisition,
     )
     running_jobs = query_jobs_by_status_code(
         status_code='RUNNING',
-        user=cast(str, config.EARTHDATA_USERNAME),
+        user=config.EARTHDATA_USERNAME,
         name=pairs.iloc[0].job_name,
         start=pairs.iloc[0].reference_acquisition,
     )
