@@ -2,7 +2,6 @@
 
 import json
 import logging
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -10,9 +9,11 @@ import asf_search as asf
 import geopandas as gpd
 from asf_search.ASFProduct import ASFProduct
 
+import config
+
 
 log = logging.getLogger('its_live_monitoring')
-log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
+log.setLevel(config.LOGGING_LEVEL)
 
 NISAR_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'data' / 'nisar_tiles_to_process.json').read_text())
 # FIXME: Which ones do we want to process?

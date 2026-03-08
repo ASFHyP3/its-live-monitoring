@@ -1,9 +1,9 @@
 """Functions for interacting with HyP3 ITS_LIVE."""
 
 import logging
-import os
 from copy import deepcopy
 from datetime import UTC, datetime
+from typing import cast
 
 import boto3
 import geopandas as gpd
@@ -11,11 +11,14 @@ import hyp3_sdk as sdk
 import pandas as pd
 from boto3.dynamodb.conditions import Attr, Key
 
+import config
+
 
 log = logging.getLogger('its_live_monitoring')
-log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
+log.setLevel(config.LOGGING_LEVEL)
 
 dynamo = boto3.resource('dynamodb')
+table = dynamo.Table(config.HYP3_JOBS_TABLE_NAME)
 
 # NOTE: Commented items will get set when submitting
 AUTORIFT_JOB_TEMPLATE = {
@@ -61,8 +64,6 @@ def query_jobs_by_status_code(status_code: str, user: str, name: str, start: dat
     Returns:
         sdk.Batch: batch of jobs matching the filters
     """
-    table = dynamo.Table(os.environ['JOBS_TABLE_NAME'])
-
     key_expression = Key('status_code').eq(status_code)
 
     filter_expression = Attr('user_id').eq(user) & Attr('name').eq(name) & Attr('request_time').gte(format_time(start))
@@ -108,18 +109,18 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     Returns:
          The pairs GeoDataFrame with any already submitted pairs removed.
     """
-    earthdata_username = os.environ['EARTHDATA_USERNAME']
-    assert earthdata_username is not None
+    if config.EARTHDATA_USERNAME is None:
+        raise ValueError('EARTHDATA_USERNAME is required to deduplicate HyP3 pairs')
 
     pending_jobs = query_jobs_by_status_code(
         status_code='PENDING',
-        user=earthdata_username,
+        user=cast(str, config.EARTHDATA_USERNAME),
         name=pairs.iloc[0].job_name,
         start=pairs.iloc[0].reference_acquisition,
     )
     running_jobs = query_jobs_by_status_code(
         status_code='RUNNING',
-        user=earthdata_username,
+        user=cast(str, config.EARTHDATA_USERNAME),
         name=pairs.iloc[0].job_name,
         start=pairs.iloc[0].reference_acquisition,
     )
@@ -136,15 +137,6 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return pairs.reset_index()
 
 
-def _nullable_str(s: str) -> str | None:
-    s = s.replace('None', '').strip()
-    return s if s else None
-
-
-def _string_is_true(s: str) -> bool:
-    return s.lower() == 'true'
-
-
 def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: D103
     prepared_jobs = []
     for reference, secondary, name in pairs[['reference', 'secondary', 'job_name']].itertuples(index=False):
@@ -153,12 +145,12 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
         prepared_job['job_parameters']['reference'] = reference
         prepared_job['job_parameters']['secondary'] = secondary
 
-        if publish_bucket := os.environ.get('PUBLISH_BUCKET', ''):
-            prepared_job['job_parameters']['publish_bucket'] = _nullable_str(publish_bucket)
+        if config.PUBLISH_BUCKET:
+            prepared_job['job_parameters']['publish_bucket'] = config.PUBLISH_BUCKET
 
-        if stac_items_endpoints := os.environ.get('STAC_ITEMS_ENDPOINT', ''):
-            prepared_job['job_parameters']['stac_items_endpoint'] = _nullable_str(stac_items_endpoints)
-            prepared_job['job_parameters']['stac_exists_ok'] = _string_is_true(os.environ.get('STAC_EXISTS_OK', ''))
+        if config.STAC_ITEMS_ENDPOINT:
+            prepared_job['job_parameters']['stac_items_endpoint'] = config.STAC_ITEMS_ENDPOINT
+            prepared_job['job_parameters']['stac_exists_ok'] = config.STAC_EXISTS_OK
 
         if name.startswith('OPERA'):
             prepared_job['job_parameters']['frame_id'] = name.split('_')[1]
@@ -168,9 +160,9 @@ def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: 
     log.debug(prepared_jobs)
 
     hyp3 = sdk.HyP3(
-        os.environ.get('HYP3_API', 'https://hyp3-its-live-test.asf.alaska.edu'),
-        username=os.environ.get('EARTHDATA_USERNAME'),
-        password=os.environ.get('EARTHDATA_PASSWORD'),
+        api_url=config.HYP3_API,
+        username=config.EARTHDATA_USERNAME,
+        password=config.EARTHDATA_PASSWORD,
     )
 
     jobs = sdk.Batch()

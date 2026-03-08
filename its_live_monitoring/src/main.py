@@ -3,12 +3,12 @@
 import argparse
 import json
 import logging
-import os
 import sys
 
 import hyp3_sdk as sdk
 import pandas as pd
 
+import config
 from hyp3 import deduplicate_hyp3_pairs, submit_pairs_for_processing
 from itslive import deduplicate_published_pairs
 from landsat import (
@@ -36,7 +36,7 @@ from sentinel2 import (
 
 
 log = logging.getLogger('its_live_monitoring')
-log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
+log.setLevel(config.LOGGING_LEVEL)
 
 
 def process_scene(
@@ -81,14 +81,14 @@ def process_scene(
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
         log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
-    if len(pairs) > 0:
+    if len(pairs) > 0 and config.HYP3_JOBS_TABLE_NAME:
         pairs = deduplicate_hyp3_pairs(pairs)
 
         log.info(f'Deduplicated HyP3 running/pending pairs; {len(pairs)} remaining')
         with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
             log.debug(pairs.sort_values(by=['secondary'], ascending=False).loc[:, ['reference', 'secondary']])
 
-    if len(pairs) > 0:
+    if len(pairs) > 0 and config.STAC_ITEMS_ENDPOINT:
         pairs = deduplicate_published_pairs(pairs)
 
         log.info(f'Deduplicated published ITS_LIVE pairs; {len(pairs)} remaining')

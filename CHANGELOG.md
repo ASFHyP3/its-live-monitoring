@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An `itslive` module with functions to deduplicate already published pairs based on the STAC catalog.
 
 ### Changed
+- - All environment variable configuration is now centralized in a new `config` module.
+- HyP3 deduplication of pairs will be skipped if the `JOBS_TABLE_NAME` environment variable is not provided.
+- ITS_LIVE STAC deduplication of pairs will be skipped if the `STAC_ITEMS_ENDPOINT` environment variable is not provided
 - `deduplicate_hyp3_pairs`, `submit_pairs_for_processing`, and other HyP3 specific functionality has been moved to the `hyp3` module from `main`. 
 
 ### Fixed
