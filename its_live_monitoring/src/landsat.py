@@ -2,7 +2,6 @@
 
 import json
 import logging
-import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -10,6 +9,8 @@ import geopandas as gpd
 import pandas as pd
 import pystac
 import pystac_client
+
+import config
 
 
 LANDSAT_CATALOG_API = 'https://landsatlook.usgs.gov/stac-server'
@@ -22,7 +23,7 @@ LANDSAT_MAX_PAIR_SEPARATION_IN_DAYS = 544
 LANDSAT_MAX_CLOUD_COVER_PERCENT = 60
 
 log = logging.getLogger('its_live_monitoring')
-log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
+log.setLevel(config.LOGGING_LEVEL)
 
 
 def get_landsat_stac_item(scene: str) -> pystac.Item:  # noqa: D103

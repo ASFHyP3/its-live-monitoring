@@ -2,7 +2,6 @@
 
 import json
 import logging
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -12,9 +11,11 @@ import pandas as pd
 import requests
 from asf_search.ASFProduct import ASFProduct
 
+import config
+
 
 log = logging.getLogger('its_live_monitoring')
-log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
+log.setLevel(config.LOGGING_LEVEL)
 
 OPERA_FRAMES_TO_BURST_IDS = json.loads(
     (Path(__file__).parent / 'data' / 'sentinel1_opera_frame_to_burst_ids.json').read_text()
