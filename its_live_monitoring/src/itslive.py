@@ -11,7 +11,7 @@ from sentinel1 import get_safe_acquisition_times
 
 
 ITS_LIVE_CATALOG_API = 'https://stac.itslive.cloud/'
-ITS_LIVE_CATALOG = pystac_client.Client.open(ITS_LIVE_CATALOG_API)
+ITS_LIVE_CATALOG = pystac_client.Client.open(ITS_LIVE_CATALOG_API, timeout=(5, 60))
 ITS_LIVE_COLLECTION_NAME = 'itslive-granules'
 ITS_LIVE_COLLECTION = ITS_LIVE_CATALOG.get_collection(ITS_LIVE_COLLECTION_NAME)
 
@@ -96,7 +96,13 @@ def pair_exists(reference: tuple[str], secondary: tuple[str], name: str) -> bool
         results = ITS_LIVE_CATALOG.search(
             collections=[ITS_LIVE_COLLECTION_NAME],
             datetime=[ref_datetime, sec_datetime],
-            query=[f'scene_1_id={reference[0]}', f'scene_2_id={secondary[0]}'],
+            filter={
+                'op': 'and',
+                'args': [
+                    {'op': '=', 'args': [{'property': 'scene_1_id'}, reference[0]]},
+                    {'op': '=', 'args': [{'property': 'scene_2_id'}, secondary[0]]},
+                ],
+            },
         )
         items = [item for page in results.pages() for item in page]
 
