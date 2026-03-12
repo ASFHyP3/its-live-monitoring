@@ -134,6 +134,7 @@ Resources:
       Role: !GetAtt LambdaRole.Arn
       MemorySize: 256
       Timeout: 900
+      ReservedConcurrentExecutions: 10
       Environment:
         Variables:
           HYP3_API: !Ref Hyp3Api
