@@ -11,7 +11,7 @@ from sentinel1 import get_safe_acquisition_times
 
 
 ITS_LIVE_CATALOG_API = 'https://stac.itslive.cloud/'
-ITS_LIVE_CATALOG = pystac_client.Client.open(ITS_LIVE_CATALOG_API)
+ITS_LIVE_CATALOG = pystac_client.Client.open(ITS_LIVE_CATALOG_API, timeout=(5, 60))
 ITS_LIVE_COLLECTION_NAME = 'itslive-granules'
 ITS_LIVE_COLLECTION = ITS_LIVE_CATALOG.get_collection(ITS_LIVE_COLLECTION_NAME)
 

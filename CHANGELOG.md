@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Monitoring lambda function now uses reserved concurrency to set a maximum number of concurrent executions so it doesn't overwhelm the STAC catalog instance.
+- pystac-client is now configured with connection and read timeouts when searching the ITS_LIVE catalog so it does not hang indefinitely waiting for a response.
 - Sentinel-1 burst or SLC image pairs are now deduplicated against already published ITS_LIVE pairs in the STAC catalog.See [#331](https://github.com/ASFHyP3/its-live-monitoring/issues/331) for more info.
 
 ### Removed
