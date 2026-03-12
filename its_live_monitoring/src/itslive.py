@@ -96,7 +96,13 @@ def pair_exists(reference: tuple[str], secondary: tuple[str], name: str) -> bool
         results = ITS_LIVE_CATALOG.search(
             collections=[ITS_LIVE_COLLECTION_NAME],
             datetime=[ref_datetime, sec_datetime],
-            query=[f'scene_1_id={reference[0]}', f'scene_2_id={secondary[0]}'],
+            filter={
+                'op': 'and',
+                'args': [
+                    {'op': '=', 'args': [{'property': 'scene_1_id'}, reference]},
+                    {'op': '=', 'args': [{'property': 'scene_2_id'}, secondary]},
+                ],
+            },
         )
         items = [item for page in results.pages() for item in page]
 
