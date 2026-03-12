@@ -99,8 +99,8 @@ def pair_exists(reference: tuple[str], secondary: tuple[str], name: str) -> bool
             filter={
                 'op': 'and',
                 'args': [
-                    {'op': '=', 'args': [{'property': 'scene_1_id'}, reference]},
-                    {'op': '=', 'args': [{'property': 'scene_2_id'}, secondary]},
+                    {'op': '=', 'args': [{'property': 'scene_1_id'}, reference[0]]},
+                    {'op': '=', 'args': [{'property': 'scene_2_id'}, secondary[0]]},
                 ],
             },
         )
