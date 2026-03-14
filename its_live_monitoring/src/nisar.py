@@ -4,7 +4,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 import asf_search as asf
 import geopandas as gpd
@@ -15,6 +15,8 @@ import config
 
 log = logging.getLogger('its_live_monitoring')
 log.setLevel(config.LOGGING_LEVEL)
+
+NisarPols = Literal['SH', 'SV', 'DH', 'DV', 'CL', 'CR', 'QP', 'NA']
 
 NISAR_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'data' / 'nisar_tiles_to_process.json').read_text())
 # FIXME: Which products do we want to process?
@@ -34,7 +36,7 @@ def get_nisar_cmr_item(scene: str) -> ASFProduct:
     return results[0]
 
 
-def get_nisar_polarizations_for_frequency(scene_name: str, *, frequency: Literal['A', 'B']):
+def get_nisar_polarizations_for_frequency(scene_name: str, *, frequency: Literal['A', 'B']) -> NisarPols:
     """Get the polarizations for the primary frequency band (`'A'`) and secondary frequency band (`'B'`).
 
     Args:
@@ -48,7 +50,7 @@ def get_nisar_polarizations_for_frequency(scene_name: str, *, frequency: Literal
         'A': all_pols[:2],
         'B': all_pols[2:4],
     }
-    return pols_by_frequency[frequency]
+    return cast(NisarPols, pols_by_frequency[frequency])
 
 
 def product_qualifies_for_nisar_processing(product: ASFProduct, log_level: int = logging.DEBUG) -> bool:
