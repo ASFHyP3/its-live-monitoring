@@ -4,6 +4,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Literal
 
 import asf_search as asf
 import geopandas as gpd
@@ -16,8 +17,9 @@ log = logging.getLogger('its_live_monitoring')
 log.setLevel(config.LOGGING_LEVEL)
 
 NISAR_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'data' / 'nisar_tiles_to_process.json').read_text())
-# FIXME: Which ones do we want to process?
+# FIXME: Which products do we want to process?
 NISAR_PRODUCTS_TO_PROCESS = ['RSLC', 'GSLC']
+NISAR_POLS_TO_PROCESS = ['SH', 'SV', 'DH', 'DV', 'QP']
 # NISAR_MIN_PAIR_SEPARATION_IN_DAYS = 12
 NISAR_MAX_PAIR_SEPARATION_IN_DAYS = 183  # 6 months
 
@@ -32,13 +34,29 @@ def get_nisar_cmr_item(scene: str) -> ASFProduct:
     return results[0]
 
 
-# TODO: Qualification criteria
-#   - pols?
+def get_nisar_polarizations_for_frequency(scene_name: str, *, frequency: Literal['A', 'B']):
+    """Get the polarizations for the primary frequency band (`'A'`) and secondary frequency band (`'B'`).
+
+    Args:
+        scene_name: NISAR scene name
+        frequency: Character string for the frequency band of interest
+
+    Returns: Two character string describing the polarizations in the selected frequency band
+    """
+    all_pols = scene_name.split('_')[9]
+    pols_by_frequency = {
+        'A': all_pols[:2],
+        'B': all_pols[2:4],
+    }
+    return pols_by_frequency[frequency]
+
+
 def product_qualifies_for_nisar_processing(product: ASFProduct, log_level: int = logging.DEBUG) -> bool:
     """Check if a NISAR product qualifies for processing."""
     scene = product.properties['sceneName']
-    tile = '_'.join(scene.split('_')[5:8])
     instrument = scene.split('_')[1][0]
+    tile = '_'.join(scene.split('_')[5:8])
+    pols = get_nisar_polarizations_for_frequency(scene, frequency='A')
 
     if instrument != 'L':
         log.log(
@@ -56,6 +74,10 @@ def product_qualifies_for_nisar_processing(product: ASFProduct, log_level: int =
 
     if tile not in NISAR_TILES_TO_PROCESS:
         log.log(log_level, f'{scene} disqualifies for processing because it is not from a tile containing land-ice')
+        return False
+
+    if pols not in NISAR_POLS_TO_PROCESS:
+        log.log(log_level, f'{scene} disqualifies for processing because it has the wrong polarization')
         return False
 
     log.log(log_level, f'{scene} qualifies for processing')
