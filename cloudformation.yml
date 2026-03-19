@@ -2,6 +2,9 @@ Parameters:
   LandsatTopicArn:
     Type: String
 
+  NisarTopicArn:
+    Type: String
+
   Sentinel1TopicArn:
     Type: String
 
@@ -78,7 +81,7 @@ Resources:
             Resource: !GetAtt Queue.Arn
             Condition:
               ArnEquals:
-                aws:SourceArn: [!Ref LandsatTopicArn, !Ref Sentinel1TopicArn, !Ref Sentinel2TopicArn]
+                aws:SourceArn: [!Ref LandsatTopicArn, !Ref NisarTopicArn, !Ref Sentinel1TopicArn, !Ref Sentinel2TopicArn]
       Queues:
         - !Ref Queue
 
@@ -95,6 +98,18 @@ Resources:
           - suffix: '_T2'
         s3_location:
           - prefix: 's3://usgs-landsat/collection02/level-1/standard/oli-tirs/'
+
+  NisarSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref NisarTopicArn
+      Protocol: sqs
+      Endpoint: !GetAtt Queue.Arn
+      FilterPolicyScope: MessageBody
+      FilterPolicy:
+        granule_ur:
+          - prefix: 'NISAR_L'
+
 
   Sentinel1Subscription:
     Type: AWS::SNS::Subscription
@@ -119,6 +134,7 @@ Resources:
       Role: !GetAtt LambdaRole.Arn
       MemorySize: 256
       Timeout: 900
+      ReservedConcurrentExecutions: 10
       Environment:
         Variables:
           HYP3_API: !Ref Hyp3Api

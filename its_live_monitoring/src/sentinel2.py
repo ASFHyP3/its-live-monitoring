@@ -2,7 +2,6 @@
 
 import json
 import logging
-import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -11,6 +10,8 @@ import pandas as pd
 import pystac
 import pystac_client
 import requests
+
+import config
 
 
 SENTINEL2_CATALOG_API = 'https://earth-search.aws.element84.com/v1/'
@@ -29,7 +30,7 @@ SENTINEL2_MIN_DATA_COVERAGE = 70
 SESSION = requests.Session()
 
 log = logging.getLogger('its_live_monitoring')
-log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
+log.setLevel(config.LOGGING_LEVEL)
 
 
 def raise_for_missing_in_google_cloud(scene_name: str) -> None:

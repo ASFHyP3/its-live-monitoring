@@ -8,6 +8,8 @@ inputs:
     required: true
   LANDSAT_TOPIC_ARN:
     required: true
+  NISAR_TOPIC_ARN:
+    required: true
   SENTINEL1_TOPIC_ARN:
     required: true
   SENTINEL2_TOPIC_ARN:
@@ -48,6 +50,7 @@ runs:
           --capabilities CAPABILITY_IAM \
           --parameter-overrides \
             LandsatTopicArn=${{ inputs.LANDSAT_TOPIC_ARN }} \
+            NisarTopicArn=${{ inputs.NISAR_TOPIC_ARN }} \
             Sentinel1TopicArn=${{ inputs.SENTINEL1_TOPIC_ARN }} \
             Sentinel2TopicArn=${{ inputs.SENTINEL2_TOPIC_ARN }} \
             Hyp3Api=${{ inputs.HYP3_API }} \

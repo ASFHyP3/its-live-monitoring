@@ -4,13 +4,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0]
+### Added
+- Support for processing NISAR SNS messages and submitting jobs to hyp3-its-live has been added.
+  - NISAR specific functions have been added to a new `nisar` module.
+- An `itslive` module with functions to deduplicate already published pairs based on the STAC catalog.
+
+### Changed
+- All environment variable configuration is now centralized in a new `config` module.
+- HyP3 deduplication of pairs will be skipped if the `JOBS_TABLE_NAME` environment variable is not provided.
+- ITS_LIVE STAC deduplication of pairs will be skipped if the `STAC_ITEMS_ENDPOINT` environment variable is not provided
+- `deduplicate_hyp3_pairs`, `submit_pairs_for_processing`, and other HyP3 specific functionality has been moved to the `hyp3` module from `main`. 
+
+### Fixed
+- Monitoring lambda function now uses reserved concurrency to set a maximum number of concurrent executions so it doesn't overwhelm the STAC catalog instance.
+- pystac-client is now configured with connection and read timeouts when searching the ITS_LIVE catalog so it does not hang indefinitely waiting for a response.
+- Sentinel-1 burst or SLC image pairs are now deduplicated against already published ITS_LIVE pairs in the STAC catalog.See [#331](https://github.com/ASFHyP3/its-live-monitoring/issues/331) for more info.
+
+### Removed
+- `deduplicate_s3_pairs` and supporting functions in favor of `itslive.deduplicate_published_pairs`.
+
 ## [0.7.0]
-## Added
+### Added
 - `StacItemsEndpoint` and `StacExistsOk` cloudformation parameters to allow publishing STAC items directly to a STAC catalog. Accordingly:
   - `STAC_ITEMS_ENDPOINT` and `STAC_EXISTS_OK` environment variables are set for the monitoring lambda.
   - The cloud formation parameters are set in the build and deploy GitHub Actions workflow by the `STAC_ITEMS_ENDPOINT` and `STAC_EXISTS_OK` deploy environment variables.
 
-## Changed
+### Changed
 - Updated the `AUTORIFT_JOB_TEMPLATE` for [HyP3 v10.13.0+](https://github.com/ASFHyP3/hyp3/pull/3003) to allow posting/putting STAC items in the catalog instead of writing them to an alternate ingest location.
 
 ### Removed

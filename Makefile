@@ -13,6 +13,7 @@ IMAGE_TAG = $(subst +,_,$(SDIST_VERSION))
 endif
 
 LANDSAT_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-landsat-test
+NISAR_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-nisar-test
 SENTINEL1_TOPIC_ARN ?= arn:aws:sns:us-west-2:986442313181:its-live-notify-sentinel1-test
 SENTINEL2_TOPIC_ARN ?= arn:aws:sns:eu-west-1:986442313181:its-live-notify-sentinel2-test
 
@@ -32,6 +33,10 @@ landsat-integration:
 	export AWS_PAGER='' && \
 	$(foreach file, $(wildcard tests/integration/landsat*.json), aws sns publish --profile saml-pub --topic-arn ${LANDSAT_TOPIC_ARN} --message file://${file} --output json;)
 
+nisar-integration:
+	export AWS_PAGER='' && \
+	$(foreach file, $(wildcard tests/integration/nisar*.json), aws sns publish --profile saml-pub --topic-arn ${NISAR_TOPIC_ARN} --message file://${file} --output json;)
+
 sentinel1-integration:
 	export AWS_PAGER='' && \
 	$(foreach file, $(wildcard tests/integration/sentinel1*.json), aws sns publish --profile saml-pub --topic-arn ${SENTINEL1_TOPIC_ARN} --message file://${file} --output json;)
@@ -40,7 +45,7 @@ sentinel2-integration:
 	export AWS_PAGER='' && \
 	$(foreach file, $(wildcard tests/integration/sentinel2*.json), aws sns publish --region eu-west-1 --profile saml-pub --topic-arn ${SENTINEL2_TOPIC_ARN} --message file://${file} --output json;)
 
-integration: landsat-integration sentinel1-integration sentinel2-integration
+integration: landsat-integration nisar-integration sentinel1-integration sentinel2-integration
 
 static: mypy ruff cfn-lint
 

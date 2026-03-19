@@ -2,7 +2,6 @@
 
 import json
 import logging
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -12,9 +11,11 @@ import pandas as pd
 import requests
 from asf_search.ASFProduct import ASFProduct
 
+import config
+
 
 log = logging.getLogger('its_live_monitoring')
-log.setLevel(os.environ.get('LOGGING_LEVEL', 'INFO'))
+log.setLevel(config.LOGGING_LEVEL)
 
 OPERA_FRAMES_TO_BURST_IDS = json.loads(
     (Path(__file__).parent / 'data' / 'sentinel1_opera_frame_to_burst_ids.json').read_text()
@@ -26,6 +27,16 @@ SENTINEL1_BURSTS_TO_PROCESS = json.loads(
     (Path(__file__).parent / 'data' / 'sentinel1_tiles_to_process.json').read_text()
 )
 SENTINEL1_MAX_PAIR_SEPARATION_IN_DAYS = 13
+
+
+def get_safe_acquisition_times(safe_name: str) -> tuple[datetime, datetime]:
+    """Get the start and stop times for a Sentinel-1 SLC from the SAFE name."""
+    if not safe_name.startswith('S1'):
+        raise ValueError(f'Only Sentinel-1 SAFEs are supported: {safe_name}')
+
+    start_time = datetime.strptime(safe_name[17:32], '%Y%m%dT%H%M%S')
+    stop_time = datetime.strptime(safe_name[33:48], '%Y%m%dT%H%M%S')
+    return start_time, stop_time
 
 
 def check_sentinel1_orbit_exists(scene: str) -> bool:
@@ -173,6 +184,7 @@ def get_sentinel1_pairs_for_reference_scene(
         assert frame_qualifies_for_sentinel1_processing(ref_products, frame_id=frame)
 
         for sec_id, sec_products in frames[:-1]:
+            # TODO: ensure same number of bursts in ref, sec.
             if frame_qualifies_for_sentinel1_processing(sec_products, frame_id=frame):
                 pair_data.append(
                     (
