@@ -73,7 +73,7 @@ aws sns publish \
 
 where `TOPIC_ARN` is the ARN of the test topic and `MESSAGE_FILE` is the path to a file containing the contents of the message you want published. Example message contents are provided in these files in the [`tests/integration`](tests/integration) directory, two of which are described here:
 * [`landsat-l8-valid.json`](tests/integration/landsat-l8-valid.json) - A message containing a Landsat 9 scene over ice that *should* be processed.
-* [`landsat-l9-wrong-tier.json`](tests/integration/landsat-l9-wrong-tier.json) - A message containing a Landsat 9 scene *not* over ice that should be *filtered out* and *not* processed.
+* [`landsat-l9-wrong-tier.json`](tests/integration/landsat-l9-wrong-tier-filtered.json) - A message containing a Landsat 9 scene *not* over ice that should be *filtered out* and *not* processed.
 
 To submit **all** the integration test payloads to the default test SNS topics, run:
 ```shell
