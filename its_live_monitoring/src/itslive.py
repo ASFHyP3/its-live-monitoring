@@ -103,6 +103,7 @@ def pair_exists(reference: tuple[str], secondary: tuple[str], name: str) -> bool
                     {'op': '=', 'args': [{'property': 'scene_2_id'}, secondary[0]]},
                 ],
             },
+            max_items=2,
         )
         items = [item for page in results.pages() for item in page]
 
