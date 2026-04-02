@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1]
+### Changed
+- Add `-filtered` suffix to integration test messages that are filtered out by the subscription filter policy.
+
+### Fixed
+- Increased the `main` lambda memory to 512 MB from 256 MB to avoiding invocations hanging and timing out.
+
 ## [0.8.0]
 ### Added
 - Support for processing NISAR SNS messages and submitting jobs to hyp3-its-live has been added.
