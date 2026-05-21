@@ -17,3 +17,5 @@ Resources:
         name:
           - prefix: 'S2A_MSIL1C_'
           - prefix: 'S2B_MSIL1C_'
+          - prefix: 'S2C_MSIL1C_'
+          - prefix: 'S2D_MSIL1C_'
