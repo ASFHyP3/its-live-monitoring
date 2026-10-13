@@ -1,11 +1,11 @@
 -r requirements-its_live_monitoring.txt
-cfn-lint==1.53.0
-ruff==0.15.21
-moto==5.2.2
-mypy==2.2.0
+cfn-lint==1.57.2
+ruff==0.17.0
+moto==5.2.3
+mypy==2.4.0
 pytest==9.1.1
-responses==0.26.2
-setuptools_scm==10.2.0
+responses==0.26.3
+setuptools_scm==10.3.4
 # for convenience
 pyarrow
 ipython
