@@ -13,10 +13,12 @@ import pystac_client
 import config
 
 
+type CollectionType = pystac.Collection | pystac_client.CollectionClient
+
 LANDSAT_CATALOG_API = 'https://landsatlook.usgs.gov/stac-server'
 LANDSAT_CATALOG = pystac_client.Client.open(LANDSAT_CATALOG_API)
 LANDSAT_COLLECTION_NAME = 'landsat-c2l1'
-LANDSAT_COLLECTION = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION_NAME)
+LANDSAT_COLLECTION: CollectionType = LANDSAT_CATALOG.get_collection(LANDSAT_COLLECTION_NAME)  # type: ignore[assignment]
 LANDSAT_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'data' / 'landsat_tiles_to_process.json').read_text())
 
 LANDSAT_MAX_PAIR_SEPARATION_IN_DAYS = 544
