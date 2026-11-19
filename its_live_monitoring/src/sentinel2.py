@@ -228,7 +228,9 @@ def get_sentinel2_pairs_for_reference_scene(
 
     log.debug(f'Found {len(items)} secondary scenes for {reference_scene_id}')
     if len(items) == 0:
-        return gpd.GeoDataFrame({'reference': [], 'reference_acquisition': [], 'secondary': [], 'job_name': []})
+        return gpd.GeoDataFrame(
+            {'reference': [], 'reference_acquisition': [], 'secondary': [], 'subset': [], 'job_name': []}
+        )
 
     features = []
     for item in items:
@@ -236,6 +238,7 @@ def get_sentinel2_pairs_for_reference_scene(
         feature['properties']['reference'] = (reference_scene_id,)
         feature['properties']['reference_acquisition'] = reference.datetime
         feature['properties']['secondary'] = (item.properties['s2:product_uri'].removesuffix('.SAFE'),)
+        feature['properties']['subset'] = None
         feature['properties']['job_name'] = reference_scene_id
         features.append(feature)
 

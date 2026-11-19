@@ -4,7 +4,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal, cast, Sequence
 
 import asf_search as asf
 import geopandas as gpd
@@ -19,11 +19,12 @@ log.setLevel(config.LOGGING_LEVEL)
 NisarPols = Literal['SH', 'SV', 'DH', 'DV', 'CL', 'CR', 'QP', 'NA']
 
 NISAR_TILES_TO_PROCESS = json.loads((Path(__file__).parent / 'data' / 'nisar_tiles_to_process.json').read_text())
-# FIXME: Which products do we want to process?
-NISAR_PRODUCTS_TO_PROCESS = ['RSLC', 'GSLC']
+NISAR_PRODUCTS_TO_PROCESS = ['RSLC']
 NISAR_POLS_TO_PROCESS = ['SH', 'SV', 'DH', 'DV', 'QP']
+NISAR_SEARCH_MATURITIES : Sequence[Literal['VALIDATED']] = ['VALIDATED']
+NISAR_SEARCH_CONFIGURATIONS: Sequence[Literal['PR']] = ['PR']
 # NISAR_MIN_PAIR_SEPARATION_IN_DAYS = 12
-NISAR_MAX_PAIR_SEPARATION_IN_DAYS = 183  # 6 months
+NISAR_MAX_PAIR_SEPARATION_IN_DAYS = 49
 
 
 def get_nisar_cmr_item(scene: str) -> ASFProduct:
@@ -108,8 +109,10 @@ def get_nisar_pairs_for_reference_scene(
     end = ref_date - timedelta(seconds=1)
 
     stack = asf.search(
-        dataset='NISAR',
+        dataset='NISAR-SCIENCE-PRODUCTS',
         processingLevel=reference.properties['processingLevel'],
+        dataMaturity=NISAR_SEARCH_MATURITIES,
+        productionConfiguration=NISAR_SEARCH_CONFIGURATIONS,
         relativeOrbit=reference.properties['pathNumber'],
         frame=reference.properties['frameNumber'],
         start=start,
@@ -123,7 +126,9 @@ def get_nisar_pairs_for_reference_scene(
     secondaries = [product for product in stack if product_qualifies_for_nisar_processing(product)]
     log.debug(f'Found {len(secondaries)} secondary scenes for {ref_name}')
     if len(secondaries) == 0:
-        return gpd.GeoDataFrame({'reference': [], 'reference_acquisition': [], 'secondary': [], 'job_name': []})
+        return gpd.GeoDataFrame(
+            {'reference': [], 'reference_acquisition': [], 'secondary': [], 'subset': [], 'job_name': []}
+        )
 
     pair_data = []
     for secondary in secondaries:
@@ -132,8 +137,11 @@ def get_nisar_pairs_for_reference_scene(
                 (ref_name,),
                 ref_date,
                 (secondary.properties['sceneName'],),
+                None,
                 ref_name,
             )
         )
 
-    return gpd.GeoDataFrame(pair_data, columns=['reference', 'reference_acquisition', 'secondary', 'job_name'])
+    return gpd.GeoDataFrame(
+        pair_data, columns=['reference', 'reference_acquisition', 'secondary', 'subset', 'job_name']
+    )

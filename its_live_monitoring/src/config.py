@@ -21,8 +21,10 @@ EARTHDATA_USERNAME = os.environ.get('EARTHDATA_USERNAME')
 # needed to deduplicate via STAC
 STAC_ITEMS_ENDPOINT = _nullable_str(os.environ.get('STAC_ITEMS_ENDPOINT', 'None'))
 
+# needed to POST new STAC items
+STAC_EXISTS_OK = _string_is_true(os.environ.get('STAC_EXISTS_OK', 'False'))
+
 # needed to submit HyP3 jobs
 HYP3_API = os.environ.get('HYP3_API', '')
 EARTHDATA_PASSWORD = os.environ.get('EARTHDATA_PASSWORD')
-STAC_EXISTS_OK = _string_is_true(os.environ.get('STAC_EXISTS_OK', 'False'))
 PUBLISH_BUCKET = _nullable_str(os.environ.get('PUBLISH_BUCKET', 'None'))

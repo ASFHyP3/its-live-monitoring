@@ -108,8 +108,7 @@ Resources:
       FilterPolicyScope: MessageBody
       FilterPolicy:
         granule_ur:
-          - prefix: 'NISAR_L'
-
+          - prefix: 'NISAR_L1_PR_RSLC_'
 
   Sentinel1Subscription:
     Type: AWS::SNS::Subscription

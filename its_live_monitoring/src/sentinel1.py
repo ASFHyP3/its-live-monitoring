@@ -3,6 +3,7 @@
 import json
 import logging
 from datetime import datetime, timedelta
+from itertools import chain
 from pathlib import Path
 
 import asf_search as asf
@@ -10,6 +11,7 @@ import geopandas as gpd
 import pandas as pd
 import requests
 from asf_search.ASFProduct import ASFProduct
+from shapely import to_wkt
 
 import config
 
@@ -126,7 +128,10 @@ def get_frame_stacks(
                     f'No secondary {burst_id} burst products available for the OPERA frame that contains {reference_burst_id}.'
                 )
 
-            burst_stacks.append(gpd.GeoDataFrame.from_features(stack.geojson()))
+            bf = gpd.GeoDataFrame.from_features(stack.geojson())
+            bf['InputGranules'] = [s.umm['InputGranules'] for s in stack]
+
+            burst_stacks.append(bf)
 
         all_burst_stacks: pd.DataFrame = pd.concat(burst_stacks)
         all_burst_stacks['frame_id'] = frame_id
@@ -180,23 +185,30 @@ def get_sentinel1_pairs_for_reference_scene(
         # pandas sorts earliest to latest
         _, ref_products = frames[-1]
         ref_date = ref_products.startTime.min()
+        ref_input_granules = set(chain.from_iterable(ref_products.InputGranules))
+        ref_geometry = to_wkt(ref_products.geometry.union_all().simplify(0.001), rounding_precision=4)
 
         assert frame_qualifies_for_sentinel1_processing(ref_products, frame_id=frame)
 
         for sec_id, sec_products in frames[:-1]:
-            # TODO: ensure same number of bursts in ref, sec.
             if frame_qualifies_for_sentinel1_processing(sec_products, frame_id=frame):
+                sec_input_granules = set(chain.from_iterable(sec_products.InputGranules))
                 pair_data.append(
                     (
-                        tuple(ref_products.sceneName),
+                        tuple(g.replace('-SLC', '') for g in ref_input_granules),
                         ref_date,
-                        tuple(sec_products.sceneName),
+                        tuple(g.replace('-SLC', '') for g in sec_input_granules),
+                        ref_geometry,
                         f'OPERA_{frame}_{ref_date.isoformat()}',
                     )
                 )
 
         log.debug(f'Found {len(pair_data)} pairs for {reference.properties["burst"]["fullBurstID"]}')
         if len(pair_data) == 0:
-            return gpd.GeoDataFrame({'reference': [], 'reference_acquisition': [], 'secondary': [], 'job_name': []})
+            return gpd.GeoDataFrame(
+                {'reference': [], 'reference_acquisition': [], 'secondary': [], 'subset': [], 'job_name': []}
+            )
 
-    return gpd.GeoDataFrame(pair_data, columns=['reference', 'reference_acquisition', 'secondary', 'job_name'])
+    return gpd.GeoDataFrame(
+        pair_data, columns=['reference', 'reference_acquisition', 'secondary', 'subset', 'job_name']
+    )
