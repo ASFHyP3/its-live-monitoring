@@ -64,10 +64,7 @@ def bursts_in_item(ref_datetime: datetime, sec_datetime: datetime, item: pystac.
     scene_2_start, scene_2_stop = get_safe_acquisition_times(cast(str, scene_2))
 
     # Bounds need to be inclusive because burst2safe just uses the first and last bursts datetimes
-    if scene_1_start <= ref_datetime <= scene_1_stop and scene_2_start <= sec_datetime <= scene_2_stop:
-        return True
-
-    return False
+    return bool(scene_1_start <= ref_datetime <= scene_1_stop and scene_2_start <= sec_datetime <= scene_2_stop)
 
 
 def pair_exists(reference: tuple[str], secondary: tuple[str], name: str) -> bool:
@@ -115,9 +112,7 @@ def pair_exists(reference: tuple[str], secondary: tuple[str], name: str) -> bool
             f'{ITS_LIVE_CATALOG_API}/collections/{ITS_LIVE_COLLECTION_NAME}'
         )
 
-    if items:
-        return True
-    return False
+    return bool(items)
 
 
 def deduplicate_published_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:

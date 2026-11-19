@@ -178,7 +178,7 @@ def get_sentinel1_pairs_for_reference_scene(
     for frame in df.frame_id.unique():
         frames = list(df.loc[df.frame_id == frame].groupby(pd.Grouper(key='startTime', freq='D', sort=True)))
         # pandas sorts earliest to latest
-        ref_id, ref_products = frames[-1]
+        _, ref_products = frames[-1]
         ref_date = ref_products.startTime.min()
 
         assert frame_qualifies_for_sentinel1_processing(ref_products, frame_id=frame)
