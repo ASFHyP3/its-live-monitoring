@@ -117,7 +117,9 @@ def get_landsat_pairs_for_reference_scene(
 
     log.debug(f'Found {len(items)} secondary scenes for {reference.id}')
     if len(items) == 0:
-        return gpd.GeoDataFrame({'reference': [], 'reference_acquisition': [], 'secondary': [], 'job_name': []})
+        return gpd.GeoDataFrame(
+            {'reference': [], 'reference_acquisition': [], 'secondary': [], 'subset': [], 'job_name': []}
+        )
 
     features = []
     for item in items:
@@ -125,6 +127,7 @@ def get_landsat_pairs_for_reference_scene(
         feature['properties']['reference'] = (reference.id,)
         feature['properties']['reference_acquisition'] = reference.datetime
         feature['properties']['secondary'] = (item.id,)
+        feature['properties']['subset'] = None
         feature['properties']['job_name'] = reference.id
         features.append(feature)
 

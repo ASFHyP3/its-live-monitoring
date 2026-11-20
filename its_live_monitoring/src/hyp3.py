@@ -24,14 +24,12 @@ AUTORIFT_JOB_TEMPLATE = {
     'job_parameters': {
         # 'reference': list[str],
         # 'secondary': list[str],
-        'parameter_file': '/vsicurl/https://its-live-data.s3.amazonaws.com/autorift_parameters/v001/autorift_landice_0120m.shp',
+        # 'subset': str | None,
         # 'publish_bucket': str | None,
-        'use_static_files': True,
         # 'frame_id' = str | None,
-        # 'stac_items_endpoint': str | None,
-        # 'stac_exists_ok': bool,
     },
-    'job_type': 'AUTORIFT',
+    # FIXME: Should stay AUTORIFT
+    'job_type': 'AUTORIFT_JULIA',
     # 'name': str | None,
 }
 
@@ -138,18 +136,17 @@ def deduplicate_hyp3_pairs(pairs: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
 def submit_pairs_for_processing(pairs: gpd.GeoDataFrame) -> sdk.Batch:  # noqa: D103
     prepared_jobs = []
-    for reference, secondary, name in pairs[['reference', 'secondary', 'job_name']].itertuples(index=False):
+    for reference, secondary, subset, name in pairs[['reference', 'secondary', 'subset', 'job_name']].itertuples(
+        index=False
+    ):
         prepared_job: dict = deepcopy(AUTORIFT_JOB_TEMPLATE)
         prepared_job['name'] = name
         prepared_job['job_parameters']['reference'] = reference
         prepared_job['job_parameters']['secondary'] = secondary
+        prepared_job['job_parameters']['subset'] = subset
 
         if config.PUBLISH_BUCKET:
             prepared_job['job_parameters']['publish_bucket'] = config.PUBLISH_BUCKET
-
-        if config.STAC_ITEMS_ENDPOINT:
-            prepared_job['job_parameters']['stac_items_endpoint'] = config.STAC_ITEMS_ENDPOINT
-            prepared_job['job_parameters']['stac_exists_ok'] = config.STAC_EXISTS_OK
 
         if name.startswith('OPERA'):
             prepared_job['job_parameters']['frame_id'] = name.split('_')[1]
