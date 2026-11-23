@@ -1,6 +1,6 @@
 -r requirements-its_live_monitoring.txt
-cfn-lint==1.59.0
-ruff==0.17.3
+cfn-lint==1.61.0
+ruff==0.17.6
 moto==5.2.5
 mypy==2.4.1
 pytest==9.2.0
